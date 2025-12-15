@@ -1,0 +1,47 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: auditax-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "SQLServer@2022"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+      - ./init:/docker-entrypoint-initdb.d
+    networks:
+      - sqlserver-network
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "SQLServer@2022" -C -Q "SELECT 1" -b -o /dev/null
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  sqlserver-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: auditax-sqlserver-init
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    volumes:
+      - ./init:/init
+      - sqlserver-data:/var/opt/mssql
+    networks:
+      - sqlserver-network
+    entrypoint: /bin/bash
+    command: /init/01-init-database.sh
+    environment:
+      MSSQL_SA_PASSWORD: "SQLServer@2022"
+
+volumes:
+  sqlserver-data:
+    name: auditax-sqlserver-data
+
+networks:
+  sqlserver-network:
+    name: auditax-sqlserver-network
+    driver: bridge

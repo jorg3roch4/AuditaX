@@ -1,0 +1,75 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <!-- Build Settings -->
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>14</LangVersion>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <Features>strict</Features>
+
+        <!-- Assembly Info -->
+        <AssemblyName>AuditaX</AssemblyName>
+        <RootNamespace>AuditaX</RootNamespace>
+
+        <!-- Package Identity -->
+        <PackageId>AuditaX</PackageId>
+        <Version>1.0.0</Version>
+        <AssemblyVersion>1.0.0</AssemblyVersion>
+        <FileVersion>1.0.0</FileVersion>
+        <Product>AuditaX</Product>
+
+        <!-- Package Metadata -->
+        <Title>AuditaX - Entity Audit Logging for .NET</Title>
+        <Authors>jorg3roch4</Authors>
+        <Description>Core library for entity auditing in .NET 10+ with fluent configuration, multiple serialization formats (JSON/XML), and extensible architecture for ORMs and databases.</Description>
+        <Copyright>Copyright (c) 2025 jorg3roch4</Copyright>
+        <PackageTags>audit;logging;entity-tracking;change-history;dotnet;efcore;dapper;sqlserver;postgresql</PackageTags>
+        <PackageReleaseNotes>v1.0.0 - Initial release with support for Dapper, Entity Framework Core, SQL Server, and PostgreSQL.</PackageReleaseNotes>
+        <NeutralLanguage>en</NeutralLanguage>
+        <MinClientVersion>6.0</MinClientVersion>
+
+        <!-- Repository & URLs -->
+        <PackageProjectUrl>https://github.com/jorg3roch4/AuditaX</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/jorg3roch4/AuditaX</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+
+        <!-- Package Assets -->
+        <PackageIcon>icon-128x128.png</PackageIcon>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+
+        <!-- Documentation & Symbols -->
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+
+        <!-- Build Configuration -->
+        <Deterministic>true</Deterministic>
+        <EnablePackageValidation>true</EnablePackageValidation>
+        <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+
+        <!-- Output -->
+        <PackageOutputPath>$(MSBuildThisFileDirectory)../../artifacts</PackageOutputPath>
+    </PropertyGroup>
+
+    <!-- Package Assets -->
+    <ItemGroup>
+        <None Include="../../assets/icon-128x128.png" Pack="true" PackagePath="" />
+        <None Include="../../LICENSE" Pack="true" PackagePath="" />
+        <None Include="../../README.md" Pack="true" PackagePath="" />
+    </ItemGroup>
+
+    <!-- Dependencies -->
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.1" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.1" />
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    </ItemGroup>
+</Project>

@@ -1,0 +1,75 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <!-- Build Settings -->
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>14</LangVersion>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <Features>strict</Features>
+
+        <!-- Assembly Info -->
+        <AssemblyName>AuditaX.PostgreSql</AssemblyName>
+        <RootNamespace>AuditaX.PostgreSql</RootNamespace>
+
+        <!-- Package Identity -->
+        <PackageId>AuditaX.PostgreSql</PackageId>
+        <Version>1.0.0</Version>
+        <AssemblyVersion>1.0.0</AssemblyVersion>
+        <FileVersion>1.0.0</FileVersion>
+        <Product>AuditaX</Product>
+
+        <!-- Package Metadata -->
+        <Title>AuditaX.PostgreSql - PostgreSQL Provider</Title>
+        <Authors>jorg3roch4</Authors>
+        <Description>PostgreSQL database provider for AuditaX audit logging with optimized queries and native type support.</Description>
+        <Copyright>Copyright (c) 2025 jorg3roch4</Copyright>
+        <PackageTags>audit;logging;postgresql;database;provider;dotnet</PackageTags>
+        <PackageReleaseNotes>v1.0.0 - Initial release with PostgreSQL support including JSON/XML storage and auto table creation.</PackageReleaseNotes>
+        <NeutralLanguage>en</NeutralLanguage>
+        <MinClientVersion>6.0</MinClientVersion>
+
+        <!-- Repository & URLs -->
+        <PackageProjectUrl>https://github.com/jorg3roch4/AuditaX</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/jorg3roch4/AuditaX</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+
+        <!-- Package Assets -->
+        <PackageIcon>icon-128x128.png</PackageIcon>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+
+        <!-- Documentation & Symbols -->
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+
+        <!-- Build Configuration -->
+        <Deterministic>true</Deterministic>
+        <EnablePackageValidation>true</EnablePackageValidation>
+        <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+
+        <!-- Output -->
+        <PackageOutputPath>$(MSBuildThisFileDirectory)../../artifacts</PackageOutputPath>
+    </PropertyGroup>
+
+    <!-- Package Assets -->
+    <ItemGroup>
+        <None Include="../../assets/icon-128x128.png" Pack="true" PackagePath="" />
+        <None Include="../../LICENSE" Pack="true" PackagePath="" />
+        <None Include="README.md" Pack="true" PackagePath="" />
+    </ItemGroup>
+
+    <!-- Project References -->
+    <ItemGroup>
+        <ProjectReference Include="../AuditaX/AuditaX.csproj" />
+    </ItemGroup>
+
+    <!-- Dependencies -->
+    <ItemGroup>
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    </ItemGroup>
+</Project>
