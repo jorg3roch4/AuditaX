@@ -14,9 +14,9 @@
 
         <!-- Package Identity -->
         <PackageId>AuditaX</PackageId>
-        <Version>1.0.0</Version>
-        <AssemblyVersion>1.0.0</AssemblyVersion>
-        <FileVersion>1.0.0</FileVersion>
+        <Version>1.0.1</Version>
+        <AssemblyVersion>1.0.1</AssemblyVersion>
+        <FileVersion>1.0.1</FileVersion>
         <Product>AuditaX</Product>
 
         <!-- Package Metadata -->
@@ -25,7 +25,7 @@
         <Description>Core library for entity auditing in .NET 10+ with fluent configuration, multiple serialization formats (JSON/XML), and extensible architecture for ORMs and databases.</Description>
         <Copyright>Copyright (c) 2025 jorg3roch4</Copyright>
         <PackageTags>audit;logging;entity-tracking;change-history;dotnet;efcore;dapper;sqlserver;postgresql</PackageTags>
-        <PackageReleaseNotes>v1.0.0 - Initial release with support for Dapper, Entity Framework Core, SQL Server, and PostgreSQL.</PackageReleaseNotes>
+        <PackageReleaseNotes>v1.0.1 - Fixed documentation, improved table structure validation, added AuditTableStructureMismatchException.</PackageReleaseNotes>
         <NeutralLanguage>en</NeutralLanguage>
         <MinClientVersion>6.0</MinClientVersion>
 

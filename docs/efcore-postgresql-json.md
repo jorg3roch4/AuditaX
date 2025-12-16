@@ -13,28 +13,60 @@ Npgsql.EntityFrameworkCore.PostgreSQL
 
 ## Configuration
 
-### appsettings.json
+### Option A: appsettings.json
 
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Database=mydatabase;Username=postgres;Password=YourPassword"
+    "DefaultConnection": "Host=localhost;Port=5432;Database=MyDatabase;Username=postgres;Password=YourPassword;"
   },
   "AuditaX": {
     "TableName": "audit_log",
     "Schema": "public",
-    "ChangeLogFormat": "Json",
     "AutoCreateTable": true,
     "EnableLogging": true,
+    "ChangeLogFormat": "Json",
     "Entities": {
       "Product": {
-        "SourceName": "Product",
-        "KeyProperty": "ProductId",
-        "AuditableProperties": [ "Name", "Description", "Price", "Stock" ]
+        "Key": "Id",
+        "AuditProperties": ["Name", "Description", "Price", "Stock", "IsActive"],
+        "RelatedEntities": {
+          "ProductTag": {
+            "ParentKey": "ProductId",
+            "CaptureProperties": ["Tag"]
+          }
+        }
       }
     }
   }
 }
+```
+
+### Option B: Fluent API
+
+```csharp
+builder.Services.AddAuditaX(options =>
+{
+    options.TableName = "audit_log";
+    options.Schema = "public";
+    options.AutoCreateTable = true;
+    options.EnableLogging = true;
+    options.ChangeLogFormat = ChangeLogFormat.Json;
+
+    options.ConfigureEntities(entities =>
+    {
+        entities.AuditEntity<Product>("Product")
+            .WithKey(p => p.Id)
+            .AuditProperties("Name", "Description", "Price", "Stock", "IsActive")
+            .WithRelatedEntity<ProductTag>("ProductTag")
+                .WithParentKey(t => t.ProductId)
+                .OnAdded(t => new Dictionary<string, string?> { ["Tag"] = t.Tag })
+                .OnRemoved(t => new Dictionary<string, string?> { ["Tag"] = t.Tag });
+    });
+})
+.UseEntityFramework<AppDbContext>()
+.UsePostgreSql()
+.ValidateOnStartup();
 ```
 
 ### Program.cs
@@ -47,47 +79,41 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<AppDbContext>((sp, options) =>
-{
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
-    options.AddAuditaXInterceptors(sp);
-});
+// Register DbContext
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Option A: Configure from appsettings.json
 builder.Services.AddAuditaX(builder.Configuration)
     .UseEntityFramework<AppDbContext>()
     .UsePostgreSql()
     .ValidateOnStartup();
 
+// Option B: Configure with Fluent API
+// builder.Services.AddAuditaX(options => { /* see above */ })
+//     .UseEntityFramework<AppDbContext>()
+//     .UsePostgreSql()
+//     .ValidateOnStartup();
+
 var app = builder.Build();
 app.Run();
 ```
 
-### DbContext
+### AppDbContext
 
 ```csharp
 using Microsoft.EntityFrameworkCore;
 
-public class AppDbContext : DbContext
+public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-
     public DbSet<Product> Products => Set<Product>();
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<Product>(entity =>
-        {
-            entity.ToTable("products");
-            entity.HasKey(e => e.ProductId);
-            entity.Property(e => e.ProductId).HasColumnName("product_id");
-            entity.Property(e => e.Name).HasColumnName("name");
-            entity.Property(e => e.Price).HasColumnName("price");
-        });
-    }
+    public DbSet<ProductTag> ProductTags => Set<ProductTag>();
 }
 ```
 
-## Usage (Automatic Auditing)
+## Usage
+
+With Entity Framework Core, auditing is **automatic**. The interceptor tracks all changes made through the DbContext:
 
 ```csharp
 public class ProductService(AppDbContext context)
@@ -102,7 +128,9 @@ public class ProductService(AppDbContext context)
     public async Task UpdateAsync(int id, string name, decimal price)
     {
         var product = await context.Products.FindAsync(id);
-        product!.Name = name;
+        if (product is null) throw new KeyNotFoundException();
+
+        product.Name = name;
         product.Price = price;
         await context.SaveChangesAsync(); // Audit log created automatically
     }
@@ -110,7 +138,9 @@ public class ProductService(AppDbContext context)
     public async Task DeleteAsync(int id)
     {
         var product = await context.Products.FindAsync(id);
-        context.Products.Remove(product!);
+        if (product is null) throw new KeyNotFoundException();
+
+        context.Products.Remove(product);
         await context.SaveChangesAsync(); // Audit log created automatically
     }
 }
@@ -119,59 +149,144 @@ public class ProductService(AppDbContext context)
 ## Generated Audit Table
 
 ```sql
-CREATE TABLE IF NOT EXISTS public.audit_log (
-    audit_log_id SERIAL PRIMARY KEY,
-    source_name VARCHAR(128) NOT NULL,
-    source_key VARCHAR(128) NOT NULL,
-    action VARCHAR(16) NOT NULL,
-    changes TEXT,
-    "user" VARCHAR(128),
-    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.audit_log (
+    log_id      UUID         NOT NULL DEFAULT gen_random_uuid(),
+    source_name VARCHAR(50)  NOT NULL,
+    source_key  VARCHAR(900) NOT NULL,
+    audit_log   JSONB        NOT NULL,
+    CONSTRAINT pk_audit_log PRIMARY KEY (log_id),
+    CONSTRAINT uq_audit_log_source UNIQUE (source_name, source_key)
 );
+
+CREATE INDEX ix_audit_log_source_name ON public.audit_log (source_name) INCLUDE (source_key);
+CREATE INDEX ix_audit_log_source_key ON public.audit_log (source_key) INCLUDE (source_name);
 ```
 
 ## Sample Audit Log Entry
 
 ```json
 {
-  "audit_log_id": 1,
-  "source_name": "Product",
-  "source_key": "42",
-  "action": "Update",
-  "changes": "{\"auditLog\":[{\"action\":\"Updated\",\"user\":\"admin@example.com\",\"timestamp\":\"2024-12-11T10:30:00Z\",\"fields\":[{\"name\":\"Price\",\"before\":\"9.99\",\"after\":\"12.99\"}]}]}",
-  "user": "admin@example.com",
-  "timestamp": "2024-12-11T10:30:00Z"
+  "auditLog": [
+    {
+      "action": "Created",
+      "user": "admin@example.com",
+      "timestamp": "2024-12-15T10:00:00Z",
+      "fields": []
+    },
+    {
+      "action": "Updated",
+      "user": "admin@example.com",
+      "timestamp": "2024-12-15T10:30:00Z",
+      "fields": [
+        { "name": "Price", "before": "79.99", "after": "69.99" },
+        { "name": "Stock", "before": "100", "after": "95" }
+      ]
+    },
+    {
+      "action": "Added",
+      "user": "admin@example.com",
+      "timestamp": "2024-12-15T11:00:00Z",
+      "related": "ProductTag",
+      "fields": [
+        { "name": "Tag", "after": "Gaming" }
+      ]
+    },
+    {
+      "action": "Deleted",
+      "user": "admin@example.com",
+      "timestamp": "2024-12-15T12:00:00Z",
+      "fields": []
+    }
+  ]
 }
 ```
 
-## Querying JSON Changes in PostgreSQL
+## Querying Audit Logs
 
-```sql
--- Get all field changes from audit entries
-SELECT
-    audit_log_id,
-    source_name,
-    source_key,
-    entry->>'action' AS entry_action,
-    entry->>'user' AS entry_user,
-    field->>'name' AS field_name,
-    field->>'before' AS old_value,
-    field->>'after' AS new_value,
-    "user",
-    timestamp
-FROM audit_log,
-     jsonb_array_elements(changes::jsonb->'auditLog') AS entry,
-     jsonb_array_elements(entry->'fields') AS field
-WHERE action = 'Update';
+Inject `IAuditQueryService` to query audit logs:
 
--- Find all price changes
-SELECT * FROM audit_log
-WHERE changes::jsonb->'auditLog' @> '[{"fields": [{"name": "Price"}]}]';
+```csharp
+public class AuditController(IAuditQueryService auditQueryService)
+{
+    // ...
+}
 ```
 
-## Running the Sample
+### Get audit log for a specific entity
 
-```bash
-cd samples/AuditaX.Sample.EntityFramework
-dotnet run -- postgresql json
+```csharp
+var result = await auditQueryService.GetBySourceNameAndKeyAsync("Product", "42");
 ```
+
+**Returns:** `AuditQueryResult?`
+| Property | Value |
+|----------|-------|
+| SourceName | Product |
+| SourceKey | 42 |
+| AuditLog | `{"auditLog":[...]}` |
+
+### Get audit logs by entity type (with pagination)
+
+```csharp
+var results = await auditQueryService.GetBySourceNameAsync("Product", skip: 0, take: 100);
+```
+
+**Returns:** `IEnumerable<AuditQueryResult>`
+| SourceName | SourceKey | AuditLog |
+|------------|-----------|----------|
+| Product | 1 | `{"auditLog":[...]}` |
+| Product | 2 | `{"auditLog":[...]}` |
+| Product | 42 | `{"auditLog":[...]}` |
+
+### Get audit logs by action type
+
+```csharp
+var results = await auditQueryService.GetBySourceNameAndActionAsync("Product", AuditAction.Updated);
+```
+
+**Returns:** `IEnumerable<AuditQueryResult>`
+| SourceName | SourceKey | AuditLog |
+|------------|-----------|----------|
+| Product | 42 | `{"auditLog":[{"action":"Updated",...}]}` |
+
+### Get audit logs by date range
+
+```csharp
+var results = await auditQueryService.GetBySourceNameAndDateAsync(
+    "Product",
+    fromDate: DateTime.UtcNow.AddDays(-7),
+    toDate: DateTime.UtcNow);
+```
+
+**Returns:** `IEnumerable<AuditQueryResult>`
+| SourceName | SourceKey | AuditLog |
+|------------|-----------|----------|
+| Product | 42 | `{"auditLog":[...]}` |
+
+### Get audit logs by action and date range
+
+```csharp
+var results = await auditQueryService.GetBySourceNameActionAndDateAsync(
+    "Product",
+    AuditAction.Updated,
+    fromDate: DateTime.UtcNow.AddDays(-7),
+    toDate: DateTime.UtcNow);
+```
+
+**Returns:** `IEnumerable<AuditQueryResult>`
+| SourceName | SourceKey | AuditLog |
+|------------|-----------|----------|
+| Product | 42 | `{"auditLog":[{"action":"Updated",...}]}` |
+
+### Get audit summary (last action per entity)
+
+```csharp
+var summaries = await auditQueryService.GetSummaryBySourceNameAsync("Product", skip: 0, take: 100);
+```
+
+**Returns:** `IEnumerable<AuditSummaryResult>`
+| SourceName | SourceKey | LastAction | LastTimestamp | LastUser |
+|------------|-----------|------------|---------------|----------|
+| Product | 1 | Created | 2024-12-15T09:00:00Z | admin@example.com |
+| Product | 2 | Updated | 2024-12-15T10:30:00Z | admin@example.com |
+| Product | 42 | Deleted | 2024-12-15T12:00:00Z | admin@example.com |

@@ -35,8 +35,8 @@ dotnet add package AuditaX.SqlServer   # or AuditaX.PostgreSql
     "Entities": {
       "Product": {
         "SourceName": "Product",
-        "KeyProperty": "ProductId",
-        "AuditableProperties": [ "Name", "Price", "Stock" ]
+        "Key": "ProductId",
+        "AuditProperties": [ "Name", "Price", "Stock" ]
       }
     }
   }
@@ -50,7 +50,7 @@ dotnet add package AuditaX.SqlServer   # or AuditaX.PostgreSql
 services.AddDbContext<AppDbContext>((sp, options) =>
 {
     options.UseSqlServer(connectionString);
-    options.AddAuditaXInterceptors(sp);  // Important!
+    options.AddAuditaXInterceptor(sp);  // Important!
 });
 
 // Configure AuditaX
@@ -93,7 +93,7 @@ public class ProductService(AppDbContext context)
 
 ## How It Works
 
-1. **Interceptor Registration**: `AddAuditaXInterceptors()` registers a `SaveChangesInterceptor`
+1. **Interceptor Registration**: `AddAuditaXInterceptor()` registers a `SaveChangesInterceptor`
 2. **Change Detection**: When `SaveChangesAsync()` is called, the interceptor:
    - Enumerates all tracked entities
    - Filters for Added, Modified, and Deleted states
@@ -113,7 +113,7 @@ Your DbContext must be registered with the AuditaX interceptors:
 services.AddDbContext<AppDbContext>((sp, options) =>
 {
     options.UseYourDatabase(connectionString);
-    options.AddAuditaXInterceptors(sp);  // Required for automatic auditing
+    options.AddAuditaXInterceptor(sp);  // Required for automatic auditing
 });
 ```
 

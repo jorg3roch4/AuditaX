@@ -12,8 +12,16 @@ public sealed class AuditEntityConfiguration
 
     /// <summary>
     /// Gets or sets the entity type.
+    /// May be null initially for configurations loaded from appsettings,
+    /// but will be set when first accessed via GetEntityConfiguration.
     /// </summary>
-    public required Type EntityType { get; set; }
+    public Type? EntityType { get; set; }
+
+    /// <summary>
+    /// Gets or sets the property name used to extract the entity key.
+    /// Used by appsettings-based configurations for reflection-based key extraction.
+    /// </summary>
+    public string? KeyPropertyName { get; set; }
 
     /// <summary>
     /// Gets or sets the function to extract the entity key.

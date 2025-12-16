@@ -1,7 +1,6 @@
 using System.Data;
 using Dapper;
 using AuditaX.Enums;
-using AuditaX.Interfaces;
 using AuditaX.Samples.Common.Demo;
 using AuditaX.Samples.Common.Entities;
 
@@ -9,6 +8,7 @@ namespace AuditaX.Sample.Dapper.Data;
 
 /// <summary>
 /// Dapper implementation of data operations for the demo.
+/// Tables are created by the DatabaseSetup tool before running this sample.
 /// </summary>
 public class DapperDataOperations : IDemoDataOperations
 {
@@ -19,58 +19,6 @@ public class DapperDataOperations : IDemoDataOperations
     {
         _connection = connection;
         _databaseType = databaseType;
-    }
-
-    public async Task EnsureTablesCreatedAsync()
-    {
-        if (_databaseType == DatabaseType.SqlServer)
-        {
-            await _connection.ExecuteAsync(@"
-                IF EXISTS (SELECT * FROM sys.tables WHERE name = 'ProductTags')
-                    DROP TABLE ProductTags;
-                IF EXISTS (SELECT * FROM sys.tables WHERE name = 'Products')
-                    DROP TABLE Products;
-
-                CREATE TABLE Products (
-                    Id INT IDENTITY(1,1) PRIMARY KEY,
-                    Name NVARCHAR(200) NOT NULL,
-                    Description NVARCHAR(1000) NULL,
-                    Price DECIMAL(18,2) NOT NULL,
-                    Stock INT NOT NULL,
-                    IsActive BIT NOT NULL DEFAULT 1
-                );
-
-                CREATE TABLE ProductTags (
-                    Id INT IDENTITY(1,1) PRIMARY KEY,
-                    ProductId INT NOT NULL,
-                    Tag NVARCHAR(100) NOT NULL,
-                    CONSTRAINT FK_ProductTags_Products FOREIGN KEY (ProductId)
-                        REFERENCES Products (Id) ON DELETE CASCADE
-                );");
-        }
-        else
-        {
-            await _connection.ExecuteAsync(@"
-                DROP TABLE IF EXISTS product_tags;
-                DROP TABLE IF EXISTS products;
-
-                CREATE TABLE products (
-                    id SERIAL PRIMARY KEY,
-                    name VARCHAR(200) NOT NULL,
-                    description VARCHAR(1000) NULL,
-                    price DECIMAL(18,2) NOT NULL,
-                    stock INT NOT NULL,
-                    is_active BOOLEAN NOT NULL DEFAULT TRUE
-                );
-
-                CREATE TABLE product_tags (
-                    id SERIAL PRIMARY KEY,
-                    product_id INT NOT NULL,
-                    tag VARCHAR(100) NOT NULL,
-                    CONSTRAINT fk_product_tags_products FOREIGN KEY (product_id)
-                        REFERENCES products (id) ON DELETE CASCADE
-                );");
-        }
     }
 
     public async Task<Product> CreateProductAsync(Product product)

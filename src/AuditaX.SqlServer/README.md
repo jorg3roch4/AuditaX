@@ -59,17 +59,16 @@ services.AddAuditaX(configuration)
 
 ```sql
 CREATE TABLE [dbo].[AuditLog] (
-    [AuditLogId] INT IDENTITY(1,1) PRIMARY KEY,
-    [SourceName] NVARCHAR(128) NOT NULL,
-    [SourceKey] NVARCHAR(128) NOT NULL,
-    [Action] NVARCHAR(16) NOT NULL,
-    [Changes] NVARCHAR(MAX) NULL,
-    [User] NVARCHAR(128) NULL,
-    [Timestamp] DATETIME2 NOT NULL DEFAULT GETUTCDATE()
+    [LogId] UNIQUEIDENTIFIER NOT NULL DEFAULT NEWSEQUENTIALID(),
+    [SourceName] NVARCHAR(50) NOT NULL,
+    [SourceKey] NVARCHAR(900) NOT NULL,
+    [AuditLog] NVARCHAR(MAX) NOT NULL,  -- Use XML type for XML format
+    CONSTRAINT [PK_AuditLog] PRIMARY KEY CLUSTERED ([LogId]),
+    CONSTRAINT [UQ_AuditLog_Source] UNIQUE ([SourceName], [SourceKey])
 );
 
-CREATE INDEX IX_AuditLog_SourceName_SourceKey ON [dbo].[AuditLog] ([SourceName], [SourceKey]);
-CREATE INDEX IX_AuditLog_Timestamp ON [dbo].[AuditLog] ([Timestamp]);
+CREATE INDEX IX_AuditLog_SourceName ON [dbo].[AuditLog] ([SourceName]) INCLUDE ([SourceKey]);
+CREATE INDEX IX_AuditLog_SourceKey ON [dbo].[AuditLog] ([SourceKey]) INCLUDE ([SourceName]);
 ```
 
 ## Querying Audit Logs
@@ -78,48 +77,45 @@ CREATE INDEX IX_AuditLog_Timestamp ON [dbo].[AuditLog] ([Timestamp]);
 
 ```sql
 SELECT * FROM AuditLog
-WHERE SourceName = 'Product'
-ORDER BY Timestamp DESC;
+WHERE SourceName = 'Product';
 ```
 
 ### Query JSON Changes
 
 ```sql
 SELECT
-    AuditLogId,
+    LogId,
     SourceName,
     SourceKey,
+    JSON_VALUE(e.value, '$.action') AS EntryAction,
+    JSON_VALUE(e.value, '$.user') AS EntryUser,
+    JSON_VALUE(e.value, '$.timestamp') AS EntryTimestamp,
     JSON_VALUE(f.value, '$.name') AS FieldName,
     JSON_VALUE(f.value, '$.before') AS OldValue,
-    JSON_VALUE(f.value, '$.after') AS NewValue,
-    JSON_VALUE(e.value, '$.user') AS EntryUser,
-    JSON_VALUE(e.value, '$.action') AS EntryAction,
-    [User],
-    [Timestamp]
+    JSON_VALUE(f.value, '$.after') AS NewValue
 FROM AuditLog
-CROSS APPLY OPENJSON(Changes, '$.auditLog') AS e
+CROSS APPLY OPENJSON(AuditLog, '$.auditLog') AS e
 CROSS APPLY OPENJSON(e.value, '$.fields') AS f
-WHERE Action = 'Update';
+WHERE JSON_VALUE(e.value, '$.action') = 'Updated';
 ```
 
 ### Query XML Changes
 
 ```sql
 SELECT
-    AuditLogId,
+    LogId,
     SourceName,
     SourceKey,
     e.value('@Action', 'NVARCHAR(16)') AS EntryAction,
     e.value('@User', 'NVARCHAR(128)') AS EntryUser,
+    e.value('@Timestamp', 'NVARCHAR(50)') AS EntryTimestamp,
     f.value('@Name', 'NVARCHAR(128)') AS FieldName,
     f.value('@Before', 'NVARCHAR(MAX)') AS OldValue,
-    f.value('@After', 'NVARCHAR(MAX)') AS NewValue,
-    [User],
-    [Timestamp]
+    f.value('@After', 'NVARCHAR(MAX)') AS NewValue
 FROM AuditLog
-CROSS APPLY Changes.nodes('/AuditLog/Entry') AS t(e)
+CROSS APPLY AuditLog.nodes('/AuditLog/Entry') AS t(e)
 CROSS APPLY e.nodes('Field') AS u(f)
-WHERE Action = 'Update';
+WHERE e.value('@Action', 'NVARCHAR(16)') = 'Updated';
 ```
 
 ## DapperContext for SQL Server

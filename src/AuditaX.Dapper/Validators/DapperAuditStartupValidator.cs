@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
@@ -6,6 +8,7 @@ using AuditaX.Configuration;
 using AuditaX.Enums;
 using AuditaX.Exceptions;
 using AuditaX.Interfaces;
+using AuditaX.Models;
 
 namespace AuditaX.Dapper.Validators;
 
@@ -51,7 +54,7 @@ public sealed class DapperAuditStartupValidator : IAuditStartupValidator
             if (_options.AutoCreateTable)
             {
                 await CreateTableIfNotExistsAsync(cancellationToken);
-                // Table was just created with the correct column type, no need to validate format
+                // Table was just created with the correct structure, no need to validate
                 return;
             }
             else
@@ -62,8 +65,8 @@ public sealed class DapperAuditStartupValidator : IAuditStartupValidator
             }
         }
 
-        // Step 2: Validate the column type matches the configured format
-        await ValidateColumnFormatAsync(cancellationToken);
+        // Step 2: Validate the complete table structure
+        await ValidateTableStructureAsync(cancellationToken);
     }
 
     /// <inheritdoc />
@@ -91,40 +94,77 @@ public sealed class DapperAuditStartupValidator : IAuditStartupValidator
     }
 
     /// <summary>
-    /// Validates that the column type in the database matches the configured ChangeLogFormat.
+    /// Validates that the table structure matches the expected structure.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <exception cref="AuditColumnFormatMismatchException">
-    /// Thrown when the column type doesn't match the configured format.
+    /// <exception cref="AuditTableStructureMismatchException">
+    /// Thrown when the table structure doesn't match the expected structure.
     /// </exception>
-    private async Task ValidateColumnFormatAsync(CancellationToken cancellationToken)
+    /// <exception cref="AuditColumnFormatMismatchException">
+    /// Thrown when the AuditLog column type doesn't match the configured format.
+    /// </exception>
+    private async Task ValidateTableStructureAsync(CancellationToken cancellationToken)
     {
-        var actualColumnType = await GetAuditLogColumnTypeAsync(cancellationToken);
+        EnsureConnectionOpen();
 
-        if (string.IsNullOrEmpty(actualColumnType))
+        // Get actual table structure in a single query
+        var command = new CommandDefinition(
+            _databaseProvider.GetTableStructureSql,
+            cancellationToken: cancellationToken);
+
+        var actualColumns = (await _dbConnection.QueryAsync<TableColumnInfo>(command)).ToList();
+        var expectedColumns = _databaseProvider.GetExpectedTableStructure();
+
+        var missingColumns = new List<string>();
+        var incorrectColumns = new List<(string ColumnName, string ExpectedType, string ActualType)>();
+
+        foreach (var expected in expectedColumns)
         {
-            // Column doesn't exist - this shouldn't happen if table exists, but handle it gracefully
-            throw new AuditTableNotFoundException(
-                _databaseProvider.FullTableName,
-                _databaseProvider.CreateTableSql);
+            var actual = actualColumns.FirstOrDefault(c =>
+                c.ColumnName.Equals(expected.ColumnName, System.StringComparison.OrdinalIgnoreCase));
+
+            if (actual is null)
+            {
+                missingColumns.Add(expected.ColumnName);
+            }
+            else if (!_databaseProvider.ValidateColumn(actual, expected))
+            {
+                var actualTypeDesc = actual.MaxLength.HasValue && actual.MaxLength.Value > 0
+                    ? $"{actual.DataType}({actual.MaxLength})"
+                    : actual.DataType;
+
+                incorrectColumns.Add((expected.ColumnName, expected.ExpectedTypeDescription, actualTypeDesc));
+            }
         }
 
-        var isCompatible = _options.ChangeLogFormat == ChangeLogFormat.Xml
-            ? _databaseProvider.IsXmlCompatibleColumnType(actualColumnType)
-            : _databaseProvider.IsJsonCompatibleColumnType(actualColumnType);
-
-        if (!isCompatible)
+        // Throw appropriate exception based on validation results
+        if (missingColumns.Count > 0 || incorrectColumns.Count > 0)
         {
-            var expectedColumnType = _options.ChangeLogFormat == ChangeLogFormat.Xml
-                ? _databaseProvider.ExpectedXmlColumnType
-                : _databaseProvider.ExpectedJsonColumnType;
+            // Check if the AuditLog column is the only issue and it's a format mismatch
+            if (missingColumns.Count == 0 &&
+                incorrectColumns.Count == 1 &&
+                incorrectColumns[0].ColumnName.Equals(_databaseProvider.AuditLogColumn, System.StringComparison.OrdinalIgnoreCase))
+            {
+                var actualColumn = actualColumns.First(c =>
+                    c.ColumnName.Equals(_databaseProvider.AuditLogColumn, System.StringComparison.OrdinalIgnoreCase));
 
-            throw new AuditColumnFormatMismatchException(
+                var expectedColumnType = _options.ChangeLogFormat == ChangeLogFormat.Xml
+                    ? _databaseProvider.ExpectedXmlColumnType
+                    : _databaseProvider.ExpectedJsonColumnType;
+
+                throw new AuditColumnFormatMismatchException(
+                    _databaseProvider.FullTableName,
+                    _databaseProvider.AuditLogColumn,
+                    _options.ChangeLogFormat,
+                    expectedColumnType,
+                    actualColumn.DataType);
+            }
+
+            throw new AuditTableStructureMismatchException(
                 _databaseProvider.FullTableName,
-                _databaseProvider.AuditLogColumn,
-                _options.ChangeLogFormat,
-                expectedColumnType,
-                actualColumnType);
+                missingColumns,
+                incorrectColumns,
+                _databaseProvider.CreateTableSql);
         }
     }
 

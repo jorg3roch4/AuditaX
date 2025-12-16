@@ -5,6 +5,7 @@ namespace AuditaX.Sample.EntityFramework.Data;
 
 /// <summary>
 /// Entity Framework implementation of data operations for the demo.
+/// Tables are created by the DatabaseSetup tool before running this sample.
 /// </summary>
 public class EFDataOperations : IDemoDataOperations
 {
@@ -13,13 +14,6 @@ public class EFDataOperations : IDemoDataOperations
     public EFDataOperations(AppDbContext context)
     {
         _context = context;
-    }
-
-    public async Task EnsureTablesCreatedAsync()
-    {
-        // Drop and recreate database for clean demo
-        await _context.Database.EnsureDeletedAsync();
-        await _context.Database.EnsureCreatedAsync();
     }
 
     public async Task<Product> CreateProductAsync(Product product)

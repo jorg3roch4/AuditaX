@@ -183,7 +183,7 @@ public class ServiceExtensionsTests
         var result = changeLogService.CreateEntry(null, "test");
 
         // Assert
-        result.Should().StartWith("{\"entries\"");
+        result.Should().StartWith("{\"auditLog\"");
     }
 
     // Test user provider

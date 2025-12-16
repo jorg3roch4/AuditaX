@@ -32,7 +32,7 @@ public class ChangeLogServiceTests
         var result = service.CreateEntry(null, "test@example.com");
 
         // Assert
-        result.Should().StartWith("{\"entries\"");
+        result.Should().StartWith("{\"auditLog\"");
     }
 
     [Fact]
@@ -118,7 +118,7 @@ public class ChangeLogServiceTests
         ], "second@example.com");
 
         // Assert - Should still be JSON because we're appending to JSON
-        result.Should().StartWith("{\"entries\"");
+        result.Should().StartWith("{\"auditLog\"");
         result.Should().Contain("first@example.com");
         result.Should().Contain("second@example.com");
     }
@@ -135,8 +135,8 @@ public class ChangeLogServiceTests
     public void DetectFormatType_ShouldDetectJson()
     {
         // Act & Assert
-        ChangeLogService.DetectFormatType("{\"entries\":[]}").Should().Be(ChangeLogFormat.Json);
-        ChangeLogService.DetectFormatType("  {\"entries\":[]}").Should().Be(ChangeLogFormat.Json);
+        ChangeLogService.DetectFormatType("{\"auditLog\":[]}").Should().Be(ChangeLogFormat.Json);
+        ChangeLogService.DetectFormatType("  {\"auditLog\":[]}").Should().Be(ChangeLogFormat.Json);
         ChangeLogService.DetectFormatType("[{\"action\":\"Created\"}]").Should().Be(ChangeLogFormat.Json);
     }
 

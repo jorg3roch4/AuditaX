@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using AuditaX.Enums;
+using AuditaX.Models;
 
 namespace AuditaX.Interfaces;
 
@@ -87,6 +89,26 @@ public interface IDatabaseProvider
     /// <param name="columnType">The actual column type from the database.</param>
     /// <returns>True if compatible with JSON format; otherwise, false.</returns>
     bool IsJsonCompatibleColumnType(string columnType);
+
+    /// <summary>
+    /// Gets the SQL query to retrieve all columns of the audit table.
+    /// Returns column_name, data_type, character_maximum_length, is_nullable.
+    /// </summary>
+    string GetTableStructureSql { get; }
+
+    /// <summary>
+    /// Gets the expected table structure based on the current configuration.
+    /// </summary>
+    /// <returns>A list of expected column definitions.</returns>
+    IReadOnlyList<ExpectedColumnDefinition> GetExpectedTableStructure();
+
+    /// <summary>
+    /// Validates if the actual column matches the expected definition.
+    /// </summary>
+    /// <param name="actual">The actual column info from the database.</param>
+    /// <param name="expected">The expected column definition.</param>
+    /// <returns>True if the column is valid; false otherwise.</returns>
+    bool ValidateColumn(TableColumnInfo actual, ExpectedColumnDefinition expected);
 
     #region Query SQL Properties
 

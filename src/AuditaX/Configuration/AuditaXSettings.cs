@@ -56,18 +56,27 @@ public sealed class AuditaXSettings
 public sealed class EntitySettings
 {
     /// <summary>
-    /// Property name used as the entity key.
+    /// The name used for this entity in audit logs.
+    /// If not specified, the entity key name from configuration will be used.
     /// </summary>
-    public string KeyProperty { get; set; } = "Id";
+    public string? SourceName { get; set; }
+
+    /// <summary>
+    /// Property name used as the entity key.
+    /// Corresponds to FluentAPI: .WithKey()
+    /// </summary>
+    public string Key { get; set; } = "Id";
 
     /// <summary>
     /// List of property names to audit.
+    /// Corresponds to FluentAPI: .AuditProperties()
     /// </summary>
     public List<string> AuditProperties { get; set; } = [];
 
     /// <summary>
     /// Related entities configuration.
     /// Key is the related entity name, value is the related entity settings.
+    /// Corresponds to FluentAPI: .WithRelatedEntity()
     /// </summary>
     public Dictionary<string, RelatedEntitySettings> RelatedEntities { get; set; } = [];
 }
@@ -79,11 +88,13 @@ public sealed class RelatedEntitySettings
 {
     /// <summary>
     /// Property name that references the parent entity.
+    /// Corresponds to FluentAPI: .WithParentKey()
     /// </summary>
-    public string KeyProperty { get; set; } = string.Empty;
+    public string ParentKey { get; set; } = string.Empty;
 
     /// <summary>
     /// Properties to capture when the related entity is added/removed.
+    /// Used for both OnAdded and OnRemoved scenarios.
     /// </summary>
     public List<string> CaptureProperties { get; set; } = [];
 }

@@ -14,9 +14,9 @@
 
         <!-- Package Identity -->
         <PackageId>AuditaX.EntityFramework</PackageId>
-        <Version>1.0.0</Version>
-        <AssemblyVersion>1.0.0</AssemblyVersion>
-        <FileVersion>1.0.0</FileVersion>
+        <Version>1.0.1</Version>
+        <AssemblyVersion>1.0.1</AssemblyVersion>
+        <FileVersion>1.0.1</FileVersion>
         <Product>AuditaX</Product>
 
         <!-- Package Metadata -->
@@ -25,7 +25,7 @@
         <Description>Entity Framework Core integration for AuditaX with automatic change tracking via SaveChanges interceptors.</Description>
         <Copyright>Copyright (c) 2025 jorg3roch4</Copyright>
         <PackageTags>audit;logging;entityframework;efcore;orm;entity-tracking;dotnet</PackageTags>
-        <PackageReleaseNotes>v1.0.0 - Initial release with automatic SaveChanges interception for EF Core.</PackageReleaseNotes>
+        <PackageReleaseNotes>v1.0.1 - Improved table structure validation with detailed error messages.</PackageReleaseNotes>
         <NeutralLanguage>en</NeutralLanguage>
         <MinClientVersion>6.0</MinClientVersion>
 

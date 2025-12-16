@@ -101,13 +101,13 @@ CREATE TABLE customers (
     "Entities": {
       "Product": {
         "SourceName": "Product",
-        "KeyProperty": "ProductId",
-        "AuditableProperties": ["Name", "Description", "Price", "Stock"]
+        "Key": "ProductId",
+        "AuditProperties": ["Name", "Description", "Price", "Stock"]
       },
       "Customer": {
         "SourceName": "Customer",
-        "KeyProperty": "CustomerId",
-        "AuditableProperties": ["Name", "Email", "Phone"]
+        "Key": "CustomerId",
+        "AuditProperties": ["Name", "Email", "Phone"]
       }
     }
   }

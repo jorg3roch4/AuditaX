@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.0.11222.15 d18.0
+VisualStudioVersion = 18.0.11222.15
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
 EndProject
@@ -33,6 +33,76 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AuditaX.Sample.Dapper", "samples\AuditaX.Sample.Dapper\AuditaX.Sample.Dapper.csproj", "{CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCC02}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AuditaX.Sample.EntityFramework", "samples\AuditaX.Sample.EntityFramework\AuditaX.Sample.EntityFramework.csproj", "{CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCC03}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{5F4A41AC-B9F5-457A-97AE-416306BB5986}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AuditLog", "AuditLog", "{7960EC5E-8B97-4702-AE13-0895AC87A48D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{D728980A-B267-4AAE-A5AB-02402E6F486B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PostgreSql", "PostgreSql", "{FD146B55-7566-486F-962C-83110E25F548}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\AuditLog\PostgreSql\audit_log.json.sql = scripts\AuditLog\PostgreSql\audit_log.json.sql
+		scripts\AuditLog\PostgreSql\audit_log.xml.sql = scripts\AuditLog\PostgreSql\audit_log.xml.sql
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SqlServer", "SqlServer", "{0FBA9477-5B7F-4289-81BC-A24A1969CD5D}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\AuditLog\SqlServer\AuditLog.Json.sql = scripts\AuditLog\SqlServer\AuditLog.Json.sql
+		scripts\AuditLog\SqlServer\AuditLog.Xml.sql = scripts\AuditLog\SqlServer\AuditLog.Xml.sql
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PostgreSql", "PostgreSql", "{7DB4B94D-AB2C-4E6A-9D44-CADCE8BACA6D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SqlServer", "SqlServer", "{4D7C2B23-4AF0-45F9-9357-7AAA0ACA7E8B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Dapper.Json", "Dapper.Json", "{7B2CC060-2AF9-4D83-BCDD-0523FF30CFE4}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\Samples\PostgreSql\Dapper.Json\01_create_database.sql = scripts\Samples\PostgreSql\Dapper.Json\01_create_database.sql
+		scripts\Samples\PostgreSql\Dapper.Json\02_create_tables.sql = scripts\Samples\PostgreSql\Dapper.Json\02_create_tables.sql
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Dapper.Xml", "Dapper.Xml", "{E28599FA-D4D0-49CB-BFAD-B208DF14032B}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\Samples\PostgreSql\Dapper.Xml\01_create_database.sql = scripts\Samples\PostgreSql\Dapper.Xml\01_create_database.sql
+		scripts\Samples\PostgreSql\Dapper.Xml\02_create_tables.sql = scripts\Samples\PostgreSql\Dapper.Xml\02_create_tables.sql
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EF.Json", "EF.Json", "{1F6A0C75-646A-4124-BB64-30425720F2AD}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\Samples\PostgreSql\EF.Json\01_create_database.sql = scripts\Samples\PostgreSql\EF.Json\01_create_database.sql
+		scripts\Samples\PostgreSql\EF.Json\02_create_tables.sql = scripts\Samples\PostgreSql\EF.Json\02_create_tables.sql
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EF.Xml", "EF.Xml", "{48DCE44C-0748-44BB-AC4F-18DD7B2087F6}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\Samples\PostgreSql\EF.Xml\01_create_database.sql = scripts\Samples\PostgreSql\EF.Xml\01_create_database.sql
+		scripts\Samples\PostgreSql\EF.Xml\02_create_tables.sql = scripts\Samples\PostgreSql\EF.Xml\02_create_tables.sql
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Dapper.Json", "Dapper.Json", "{1F8B54D1-454F-4EC9-AAC9-3E642AE717D4}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\Samples\SqlServer\Dapper.Json\01_CreateDatabase.sql = scripts\Samples\SqlServer\Dapper.Json\01_CreateDatabase.sql
+		scripts\Samples\SqlServer\Dapper.Json\02_CreateTables.sql = scripts\Samples\SqlServer\Dapper.Json\02_CreateTables.sql
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Dapper.Xml", "Dapper.Xml", "{AA4682A7-F8AA-42A4-ACD6-335BB7DB6E2C}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\Samples\SqlServer\Dapper.Xml\01_CreateDatabase.sql = scripts\Samples\SqlServer\Dapper.Xml\01_CreateDatabase.sql
+		scripts\Samples\SqlServer\Dapper.Xml\02_CreateTables.sql = scripts\Samples\SqlServer\Dapper.Xml\02_CreateTables.sql
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EF.Json", "EF.Json", "{4B85DC37-5862-45BC-A9F7-BF79730305B0}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\Samples\SqlServer\EF.Json\01_CreateDatabase.sql = scripts\Samples\SqlServer\EF.Json\01_CreateDatabase.sql
+		scripts\Samples\SqlServer\EF.Json\02_CreateTables.sql = scripts\Samples\SqlServer\EF.Json\02_CreateTables.sql
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EF.Xml", "EF.Xml", "{9C38A3DE-50B6-4686-97E5-B7632F755FED}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\Samples\SqlServer\EF.Xml\01_CreateDatabase.sql = scripts\Samples\SqlServer\EF.Xml\01_CreateDatabase.sql
+		scripts\Samples\SqlServer\EF.Xml\02_CreateTables.sql = scripts\Samples\SqlServer\EF.Xml\02_CreateTables.sql
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -105,5 +175,22 @@ Global
 		{CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCC01} = {C3D4E5F6-A7B8-9012-CDEF-123456789012}
 		{CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCC02} = {C3D4E5F6-A7B8-9012-CDEF-123456789012}
 		{CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCC03} = {C3D4E5F6-A7B8-9012-CDEF-123456789012}
+		{7960EC5E-8B97-4702-AE13-0895AC87A48D} = {5F4A41AC-B9F5-457A-97AE-416306BB5986}
+		{D728980A-B267-4AAE-A5AB-02402E6F486B} = {5F4A41AC-B9F5-457A-97AE-416306BB5986}
+		{FD146B55-7566-486F-962C-83110E25F548} = {7960EC5E-8B97-4702-AE13-0895AC87A48D}
+		{0FBA9477-5B7F-4289-81BC-A24A1969CD5D} = {7960EC5E-8B97-4702-AE13-0895AC87A48D}
+		{7DB4B94D-AB2C-4E6A-9D44-CADCE8BACA6D} = {D728980A-B267-4AAE-A5AB-02402E6F486B}
+		{4D7C2B23-4AF0-45F9-9357-7AAA0ACA7E8B} = {D728980A-B267-4AAE-A5AB-02402E6F486B}
+		{7B2CC060-2AF9-4D83-BCDD-0523FF30CFE4} = {7DB4B94D-AB2C-4E6A-9D44-CADCE8BACA6D}
+		{E28599FA-D4D0-49CB-BFAD-B208DF14032B} = {7DB4B94D-AB2C-4E6A-9D44-CADCE8BACA6D}
+		{1F6A0C75-646A-4124-BB64-30425720F2AD} = {7DB4B94D-AB2C-4E6A-9D44-CADCE8BACA6D}
+		{48DCE44C-0748-44BB-AC4F-18DD7B2087F6} = {7DB4B94D-AB2C-4E6A-9D44-CADCE8BACA6D}
+		{1F8B54D1-454F-4EC9-AAC9-3E642AE717D4} = {4D7C2B23-4AF0-45F9-9357-7AAA0ACA7E8B}
+		{AA4682A7-F8AA-42A4-ACD6-335BB7DB6E2C} = {4D7C2B23-4AF0-45F9-9357-7AAA0ACA7E8B}
+		{4B85DC37-5862-45BC-A9F7-BF79730305B0} = {4D7C2B23-4AF0-45F9-9357-7AAA0ACA7E8B}
+		{9C38A3DE-50B6-4686-97E5-B7632F755FED} = {4D7C2B23-4AF0-45F9-9357-7AAA0ACA7E8B}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {417BD78B-3467-430C-A272-EB86FFF2271A}
 	EndGlobalSection
 EndGlobal

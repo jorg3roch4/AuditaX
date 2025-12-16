@@ -24,7 +24,7 @@ public class JsonChangeLogServiceTests
 
         // Assert
         result.Should().NotBeNullOrEmpty();
-        result.Should().Contain("\"entries\"");
+        result.Should().Contain("\"auditLog\"");
         result.Should().Contain("\"action\":\"Created\"");
         result.Should().Contain($"\"user\":\"{user}\"");
         result.Should().Contain("\"timestamp\"");
@@ -188,11 +188,11 @@ public class JsonChangeLogServiceTests
         var result = _service.CreateEntry(null, user);
 
         // Assert
-        result.Should().Contain("\"entries\"");
+        result.Should().Contain("\"auditLog\"");
         result.Should().Contain("\"action\"");
         result.Should().Contain("\"user\"");
         result.Should().Contain("\"timestamp\"");
-        result.Should().NotContain("\"Entries\"");
+        result.Should().NotContain("\"AuditLog\""); // Should be camelCase, not PascalCase
         result.Should().NotContain("\"Action\"");
     }
 }

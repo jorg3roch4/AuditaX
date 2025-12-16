@@ -2,6 +2,32 @@
 
 All notable changes to AuditaX will be documented in this file.
 
+## [1.0.1] - 2025-12-16
+
+### Breaking Changes
+- **appsettings.json property names renamed** to match FluentAPI method names:
+  - `KeyProperty` → `Key` (matches `.WithKey()`)
+  - `AuditableProperties` → `AuditProperties` (matches `.AuditProperties()`)
+  - `KeyProperty` in RelatedEntities → `ParentKey` (matches `.WithParentKey()`)
+
+### Fixed
+- Fixed documentation: corrected audit table creation scripts (column names and types now match actual entity structure)
+- Fixed documentation: `AddAuditaXInterceptors` renamed to `AddAuditaXInterceptor` (singular)
+- Fixed startup validation: improved error messages when table exists but has incorrect structure
+- Fixed EF Core startup validator `InvalidCastException` when validating table structure on SQL Server
+- Fixed JSON format tests: assertions now match actual JSON output (`auditLog` instead of `entries`)
+
+### Added
+- Added `AuditTableStructureMismatchException` for detailed table structure validation errors
+- Added complete table structure validation at startup (validates all columns in single query)
+- Added `TableColumnInfo` and `ExpectedColumnDefinition` models for structure validation
+- Added comprehensive unit tests for table structure validation (SQL Server and PostgreSQL)
+
+### Changed
+- Updated all documentation and sample files with correct appsettings property names
+
+---
+
 ## [1.0.0] - 2025-12-15
 
 ### Added

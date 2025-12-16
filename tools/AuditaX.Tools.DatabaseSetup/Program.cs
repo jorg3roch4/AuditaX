@@ -57,17 +57,34 @@ public static class Program
             return 1;
         }
 
-        var choice = AnsiConsole.Prompt(
-            new SelectionPrompt<string>()
-                .Title("[yellow]What would you like to do?[/]")
-                .PageSize(10)
-                .AddChoices(
-                [
-                    "Create all databases (SQL Server + PostgreSQL)",
-                    "Create SQL Server databases only",
-                    "Create PostgreSQL databases only",
-                    "Exit"
-                ]));
+        // Support command-line arguments for non-interactive mode
+        // Usage: dotnet run -- [all|sqlserver|postgresql]
+        string choice;
+        if (args.Length > 0)
+        {
+            choice = args[0].ToLowerInvariant() switch
+            {
+                "all" => "Create all databases (SQL Server + PostgreSQL)",
+                "sqlserver" or "sql" => "Create SQL Server databases only",
+                "postgresql" or "pg" => "Create PostgreSQL databases only",
+                _ => "Exit"
+            };
+            AnsiConsole.MarkupLine($"[dim]Running in non-interactive mode: {choice}[/]\n");
+        }
+        else
+        {
+            choice = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("[yellow]What would you like to do?[/]")
+                    .PageSize(10)
+                    .AddChoices(
+                    [
+                        "Create all databases (SQL Server + PostgreSQL)",
+                        "Create SQL Server databases only",
+                        "Create PostgreSQL databases only",
+                        "Exit"
+                    ]));
+        }
 
         var result = 0;
 

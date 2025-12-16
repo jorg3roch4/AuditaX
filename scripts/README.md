@@ -26,37 +26,35 @@ These scripts create the audit log table. Note that AuditaX can create the table
 ### SQL Server
 
 ```sql
--- scripts/AuditLog/SqlServer/AuditLog_Create.sql
+-- scripts/AuditLog/SqlServer/AuditLog.Json.sql (or AuditLog.Xml.sql)
 CREATE TABLE [dbo].[AuditLog] (
-    [AuditLogId] INT IDENTITY(1,1) PRIMARY KEY,
-    [SourceName] NVARCHAR(128) NOT NULL,
-    [SourceKey] NVARCHAR(128) NOT NULL,
-    [Action] NVARCHAR(16) NOT NULL,
-    [Changes] NVARCHAR(MAX) NULL,
-    [User] NVARCHAR(128) NULL,
-    [Timestamp] DATETIME2 NOT NULL DEFAULT GETUTCDATE()
+    [LogId] UNIQUEIDENTIFIER NOT NULL DEFAULT NEWSEQUENTIALID(),
+    [SourceName] NVARCHAR(50) NOT NULL,
+    [SourceKey] NVARCHAR(900) NOT NULL,
+    [AuditLog] NVARCHAR(MAX) NOT NULL,  -- Use XML type for XML format
+    CONSTRAINT [PK_AuditLog] PRIMARY KEY CLUSTERED ([LogId]),
+    CONSTRAINT [UQ_AuditLog_Source] UNIQUE ([SourceName], [SourceKey])
 );
 
-CREATE INDEX IX_AuditLog_SourceName_SourceKey ON [dbo].[AuditLog] ([SourceName], [SourceKey]);
-CREATE INDEX IX_AuditLog_Timestamp ON [dbo].[AuditLog] ([Timestamp]);
+CREATE INDEX IX_AuditLog_SourceName ON [dbo].[AuditLog] ([SourceName]) INCLUDE ([SourceKey]);
+CREATE INDEX IX_AuditLog_SourceKey ON [dbo].[AuditLog] ([SourceKey]) INCLUDE ([SourceName]);
 ```
 
 ### PostgreSQL
 
 ```sql
--- scripts/AuditLog/PostgreSql/audit_log_create.sql
+-- scripts/AuditLog/PostgreSql/audit_log.json.sql
 CREATE TABLE IF NOT EXISTS public.audit_log (
-    audit_log_id SERIAL PRIMARY KEY,
-    source_name VARCHAR(128) NOT NULL,
-    source_key VARCHAR(128) NOT NULL,
-    action VARCHAR(16) NOT NULL,
-    changes TEXT,
-    "user" VARCHAR(128),
-    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    log_id UUID NOT NULL DEFAULT gen_random_uuid(),
+    source_name VARCHAR(50) NOT NULL,
+    source_key VARCHAR(900) NOT NULL,
+    audit_log JSONB NOT NULL,  -- Use XML type for XML format
+    CONSTRAINT pk_audit_log PRIMARY KEY (log_id),
+    CONSTRAINT uq_audit_log_source UNIQUE (source_name, source_key)
 );
 
-CREATE INDEX IF NOT EXISTS ix_audit_log_source ON public.audit_log (source_name, source_key);
-CREATE INDEX IF NOT EXISTS ix_audit_log_timestamp ON public.audit_log (timestamp);
+CREATE INDEX IF NOT EXISTS ix_audit_log_source_name ON public.audit_log (source_name);
+CREATE INDEX IF NOT EXISTS ix_audit_log_source_key ON public.audit_log (source_key);
 ```
 
 ## Sample Database Scripts

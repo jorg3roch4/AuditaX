@@ -31,22 +31,32 @@ Of course, there's absolutely no obligation. If you prefer, simply starring the 
 
 ---
 
-## What's New in 1.0.0
+## ✨ Features
 
-**Initial Release!** AuditaX 1.0.0 provides a complete audit logging solution:
-
-- Multiple ORM Support: Dapper and Entity Framework Core
-- Multiple Database Providers: SQL Server and PostgreSQL
-- Flexible Change Log Format: JSON or XML serialization
-- Automatic Change Tracking: EF Core interceptors
-- Manual Audit Control: `IAuditUnitOfWork` for Dapper
-- Configuration Options: appsettings.json or Fluent API
-- Auto Table Creation: Creates audit table on startup
-- Startup Validation: Validates configuration and connectivity
+- **Multiple ORM Support**: Dapper and Entity Framework Core
+- **Multiple Database Providers**: SQL Server and PostgreSQL
+- **Flexible Change Log Format**: JSON or XML serialization
+- **Automatic Change Tracking**: EF Core interceptors capture all changes
+- **Manual Audit Control**: `IAuditUnitOfWork` for Dapper repositories
+- **Configuration Options**: appsettings.json or Fluent API
+- **Auto Table Creation**: Creates audit table on startup if needed
+- **Startup Validation**: Validates table structure and configuration
 
 ---
 
-## Packages
+## 🎉 What's New in 1.0.1
+
+- **Breaking**: Renamed appsettings.json properties to match FluentAPI (`KeyProperty` → `Key`, `AuditableProperties` → `AuditProperties`)
+- Fixed documentation with correct audit table scripts
+- Improved startup validation with detailed structure checking
+- Added `AuditTableStructureMismatchException` for clear error messages
+- Fixed `AddAuditaXInterceptor` method name in documentation
+
+See [CHANGELOG.md](CHANGELOG.md) for full details.
+
+---
+
+## 📦 Packages
 
 | Package | Description | NuGet |
 |---------|-------------|-------|
@@ -58,7 +68,7 @@ Of course, there's absolutely no obligation. If you prefer, simply starring the 
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Installation
 
@@ -78,7 +88,9 @@ dotnet add package AuditaX.EntityFramework
 dotnet add package AuditaX.PostgreSql
 ```
 
-### Configuration (appsettings.json)
+### Configuration
+
+#### Option A: appsettings.json
 
 ```json
 {
@@ -90,18 +102,14 @@ dotnet add package AuditaX.PostgreSql
     "EnableLogging": true,
     "Entities": {
       "Product": {
-        "SourceName": "Product",
-        "KeyProperty": "ProductId",
-        "AuditableProperties": [ "Name", "Price", "Stock" ]
+        "Key": "Id",
+        "AuditProperties": [ "Name", "Price", "Stock" ]
       }
     }
   }
 }
 ```
 
-### Service Registration
-
-**Dapper + SQL Server:**
 ```csharp
 services.AddAuditaX(configuration)
     .UseDapper<DapperContext>()
@@ -109,37 +117,32 @@ services.AddAuditaX(configuration)
     .ValidateOnStartup();
 ```
 
-**EF Core + PostgreSQL:**
+#### Option B: Fluent API
+
 ```csharp
-services.AddAuditaX(configuration)
-    .UseEntityFramework<AppDbContext>()
-    .UsePostgreSql()
-    .ValidateOnStartup();
+services.AddAuditaX(options =>
+{
+    options.TableName = "AuditLog";
+    options.Schema = "dbo";
+    options.AutoCreateTable = true;
+    options.EnableLogging = true;
+    options.ChangeLogFormat = ChangeLogFormat.Json;
+
+    options.ConfigureEntities(entities =>
+    {
+        entities.AuditEntity<Product>("Product")
+            .WithKey(p => p.Id)
+            .AuditProperties("Name", "Price", "Stock");
+    });
+})
+.UseDapper<DapperContext>()
+.UseSqlServer()
+.ValidateOnStartup();
 ```
 
 ---
 
-## Features
-
-### Core Capabilities
-- **Fluent Configuration** - Configure via appsettings.json or fluent API
-- **Entity Configuration** - Define which entities and properties to audit
-- **Change Serialization** - JSON or XML format for change logs
-- **Auto Table Creation** - Automatically creates the audit table on startup
-- **Startup Validation** - Validates configuration and database connectivity
-
-### ORM Integration
-- **Dapper Support** - Manual audit control with `IAuditUnitOfWork`
-- **EF Core Support** - Automatic change tracking via SaveChanges interceptors
-- **User Provider** - Inject `IUserProvider` to capture the current user
-
-### Database Providers
-- **SQL Server** - Native support with optimized queries
-- **PostgreSQL** - Native support with optimized queries
-
----
-
-## Usage
+## 💻 Usage
 
 ### With Dapper (Manual Audit)
 
@@ -209,21 +212,29 @@ await dbContext.SaveChangesAsync(); // Update audit log created automatically
 
 ---
 
-## Audit Log Structure
+## 🗄️ Audit Log Structure
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `AuditLogId` | INT/SERIAL | Primary key (auto-increment) |
-| `SourceName` | VARCHAR(128) | Entity/table name |
-| `SourceKey` | VARCHAR(128) | Primary key value |
-| `Action` | VARCHAR(16) | Create, Update, or Delete |
-| `Changes` | NVARCHAR(MAX)/TEXT | JSON or XML serialized changes |
-| `User` | VARCHAR(128) | User who made the change |
-| `Timestamp` | DATETIME/TIMESTAMPTZ | When the change occurred |
+### SQL Server
+
+| Column | JSON Format | XML Format |
+|--------|-------------|------------|
+| `LogId` | UNIQUEIDENTIFIER | UNIQUEIDENTIFIER |
+| `SourceName` | NVARCHAR(50) | NVARCHAR(50) |
+| `SourceKey` | NVARCHAR(900) | NVARCHAR(900) |
+| `AuditLog` | NVARCHAR(MAX) | XML |
+
+### PostgreSQL
+
+| Column | JSON Format | XML Format |
+|--------|-------------|------------|
+| `log_id` | UUID | UUID |
+| `source_name` | VARCHAR(50) | VARCHAR(50) |
+| `source_key` | VARCHAR(900) | VARCHAR(900) |
+| `audit_log` | JSONB | XML |
 
 ---
 
-## Change Log Formats
+## 📋 Change Log Formats
 
 ### JSON Format
 ```json
@@ -274,7 +285,7 @@ await dbContext.SaveChangesAsync(); // Update audit log created automatically
 
 ---
 
-## Querying Audit Logs
+## 🔍 Querying Audit Logs
 
 AuditaX provides `IAuditQueryService` for querying audit history. Inject it into your services:
 
@@ -296,9 +307,20 @@ public class ProductService(IAuditQueryService auditQueryService)
 **Summary Result (one record per entity with last action):**
 ```json
 [
-  { "sourceName": "Product", "sourceKey": "1", "lastAction": "Updated", "lastTimestamp": "2025-12-15T14:30:00Z", "lastUser": "sales@example.com" },
-  { "sourceName": "Product", "sourceKey": "2", "lastAction": "Created", "lastTimestamp": "2025-12-15T10:00:00Z", "lastUser": "admin@example.com" },
-  { "sourceName": "Product", "sourceKey": "3", "lastAction": "Deleted", "lastTimestamp": "2025-12-14T17:45:00Z", "lastUser": "admin@example.com" }
+  {
+    "sourceName": "Product",
+    "sourceKey": "1",
+    "lastAction": "Updated",
+    "lastTimestamp": "2025-12-15T14:30:00Z",
+    "lastUser": "sales@example.com"
+  },
+  {
+    "sourceName": "Product",
+    "sourceKey": "2",
+    "lastAction": "Created",
+    "lastTimestamp": "2025-12-15T10:00:00Z",
+    "lastUser": "admin@example.com"
+  }
 ]
 ```
 
@@ -317,7 +339,7 @@ See [Querying Audit Logs](./docs/querying-audit-logs.md) for complete documentat
 
 ---
 
-## Documentation
+## 📚 Documentation
 
 See the [docs](./docs) folder for detailed documentation:
 
@@ -336,16 +358,38 @@ See the [docs](./docs) folder for detailed documentation:
 
 ---
 
-## Samples
+## 🧪 Samples
 
 The `samples` folder contains working examples:
 
 - `AuditaX.Sample.Dapper` - Console app demonstrating Dapper integration
 - `AuditaX.Sample.EntityFramework` - Console app demonstrating EF Core integration
+- `AuditaX.Sample.DatabaseSetup` - Tool to create sample databases
+
+### Running the Samples
+
+Before running the samples, you need to create the sample databases:
+
+```bash
+cd samples/AuditaX.Sample.DatabaseSetup
+dotnet run
+```
+
+This interactive tool creates the required databases for SQL Server and/or PostgreSQL. Then run the samples:
+
+```bash
+# Dapper sample (interactive menu to select DB + format)
+cd samples/AuditaX.Sample.Dapper
+dotnet run
+
+# EF Core sample (interactive menu to select DB + format)
+cd samples/AuditaX.Sample.EntityFramework
+dotnet run
+```
 
 ---
 
-## Versioning & .NET Support Policy
+## 📅 Versioning & .NET Support Policy
 
 AuditaX follows a clear versioning strategy aligned with .NET's release cadence:
 
@@ -355,23 +399,31 @@ AuditaX follows a clear versioning strategy aligned with .NET's release cadence:
 
 ### Future Support Policy
 
-AuditaX will always support the **current LTS version** plus the **next standard release**:
+AuditaX will always support the **current LTS version** plus the **next standard release**. When a new LTS version is released, support for older versions will be discontinued:
 
-| AuditaX | .NET | Notes |
-|---------|------|-------|
-| 1.x | .NET 10 | LTS only |
-| 2.x | .NET 10 + .NET 11 | LTS + Standard |
-| 3.x | .NET 12 | New LTS (drops .NET 10/11) |
+| AuditaX | .NET | C# | Notes |
+|---------|------|-----|-------|
+| 1.x | .NET 10 | C# 14 | LTS only |
+| 2.x | .NET 10 + .NET 11 | C# 14 / C# 15 | LTS + Standard |
+| 3.x | .NET 12 | C# 16 | New LTS (drops .NET 10/11) |
+| 4.x | .NET 12 + .NET 13 | C# 16 / C# 17 | LTS + Standard |
+
+**Why this policy?**
+- **Focused development:** By limiting supported versions, we can dedicate more effort to quality, performance, and new features
+- **Modern features:** Each .NET version brings improvements that AuditaX can fully leverage
+- **Clear upgrade path:** Users know exactly when to plan their upgrades
+
+> **Note:** We recommend always using the latest LTS version of .NET for production applications.
 
 ---
 
-## Requirements
+## ⚙️ Requirements
 
 - .NET 10.0 or later
 - SQL Server 2016+ or PostgreSQL 12+
 
 ---
 
-## License
+## 📄 License
 
 [Apache 2.0 License](LICENSE)

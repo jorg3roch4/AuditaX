@@ -1,7 +1,10 @@
+using System;
+using System.Collections.Generic;
 using System.Text;
 using AuditaX.Configuration;
 using AuditaX.Enums;
 using AuditaX.Interfaces;
+using AuditaX.Models;
 
 namespace AuditaX.PostgreSql.Providers;
 
@@ -43,7 +46,7 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
     {
         get
         {
-            var castSuffix = options.ChangeLogFormat == ChangeLogFormat.Json ? "" : "::xml";
+            var castSuffix = options.ChangeLogFormat == ChangeLogFormat.Json ? "::jsonb" : "::xml";
             return $@"INSERT INTO {FullTableName} (""{LogIdColumn}"", ""{SourceNameColumn}"", ""{SourceKeyColumn}"", ""{AuditLogColumn}"")
            VALUES (@LogId, @SourceName, @SourceKey, @AuditLogXml{castSuffix})";
         }
@@ -54,7 +57,7 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
     {
         get
         {
-            var castSuffix = options.ChangeLogFormat == ChangeLogFormat.Json ? "" : "::xml";
+            var castSuffix = options.ChangeLogFormat == ChangeLogFormat.Json ? "::jsonb" : "::xml";
             return $@"UPDATE {FullTableName}
            SET ""{AuditLogColumn}"" = @AuditLogXml{castSuffix}
            WHERE ""{SourceNameColumn}"" = @SourceName AND ""{SourceKeyColumn}"" = @SourceKey";
@@ -74,7 +77,7 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
         get
         {
             var columnType = options.ChangeLogFormat == ChangeLogFormat.Json
-                ? "TEXT"
+                ? "JSONB"
                 : "XML";
 
             return $@"CREATE TABLE IF NOT EXISTS {FullTableName} (
@@ -100,7 +103,7 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
     public string ExpectedXmlColumnType => "xml";
 
     /// <inheritdoc />
-    public string ExpectedJsonColumnType => "text";
+    public string ExpectedJsonColumnType => "jsonb";
 
     /// <inheritdoc />
     public bool IsXmlCompatibleColumnType(string columnType)
@@ -117,9 +120,92 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
         if (string.IsNullOrEmpty(columnType))
             return false;
 
-        return columnType.Equals("text", StringComparison.OrdinalIgnoreCase) ||
-               columnType.Equals("character varying", StringComparison.OrdinalIgnoreCase) ||
-               columnType.Equals("varchar", StringComparison.OrdinalIgnoreCase);
+        return columnType.Equals("jsonb", StringComparison.OrdinalIgnoreCase) ||
+               columnType.Equals("json", StringComparison.OrdinalIgnoreCase) ||
+               columnType.Equals("text", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <inheritdoc />
+    public string GetTableStructureSql =>
+        $@"SELECT
+               column_name AS ""ColumnName"",
+               data_type AS ""DataType"",
+               character_maximum_length AS ""MaxLength"",
+               CASE WHEN is_nullable = 'YES' THEN true ELSE false END AS ""IsNullable""
+           FROM information_schema.columns
+           WHERE table_schema = '{_schema}'
+             AND table_name = '{_tableName}'
+           ORDER BY ordinal_position";
+
+    /// <inheritdoc />
+    public IReadOnlyList<ExpectedColumnDefinition> GetExpectedTableStructure()
+    {
+        var auditLogType = options.ChangeLogFormat == ChangeLogFormat.Xml
+            ? new[] { "xml" }
+            : new[] { "jsonb", "json", "text" };
+
+        return new List<ExpectedColumnDefinition>
+        {
+            new()
+            {
+                ColumnName = LogIdColumn,
+                AcceptableDataTypes = ["uuid"],
+                RequireNotNull = true
+            },
+            new()
+            {
+                ColumnName = SourceNameColumn,
+                AcceptableDataTypes = ["character varying", "varchar", "text"],
+                MinLength = 50,
+                RequireNotNull = true
+            },
+            new()
+            {
+                ColumnName = SourceKeyColumn,
+                AcceptableDataTypes = ["character varying", "varchar", "text"],
+                MinLength = 128, // Minimum acceptable, we expect 900
+                RequireNotNull = true
+            },
+            new()
+            {
+                ColumnName = AuditLogColumn,
+                AcceptableDataTypes = auditLogType,
+                RequireNotNull = true
+            }
+        }.AsReadOnly();
+    }
+
+    /// <inheritdoc />
+    public bool ValidateColumn(TableColumnInfo actual, ExpectedColumnDefinition expected)
+    {
+        // Check data type
+        var typeMatches = false;
+        foreach (var acceptableType in expected.AcceptableDataTypes)
+        {
+            if (actual.DataType.Equals(acceptableType, StringComparison.OrdinalIgnoreCase))
+            {
+                typeMatches = true;
+                break;
+            }
+        }
+
+        if (!typeMatches)
+            return false;
+
+        // Check length for string types (text type has no max length in PostgreSQL)
+        if (expected.MinLength.HasValue && !actual.DataType.Equals("text", StringComparison.OrdinalIgnoreCase))
+        {
+            if (actual.MaxLength.HasValue && actual.MaxLength.Value < expected.MinLength.Value)
+            {
+                return false;
+            }
+        }
+
+        // Check nullability
+        if (expected.RequireNotNull && actual.IsNullable)
+            return false;
+
+        return true;
     }
 
     #region Query SQL Properties
@@ -226,11 +312,11 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
     private string GetSelectBySourceNameAndDateJsonSql(int skip, int take) =>
         $@"SELECT ""{SourceNameColumn}"" AS ""SourceName"",
                   ""{SourceKeyColumn}"" AS ""SourceKey"",
-                  ""{AuditLogColumn}"" AS ""AuditLog""
+                  ""{AuditLogColumn}""::text AS ""AuditLog""
            FROM {FullTableName}
            WHERE ""{SourceNameColumn}"" = @SourceName
              AND EXISTS (
-                 SELECT 1 FROM jsonb_array_elements(""{AuditLogColumn}""::jsonb->'entries') elem
+                 SELECT 1 FROM jsonb_array_elements(""{AuditLogColumn}""->'auditLog') elem
                  WHERE (elem->>'timestamp')::timestamp >= @FromDate
                    AND (elem->>'timestamp')::timestamp <= @ToDate
              )
@@ -240,22 +326,22 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
     private string SelectBySourceNameAndActionJsonSql =>
         $@"SELECT ""{SourceNameColumn}"" AS ""SourceName"",
                   ""{SourceKeyColumn}"" AS ""SourceKey"",
-                  ""{AuditLogColumn}"" AS ""AuditLog""
+                  ""{AuditLogColumn}""::text AS ""AuditLog""
            FROM {FullTableName}
            WHERE ""{SourceNameColumn}"" = @SourceName
              AND EXISTS (
-                 SELECT 1 FROM jsonb_array_elements(""{AuditLogColumn}""::jsonb->'entries') elem
+                 SELECT 1 FROM jsonb_array_elements(""{AuditLogColumn}""->'auditLog') elem
                  WHERE elem->>'action' = @Action
              )";
 
     private string SelectBySourceNameActionAndDateJsonSql =>
         $@"SELECT ""{SourceNameColumn}"" AS ""SourceName"",
                   ""{SourceKeyColumn}"" AS ""SourceKey"",
-                  ""{AuditLogColumn}"" AS ""AuditLog""
+                  ""{AuditLogColumn}""::text AS ""AuditLog""
            FROM {FullTableName}
            WHERE ""{SourceNameColumn}"" = @SourceName
              AND EXISTS (
-                 SELECT 1 FROM jsonb_array_elements(""{AuditLogColumn}""::jsonb->'entries') elem
+                 SELECT 1 FROM jsonb_array_elements(""{AuditLogColumn}""->'auditLog') elem
                  WHERE elem->>'action' = @Action
                    AND (elem->>'timestamp')::timestamp >= @FromDate
                    AND (elem->>'timestamp')::timestamp <= @ToDate
@@ -264,9 +350,9 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
     private string GetSelectSummaryBySourceNameJsonSql(int skip, int take) =>
         $@"SELECT ""{SourceNameColumn}"" AS ""SourceName"",
                   ""{SourceKeyColumn}"" AS ""SourceKey"",
-                  (""{AuditLogColumn}""::jsonb->'entries'->-1->>'action') AS ""LastAction"",
-                  ((""{AuditLogColumn}""::jsonb->'entries'->-1->>'timestamp')::timestamp) AS ""LastTimestamp"",
-                  (""{AuditLogColumn}""::jsonb->'entries'->-1->>'user') AS ""LastUser""
+                  (""{AuditLogColumn}""->'auditLog'->-1->>'action') AS ""LastAction"",
+                  ((""{AuditLogColumn}""->'auditLog'->-1->>'timestamp')::timestamp) AS ""LastTimestamp"",
+                  (""{AuditLogColumn}""->'auditLog'->-1->>'user') AS ""LastUser""
            FROM {FullTableName}
            WHERE ""{SourceNameColumn}"" = @SourceName
            ORDER BY ""{SourceKeyColumn}""

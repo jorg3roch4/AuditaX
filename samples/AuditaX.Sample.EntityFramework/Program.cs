@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Spectre.Console;
@@ -53,7 +54,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 });
 
 // Configure AuditaX
-ConfigureAuditaX(builder.Services, config);
+ConfigureAuditaX(builder.Services, builder.Configuration, config);
 
 var host = builder.Build();
 
@@ -67,14 +68,9 @@ try
     var context = services.GetRequiredService<AppDbContext>();
     var auditService = services.GetRequiredService<IAuditService>();
     var auditQueryService = services.GetRequiredService<IAuditQueryService>();
-    var auditValidator = services.GetRequiredService<IAuditStartupValidator>();
 
-    // Create data operations and tables (this will drop/recreate the database)
+    // Create data operations (tables are created by DatabaseSetup tool)
     var dataOps = new EFDataOperations(context);
-    await dataOps.EnsureTablesCreatedAsync();
-
-    // Recreate the AuditLog table after database was dropped
-    await auditValidator.ValidateAsync();
 
     // Run the demo
     var demoRunner = new DemoRunner(auditService, auditQueryService);
@@ -124,21 +120,34 @@ static SampleConfiguration SelectConfiguration()
     };
 }
 
-static void ConfigureAuditaX(IServiceCollection services, SampleConfiguration config)
+static void ConfigureAuditaX(IServiceCollection services, IConfiguration configuration, SampleConfiguration config)
 {
     var tableName = config.Database == DatabaseType.SqlServer ? "AuditLog" : "audit_log";
     var schema = config.Database == DatabaseType.SqlServer ? "dbo" : "public";
 
-    services.AddAuditaX(options =>
-    {
-        options.TableName = tableName;
-        options.Schema = schema;
-        options.AutoCreateTable = true;
-        options.EnableLogging = true;
-        options.ChangeLogFormat = config.Format;
+    AuditaX.Extensions.AuditaXBuilder builder;
 
-        if (config.ConfigMode == ConfigurationMode.FluentApi)
+    if (config.ConfigMode == ConfigurationMode.AppSettings)
+    {
+        // Load from appsettings.json and override database-specific values
+        builder = services.AddAuditaX(configuration, options =>
         {
+            options.TableName = tableName;
+            options.Schema = schema;
+            options.ChangeLogFormat = config.Format;
+        });
+    }
+    else
+    {
+        // Fluent API configuration
+        builder = services.AddAuditaX(options =>
+        {
+            options.TableName = tableName;
+            options.Schema = schema;
+            options.AutoCreateTable = true;
+            options.EnableLogging = true;
+            options.ChangeLogFormat = config.Format;
+
             options.ConfigureEntities(entities =>
             {
                 entities.AuditEntity<Product>("Product")
@@ -149,12 +158,14 @@ static void ConfigureAuditaX(IServiceCollection services, SampleConfiguration co
                         .OnAdded(t => new Dictionary<string, string?> { ["Tag"] = t.Tag })
                         .OnRemoved(t => new Dictionary<string, string?> { ["Tag"] = t.Tag });
             });
-        }
-    })
+        });
+    }
+
     // Extensible API: UseEntityFramework + UseSqlServer/UsePostgreSql
-    .UseEntityFramework<AppDbContext>()
-    .UseDatabase(config.Database)
-    .ValidateOnStartup();  // Creates audit table if AutoCreateTable = true
+    builder
+        .UseEntityFramework<AppDbContext>()
+        .UseDatabase(config.Database)
+        .ValidateOnStartup();  // Creates audit table if AutoCreateTable = true
 
     // Register user provider
     services.AddSingleton<IAuditUserProvider>(new SampleUserProvider());

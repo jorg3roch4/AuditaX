@@ -44,9 +44,15 @@ public sealed class AuditaXOptions
     public ChangeLogFormat ChangeLogFormat { get; set; } = ChangeLogFormat.Xml;
 
     /// <summary>
-    /// Entity configurations registered via fluent API.
+    /// Entity configurations registered via fluent API (type-based lookup).
     /// </summary>
     internal Dictionary<Type, AuditEntityConfiguration> EntityConfigurations { get; } = [];
+
+    /// <summary>
+    /// Entity configurations registered via appsettings (name-based lookup).
+    /// Key is the entity name (e.g., "Product"), value is the configuration.
+    /// </summary>
+    internal Dictionary<string, AuditEntityConfiguration> NamedEntityConfigurations { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// Related entity configurations registered via fluent API.
@@ -72,12 +78,51 @@ public sealed class AuditaXOptions
 
     /// <summary>
     /// Gets the entity configuration for the specified type.
+    /// First tries type-based lookup (fluent API), then falls back to name-based lookup (appsettings).
     /// </summary>
     /// <param name="entityType">The entity type.</param>
     /// <returns>The entity configuration, or null if not found.</returns>
     public AuditEntityConfiguration? GetEntityConfiguration(Type entityType)
     {
-        return EntityConfigurations.TryGetValue(entityType, out var config) ? config : null;
+        // First try type-based lookup (fluent API configurations)
+        if (EntityConfigurations.TryGetValue(entityType, out var config))
+        {
+            return config;
+        }
+
+        // Fall back to name-based lookup (appsettings configurations)
+        if (NamedEntityConfigurations.TryGetValue(entityType.Name, out config))
+        {
+            // Set the EntityType now that we know it
+            config.EntityType = entityType;
+
+            // Create a KeySelector from KeyPropertyName using reflection
+            // This is for appsettings-based configurations that don't have a compiled KeySelector
+            if (config.KeyPropertyName is not null)
+            {
+                var keyProperty = entityType.GetProperty(config.KeyPropertyName);
+                if (keyProperty is not null)
+                {
+                    config.KeySelector = entity => keyProperty.GetValue(entity)?.ToString() ?? string.Empty;
+                }
+            }
+
+            // Cache the configuration by type for faster future lookups
+            EntityConfigurations[entityType] = config;
+            return config;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Gets the entity configuration by entity name (for appsettings-based configurations).
+    /// </summary>
+    /// <param name="entityName">The entity name.</param>
+    /// <returns>The entity configuration, or null if not found.</returns>
+    public AuditEntityConfiguration? GetEntityConfigurationByName(string entityName)
+    {
+        return NamedEntityConfigurations.TryGetValue(entityName, out var config) ? config : null;
     }
 
     /// <summary>
@@ -92,12 +137,14 @@ public sealed class AuditaXOptions
 
     /// <summary>
     /// Determines if the specified type is configured as an auditable entity.
+    /// Checks both type-based (fluent API) and name-based (appsettings) configurations.
     /// </summary>
     /// <param name="entityType">The entity type to check.</param>
     /// <returns>True if the entity is auditable, otherwise false.</returns>
     public bool IsAuditableEntity(Type entityType)
     {
-        return EntityConfigurations.ContainsKey(entityType);
+        return EntityConfigurations.ContainsKey(entityType) ||
+               NamedEntityConfigurations.ContainsKey(entityType.Name);
     }
 
     /// <summary>

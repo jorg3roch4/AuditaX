@@ -15,9 +15,9 @@ dotnet add package AuditaX.Dapper             # OR AuditaX.EntityFramework
 ## Features
 
 - PostgreSQL-specific SQL query generation
-- Support for `TEXT` type for change log storage
+- Support for native `JSONB` type for JSON storage (efficient indexing and queries)
+- Native `XML` type for XML storage
 - `TIMESTAMPTZ` for timezone-aware timestamps
-- `SERIAL` columns for auto-increment
 - Snake_case naming convention support
 - Compatible with PostgreSQL 12+
 
@@ -59,18 +59,28 @@ services.AddAuditaX(configuration)
 ## Generated Table Schema
 
 ```sql
+-- For JSON format (uses native JSONB type)
 CREATE TABLE IF NOT EXISTS public.audit_log (
-    audit_log_id SERIAL PRIMARY KEY,
-    source_name VARCHAR(128) NOT NULL,
-    source_key VARCHAR(128) NOT NULL,
-    action VARCHAR(16) NOT NULL,
-    changes TEXT,
-    "user" VARCHAR(128),
-    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    log_id UUID NOT NULL DEFAULT gen_random_uuid(),
+    source_name VARCHAR(50) NOT NULL,
+    source_key VARCHAR(900) NOT NULL,
+    audit_log JSONB NOT NULL,
+    CONSTRAINT pk_audit_log PRIMARY KEY (log_id),
+    CONSTRAINT uq_audit_log_source UNIQUE (source_name, source_key)
 );
 
-CREATE INDEX IF NOT EXISTS ix_audit_log_source ON public.audit_log (source_name, source_key);
-CREATE INDEX IF NOT EXISTS ix_audit_log_timestamp ON public.audit_log (timestamp);
+-- For XML format (uses native XML type)
+CREATE TABLE IF NOT EXISTS public.audit_log (
+    log_id UUID NOT NULL DEFAULT gen_random_uuid(),
+    source_name VARCHAR(50) NOT NULL,
+    source_key VARCHAR(900) NOT NULL,
+    audit_log XML NOT NULL,
+    CONSTRAINT pk_audit_log PRIMARY KEY (log_id),
+    CONSTRAINT uq_audit_log_source UNIQUE (source_name, source_key)
+);
+
+CREATE INDEX IF NOT EXISTS ix_audit_log_source_name ON public.audit_log (source_name);
+CREATE INDEX IF NOT EXISTS ix_audit_log_source_key ON public.audit_log (source_key);
 ```
 
 ## Querying Audit Logs
@@ -79,54 +89,50 @@ CREATE INDEX IF NOT EXISTS ix_audit_log_timestamp ON public.audit_log (timestamp
 
 ```sql
 SELECT * FROM audit_log
-WHERE source_name = 'Product'
-ORDER BY timestamp DESC;
+WHERE source_name = 'Product';
 ```
 
 ### Query JSON Changes
 
 ```sql
 SELECT
-    audit_log_id,
+    log_id,
     source_name,
     source_key,
     entry->>'action' AS entry_action,
     entry->>'user' AS entry_user,
+    entry->>'timestamp' AS entry_timestamp,
     field->>'name' AS field_name,
     field->>'before' AS old_value,
-    field->>'after' AS new_value,
-    "user",
-    timestamp
+    field->>'after' AS new_value
 FROM audit_log,
-     jsonb_array_elements(changes::jsonb->'auditLog') AS entry,
+     jsonb_array_elements(audit_log->'auditLog') AS entry,
      jsonb_array_elements(entry->'fields') AS field
-WHERE action = 'Update';
+WHERE entry->>'action' = 'Updated';
 ```
 
 ### Filter by Specific Field Change
 
 ```sql
--- Find all price changes
+-- Find all price changes (uses JSONB containment operator for efficient indexing)
 SELECT * FROM audit_log
-WHERE changes::jsonb->'auditLog' @> '[{"fields": [{"name": "Price"}]}]';
+WHERE audit_log->'auditLog' @> '[{"fields": [{"name": "Price"}]}]';
 ```
 
 ### Query XML Changes
 
 ```sql
 SELECT
-    audit_log_id,
+    log_id,
     source_name,
     source_key,
-    unnest(xpath('//Entry/@Action', changes::xml))::text AS entry_action,
-    unnest(xpath('//Entry/@User', changes::xml))::text AS entry_user,
-    unnest(xpath('//Field/@Name', changes::xml))::text AS field_name,
-    unnest(xpath('//Field/@Before', changes::xml))::text AS old_value,
-    unnest(xpath('//Field/@After', changes::xml))::text AS new_value,
-    "user",
-    timestamp
-FROM audit_log
-WHERE action = 'Update';
+    unnest(xpath('//Entry/@Action', audit_log::xml))::text AS entry_action,
+    unnest(xpath('//Entry/@User', audit_log::xml))::text AS entry_user,
+    unnest(xpath('//Entry/@Timestamp', audit_log::xml))::text AS entry_timestamp,
+    unnest(xpath('//Field/@Name', audit_log::xml))::text AS field_name,
+    unnest(xpath('//Field/@Before', audit_log::xml))::text AS old_value,
+    unnest(xpath('//Field/@After', audit_log::xml))::text AS new_value
+FROM audit_log;
 ```
 
 ## DapperContext for PostgreSQL

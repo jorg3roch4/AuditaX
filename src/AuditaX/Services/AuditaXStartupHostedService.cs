@@ -88,6 +88,33 @@ public sealed class AuditaXStartupHostedService : IHostedService
             _applicationLifetime.StopApplication();
             throw;
         }
+        catch (AuditTableStructureMismatchException ex)
+        {
+            LogCritical(ex, $"AuditaX startup validation failed: Table structure mismatch in '{ex.TableName}'.");
+
+            if (ex.MissingColumns.Count > 0)
+            {
+                LogCritical(null, $"Missing columns: {string.Join(", ", ex.MissingColumns)}");
+            }
+
+            if (ex.IncorrectColumns.Count > 0)
+            {
+                LogCritical(null, "Columns with incorrect types:");
+                foreach (var (columnName, expectedType, actualType) in ex.IncorrectColumns)
+                {
+                    LogCritical(null, $"  - {columnName}: expected '{expectedType}', found '{actualType}'");
+                }
+            }
+
+            LogCritical(null, "To fix this issue:");
+            LogCritical(null, "  1. Drop the existing table and recreate it using the correct script, or");
+            LogCritical(null, "  2. Manually alter the table to match the expected structure.");
+            LogCritical(null, $"Expected table structure:\n{ex.CreateTableSql}");
+
+            // Stop the application
+            _applicationLifetime.StopApplication();
+            throw;
+        }
         catch (Exception ex)
         {
             LogCritical(ex, $"AuditaX startup validation failed with unexpected error: {ex.Message}");

@@ -62,7 +62,7 @@ GO
 The AuditLog column stores JSON data like this:
 
 {
-  "entries": [
+  "auditLog": [
     {
       "action": "Created",
       "user": "admin@example.com",
@@ -102,7 +102,7 @@ SELECT
     e.[user],
     e.[timestamp]
 FROM [dbo].[AuditLog] a
-CROSS APPLY OPENJSON(a.AuditLog, '$.entries')
+CROSS APPLY OPENJSON(a.AuditLog, '$.auditLog')
 WITH (
     [action] NVARCHAR(50) '$.action',
     [user] NVARCHAR(256) '$.user',

@@ -14,28 +14,60 @@ Npgsql
 
 ## Configuration
 
-### appsettings.json
+### Option A: appsettings.json
 
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Database=mydatabase;Username=postgres;Password=YourPassword"
+    "DefaultConnection": "Host=localhost;Port=5432;Database=MyDatabase;Username=postgres;Password=YourPassword;"
   },
   "AuditaX": {
     "TableName": "audit_log",
     "Schema": "public",
-    "ChangeLogFormat": "Xml",
     "AutoCreateTable": true,
     "EnableLogging": true,
+    "ChangeLogFormat": "Xml",
     "Entities": {
       "Product": {
-        "SourceName": "Product",
-        "KeyProperty": "ProductId",
-        "AuditableProperties": [ "Name", "Description", "Price", "Stock" ]
+        "Key": "Id",
+        "AuditProperties": ["Name", "Description", "Price", "Stock", "IsActive"],
+        "RelatedEntities": {
+          "ProductTag": {
+            "ParentKey": "ProductId",
+            "CaptureProperties": ["Tag"]
+          }
+        }
       }
     }
   }
 }
+```
+
+### Option B: Fluent API
+
+```csharp
+builder.Services.AddAuditaX(options =>
+{
+    options.TableName = "audit_log";
+    options.Schema = "public";
+    options.AutoCreateTable = true;
+    options.EnableLogging = true;
+    options.ChangeLogFormat = ChangeLogFormat.Xml;
+
+    options.ConfigureEntities(entities =>
+    {
+        entities.AuditEntity<Product>("Product")
+            .WithKey(p => p.Id)
+            .AuditProperties("Name", "Description", "Price", "Stock", "IsActive")
+            .WithRelatedEntity<ProductTag>("ProductTag")
+                .WithParentKey(t => t.ProductId)
+                .OnAdded(t => new Dictionary<string, string?> { ["Tag"] = t.Tag })
+                .OnRemoved(t => new Dictionary<string, string?> { ["Tag"] = t.Tag });
+    });
+})
+.UseDapper<DapperContext>()
+.UsePostgreSql()
+.ValidateOnStartup();
 ```
 
 ### Program.cs
@@ -47,14 +79,20 @@ using AuditaX.PostgreSql.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Register DapperContext
 builder.Services.AddScoped<DapperContext>();
 
+// Option A: Configure from appsettings.json
 builder.Services.AddAuditaX(builder.Configuration)
     .UseDapper<DapperContext>()
     .UsePostgreSql()
     .ValidateOnStartup();
 
-builder.Services.AddScoped<IProductRepository, ProductRepository>();
+// Option B: Configure with Fluent API
+// builder.Services.AddAuditaX(options => { /* see above */ })
+//     .UseDapper<DapperContext>()
+//     .UsePostgreSql()
+//     .ValidateOnStartup();
 
 var app = builder.Build();
 app.Run();
@@ -74,113 +112,181 @@ public class DapperContext(IConfiguration configuration)
 }
 ```
 
-## Repository Implementation
+## Usage
+
+With Dapper, you need to manually call the audit methods after your data operations:
 
 ```csharp
 using Dapper;
-using AuditaX.Dapper.Interfaces;
+using AuditaX.Interfaces;
 
-public class ProductRepository(DapperContext context, IAuditUnitOfWork audit) : IProductRepository
+public class ProductRepository(DapperContext context, IAuditService auditService)
 {
     public async Task<int> CreateAsync(Product product)
     {
         using var connection = context.CreateConnection();
         const string sql = @"
-            INSERT INTO products (name, description, price, stock)
-            VALUES (@Name, @Description, @Price, @Stock)
-            RETURNING product_id";
+            INSERT INTO products (name, description, price, stock, is_active)
+            VALUES (@Name, @Description, @Price, @Stock, @IsActive)
+            RETURNING id";
 
-        var id = await connection.QuerySingleAsync<int>(sql, product);
-        product.ProductId = id;
+        product.Id = await connection.QuerySingleAsync<int>(sql, product);
 
-        await audit.LogCreateAsync(product);
+        // Log the create action
+        await auditService.LogCreateAsync("Product", product.Id.ToString());
 
-        return id;
+        return product.Id;
     }
 
-    public async Task<int> UpdateAsync(Product original, Product updated)
+    public async Task UpdateAsync(Product original, Product updated)
     {
         using var connection = context.CreateConnection();
         const string sql = @"
             UPDATE products
-            SET name = @Name, description = @Description, price = @Price, stock = @Stock
-            WHERE product_id = @ProductId";
+            SET name = @Name, description = @Description, price = @Price, stock = @Stock, is_active = @IsActive
+            WHERE id = @Id";
 
-        var affected = await connection.ExecuteAsync(sql, updated);
+        await connection.ExecuteAsync(sql, updated);
 
-        if (affected > 0)
-        {
-            await audit.LogUpdateAsync(original, updated);
-        }
+        // Log the update with field changes
+        var changes = new List<FieldChange>();
+        if (original.Price != updated.Price)
+            changes.Add(new FieldChange { Name = "Price", Before = original.Price.ToString(), After = updated.Price.ToString() });
+        if (original.Stock != updated.Stock)
+            changes.Add(new FieldChange { Name = "Stock", Before = original.Stock.ToString(), After = updated.Stock.ToString() });
 
-        return affected;
+        await auditService.LogUpdateAsync("Product", updated.Id.ToString(), changes);
     }
 
-    public async Task<bool> DeleteAsync(Product product)
+    public async Task DeleteAsync(Product product)
     {
         using var connection = context.CreateConnection();
-        var affected = await connection.ExecuteAsync(
-            "DELETE FROM products WHERE product_id = @ProductId",
-            new { product.ProductId });
+        await connection.ExecuteAsync("DELETE FROM products WHERE id = @Id", new { product.Id });
 
-        if (affected > 0)
-        {
-            await audit.LogDeleteAsync(product);
-        }
-
-        return affected > 0;
+        // Log the delete action
+        await auditService.LogDeleteAsync("Product", product.Id.ToString());
     }
 }
 ```
 
-## Sample Audit Log Entry (XML Format)
+## Generated Audit Table
 
-```json
+```sql
+CREATE TABLE public.audit_log (
+    log_id      UUID         NOT NULL DEFAULT gen_random_uuid(),
+    source_name VARCHAR(50)  NOT NULL,
+    source_key  VARCHAR(900) NOT NULL,
+    audit_log   XML          NOT NULL,
+    CONSTRAINT pk_audit_log PRIMARY KEY (log_id),
+    CONSTRAINT uq_audit_log_source UNIQUE (source_name, source_key)
+);
+
+CREATE INDEX ix_audit_log_source_name ON public.audit_log (source_name) INCLUDE (source_key);
+CREATE INDEX ix_audit_log_source_key ON public.audit_log (source_key) INCLUDE (source_name);
+```
+
+## Sample Audit Log Entry
+
+```xml
+<AuditLog>
+  <Entry Action="Created" User="admin@example.com" Timestamp="2024-12-15T10:00:00Z" />
+  <Entry Action="Updated" User="admin@example.com" Timestamp="2024-12-15T10:30:00Z">
+    <Field Name="Price" Before="79.99" After="69.99" />
+    <Field Name="Stock" Before="100" After="95" />
+  </Entry>
+  <Entry Action="Added" User="admin@example.com" Timestamp="2024-12-15T11:00:00Z" Related="ProductTag">
+    <Field Name="Tag" After="Gaming" />
+  </Entry>
+  <Entry Action="Deleted" User="admin@example.com" Timestamp="2024-12-15T12:00:00Z" />
+</AuditLog>
+```
+
+## Querying Audit Logs
+
+Inject `IAuditQueryService` to query audit logs:
+
+```csharp
+public class AuditController(IAuditQueryService auditQueryService)
 {
-  "audit_log_id": 1,
-  "source_name": "Product",
-  "source_key": "42",
-  "action": "Update",
-  "changes": "<AuditLog><Entry Action=\"Updated\" User=\"admin@example.com\" Timestamp=\"2024-12-11T10:30:00Z\"><Field Name=\"Price\" Before=\"9.99\" After=\"12.99\" /></Entry></AuditLog>",
-  "user": "admin@example.com",
-  "timestamp": "2024-12-11T10:30:00Z"
+    // ...
 }
 ```
 
-## Querying XML Changes in PostgreSQL
+### Get audit log for a specific entity
 
-```sql
--- Get all field changes using xpath
-SELECT
-    audit_log_id,
-    source_name,
-    source_key,
-    unnest(xpath('//Entry/@Action', changes::xml))::text AS entry_action,
-    unnest(xpath('//Entry/@User', changes::xml))::text AS entry_user,
-    unnest(xpath('//Field/@Name', changes::xml))::text AS field_name,
-    unnest(xpath('//Field/@Before', changes::xml))::text AS old_value,
-    unnest(xpath('//Field/@After', changes::xml))::text AS new_value,
-    "user",
-    timestamp
-FROM audit_log
-WHERE changes IS NOT NULL;
-
--- Get specific field changes
-SELECT
-    audit_log_id,
-    source_name,
-    source_key,
-    (xpath('/AuditLog/Entry/Field[@Name="Price"]/@Before', changes::xml))[1]::text AS old_price,
-    (xpath('/AuditLog/Entry/Field[@Name="Price"]/@After', changes::xml))[1]::text AS new_price,
-    "user",
-    timestamp
-FROM audit_log
-WHERE action = 'Update';
+```csharp
+var result = await auditQueryService.GetBySourceNameAndKeyAsync("Product", "42");
 ```
 
-## Running the Sample
+**Returns:** `AuditQueryResult?`
+| Property | Value |
+|----------|-------|
+| SourceName | Product |
+| SourceKey | 42 |
+| AuditLog | `<AuditLog>...</AuditLog>` |
 
-```bash
-cd samples/AuditaX.Sample.Dapper
-dotnet run -- postgresql xml
+### Get audit logs by entity type (with pagination)
+
+```csharp
+var results = await auditQueryService.GetBySourceNameAsync("Product", skip: 0, take: 100);
 ```
+
+**Returns:** `IEnumerable<AuditQueryResult>`
+| SourceName | SourceKey | AuditLog |
+|------------|-----------|----------|
+| Product | 1 | `<AuditLog>...</AuditLog>` |
+| Product | 2 | `<AuditLog>...</AuditLog>` |
+| Product | 42 | `<AuditLog>...</AuditLog>` |
+
+### Get audit logs by action type
+
+```csharp
+var results = await auditQueryService.GetBySourceNameAndActionAsync("Product", AuditAction.Updated);
+```
+
+**Returns:** `IEnumerable<AuditQueryResult>`
+| SourceName | SourceKey | AuditLog |
+|------------|-----------|----------|
+| Product | 42 | `<AuditLog><Entry Action="Updated"...>...</AuditLog>` |
+
+### Get audit logs by date range
+
+```csharp
+var results = await auditQueryService.GetBySourceNameAndDateAsync(
+    "Product",
+    fromDate: DateTime.UtcNow.AddDays(-7),
+    toDate: DateTime.UtcNow);
+```
+
+**Returns:** `IEnumerable<AuditQueryResult>`
+| SourceName | SourceKey | AuditLog |
+|------------|-----------|----------|
+| Product | 42 | `<AuditLog>...</AuditLog>` |
+
+### Get audit logs by action and date range
+
+```csharp
+var results = await auditQueryService.GetBySourceNameActionAndDateAsync(
+    "Product",
+    AuditAction.Updated,
+    fromDate: DateTime.UtcNow.AddDays(-7),
+    toDate: DateTime.UtcNow);
+```
+
+**Returns:** `IEnumerable<AuditQueryResult>`
+| SourceName | SourceKey | AuditLog |
+|------------|-----------|----------|
+| Product | 42 | `<AuditLog><Entry Action="Updated"...>...</AuditLog>` |
+
+### Get audit summary (last action per entity)
+
+```csharp
+var summaries = await auditQueryService.GetSummaryBySourceNameAsync("Product", skip: 0, take: 100);
+```
+
+**Returns:** `IEnumerable<AuditSummaryResult>`
+| SourceName | SourceKey | LastAction | LastTimestamp | LastUser |
+|------------|-----------|------------|---------------|----------|
+| Product | 1 | Created | 2024-12-15T09:00:00Z | admin@example.com |
+| Product | 2 | Updated | 2024-12-15T10:30:00Z | admin@example.com |
+| Product | 42 | Deleted | 2024-12-15T12:00:00Z | admin@example.com |

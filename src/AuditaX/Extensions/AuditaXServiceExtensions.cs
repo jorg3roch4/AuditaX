@@ -96,6 +96,21 @@ public static class AuditaXServiceExtensions
             options.ChangeLogFormat = changeLogFormat;
         }
 
+        // Map entity configurations from appsettings
+        foreach (var (entityName, entitySettings) in settings.Entities)
+        {
+            var entityConfig = new Configuration.AuditEntityConfiguration
+            {
+                EntityName = entitySettings.SourceName ?? entityName,
+                EntityType = null, // Will be resolved at runtime
+                KeyPropertyName = entitySettings.Key,
+                AuditableProperties = [.. entitySettings.AuditProperties]
+            };
+
+            // Store in the name-based dictionary
+            options.NamedEntityConfigurations[entityName] = entityConfig;
+        }
+
         return options;
     }
 

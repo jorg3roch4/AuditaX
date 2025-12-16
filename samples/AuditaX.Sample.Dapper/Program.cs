@@ -1,5 +1,6 @@
 using System.Data;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Npgsql;
@@ -46,7 +47,7 @@ builder.Services.AddScoped<SampleDapperContext>(sp =>
     new SampleDapperContext(connectionString, config.Database));
 
 // Configure AuditaX
-ConfigureAuditaX(builder.Services, config);
+ConfigureAuditaX(builder.Services, builder.Configuration, config);
 
 var host = builder.Build();
 
@@ -61,10 +62,9 @@ try
     var auditService = services.GetRequiredService<IAuditService>();
     var auditQueryService = services.GetRequiredService<IAuditQueryService>();
 
-    // Create data operations and tables
+    // Create data operations (tables are created by DatabaseSetup tool)
     using var connection = dapperContext.CreateConnection();
     var dataOps = new DapperDataOperations(connection, config.Database);
-    await dataOps.EnsureTablesCreatedAsync();
 
     // Run the demo
     var demoRunner = new DemoRunner(auditService, auditQueryService);
@@ -128,21 +128,34 @@ static SampleConfiguration ParseConfiguration(string[] args)
     };
 }
 
-static void ConfigureAuditaX(IServiceCollection services, SampleConfiguration config)
+static void ConfigureAuditaX(IServiceCollection services, IConfiguration configuration, SampleConfiguration config)
 {
     var tableName = config.Database == DatabaseType.SqlServer ? "AuditLog" : "audit_log";
     var schema = config.Database == DatabaseType.SqlServer ? "dbo" : "public";
 
-    services.AddAuditaX(options =>
-    {
-        options.TableName = tableName;
-        options.Schema = schema;
-        options.AutoCreateTable = true;
-        options.EnableLogging = true;
-        options.ChangeLogFormat = config.Format;
+    AuditaX.Extensions.AuditaXBuilder builder;
 
-        if (config.ConfigMode == ConfigurationMode.FluentApi)
+    if (config.ConfigMode == ConfigurationMode.AppSettings)
+    {
+        // Load from appsettings.json and override database-specific values
+        builder = services.AddAuditaX(configuration, options =>
         {
+            options.TableName = tableName;
+            options.Schema = schema;
+            options.ChangeLogFormat = config.Format;
+        });
+    }
+    else
+    {
+        // Fluent API configuration
+        builder = services.AddAuditaX(options =>
+        {
+            options.TableName = tableName;
+            options.Schema = schema;
+            options.AutoCreateTable = true;
+            options.EnableLogging = true;
+            options.ChangeLogFormat = config.Format;
+
             options.ConfigureEntities(entities =>
             {
                 entities.AuditEntity<Product>("Product")
@@ -153,12 +166,14 @@ static void ConfigureAuditaX(IServiceCollection services, SampleConfiguration co
                         .OnAdded(t => new Dictionary<string, string?> { ["Tag"] = t.Tag })
                         .OnRemoved(t => new Dictionary<string, string?> { ["Tag"] = t.Tag });
             });
-        }
-    })
+        });
+    }
+
     // Extensible API: UseDapper + UseSqlServer/UsePostgreSql
-    .UseDapper<SampleDapperContext>()
-    .UseDatabase(config.Database)
-    .ValidateOnStartup();  // Creates audit table if AutoCreateTable = true
+    builder
+        .UseDapper<SampleDapperContext>()
+        .UseDatabase(config.Database)
+        .ValidateOnStartup();  // Creates audit table if AutoCreateTable = true
 
     // Register user provider
     services.AddSingleton<IAuditUserProvider>(new SampleUserProvider());

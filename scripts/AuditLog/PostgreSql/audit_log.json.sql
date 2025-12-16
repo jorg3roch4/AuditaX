@@ -23,7 +23,7 @@ CREATE TABLE audit_log
     source_key      VARCHAR(900)    NOT NULL,   -- Entity primary key value
 
     -- Audit data: Complete change history in JSON format
-    audit_log       TEXT            NOT NULL,   -- JSON document with all changes
+    audit_log       JSONB           NOT NULL,   -- Native JSONB for efficient queries and indexing
 
     -- Constraints
     CONSTRAINT pk_audit_log PRIMARY KEY (log_id),
@@ -55,7 +55,7 @@ END $$;
 The audit_log column stores JSON data like this:
 
 {
-  "entries": [
+  "auditLog": [
     {
       "action": "Created",
       "user": "admin@example.com",
@@ -87,7 +87,7 @@ SELECT log_id, source_name, source_key, audit_log
 FROM audit_log
 WHERE source_name = 'product' AND source_key = '123';
 
--- Parse JSON entries
+-- Parse JSON entries (no cast needed, audit_log is already JSONB)
 SELECT
     a.source_name,
     a.source_key,
@@ -95,7 +95,7 @@ SELECT
     e->>'user' AS "user",
     (e->>'timestamp')::timestamptz AS "timestamp"
 FROM audit_log a,
-     jsonb_array_elements(a.audit_log::jsonb->'entries') AS e
+     jsonb_array_elements(a.audit_log->'auditLog') AS e
 WHERE a.source_name = 'product';
 
 -- Get field changes from Update entries
@@ -107,7 +107,7 @@ SELECT
     f->>'before' AS before_value,
     f->>'after' AS after_value
 FROM audit_log a,
-     jsonb_array_elements(a.audit_log::jsonb->'entries') AS e,
+     jsonb_array_elements(a.audit_log->'auditLog') AS e,
      jsonb_array_elements(e->'fields') AS f
 WHERE a.source_name = 'product'
   AND e->>'action' = 'Updated';

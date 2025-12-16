@@ -45,7 +45,7 @@ internal class AuditaXDbContext : DbContext
         var isPostgreSql = logIdColumn == "log_id";
         var defaultValueSql = isPostgreSql ? "gen_random_uuid()" : "NEWID()";
         var columnType = isPostgreSql
-            ? (useJson ? "TEXT" : "XML")
+            ? (useJson ? "JSONB" : "XML")
             : (useJson ? "NVARCHAR(MAX)" : "XML");
 
         modelBuilder.Entity<AuditLog>(entity =>

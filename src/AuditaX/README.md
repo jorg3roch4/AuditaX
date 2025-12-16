@@ -49,8 +49,8 @@ AuditaX.PostgreSql         # For PostgreSQL database
     "Entities": {
       "Product": {
         "SourceName": "Product",
-        "KeyProperty": "ProductId",
-        "AuditableProperties": [ "Name", "Price", "Stock" ]
+        "Key": "ProductId",
+        "AuditProperties": [ "Name", "Price", "Stock" ]
       }
     }
   }
@@ -105,16 +105,16 @@ Each entity to be audited needs configuration:
   "Entities": {
     "EntityTypeName": {
       "SourceName": "DisplayNameInAuditLog",
-      "KeyProperty": "PrimaryKeyPropertyName",
-      "AuditableProperties": [ "Prop1", "Prop2" ]
+      "Key": "PrimaryKeyPropertyName",
+      "AuditProperties": [ "Prop1", "Prop2" ]
     }
   }
 }
 ```
 
 - **SourceName**: Name stored in audit log (defaults to type name)
-- **KeyProperty**: Property used as `SourceKey` in audit log
-- **AuditableProperties**: Properties tracked for changes (Update action)
+- **Key**: Property used as `SourceKey` in audit log
+- **AuditProperties**: Properties tracked for changes (Update action)
 
 ## Custom User Provider
 

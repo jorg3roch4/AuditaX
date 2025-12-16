@@ -128,8 +128,8 @@ Provides the current user for audit logging. Default implementation uses `HttpCo
   "Entities": {
     "EntityTypeName": {
       "SourceName": "DisplayName",
-      "KeyProperty": "PrimaryKeyPropertyName",
-      "AuditableProperties": [ "Prop1", "Prop2", "Prop3" ]
+      "Key": "PrimaryKeyPropertyName",
+      "AuditProperties": [ "Prop1", "Prop2", "Prop3" ]
     }
   }
 }

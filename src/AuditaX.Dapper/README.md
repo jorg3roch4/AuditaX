@@ -34,8 +34,8 @@ dotnet add package AuditaX.SqlServer   # or AuditaX.PostgreSql
     "Entities": {
       "Product": {
         "SourceName": "Product",
-        "KeyProperty": "ProductId",
-        "AuditableProperties": [ "Name", "Price", "Stock" ]
+        "Key": "ProductId",
+        "AuditProperties": [ "Name", "Price", "Stock" ]
       }
     }
   }
