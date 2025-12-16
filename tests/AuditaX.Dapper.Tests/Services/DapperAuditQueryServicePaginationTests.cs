@@ -23,7 +23,7 @@ public class DapperAuditQueryServicePaginationTests
         {
             TableName = "AuditLog",
             Schema = "dbo",
-            ChangeLogFormat = ChangeLogFormat.Json
+            LogFormat = LogFormat.Json
         };
     }
 
@@ -265,7 +265,7 @@ public class DapperAuditQueryServicePaginationTests
         {
             TableName = "audit_log",
             Schema = "public",
-            ChangeLogFormat = ChangeLogFormat.Json
+            LogFormat = LogFormat.Json
         };
         var provider = new PostgreSqlDatabaseProvider(pgOptions);
         var service = new DapperAuditQueryService(_mockConnection.Object, provider);
@@ -284,7 +284,7 @@ public class DapperAuditQueryServicePaginationTests
         {
             TableName = "audit_log",
             Schema = "public",
-            ChangeLogFormat = ChangeLogFormat.Xml
+            LogFormat = LogFormat.Xml
         };
         var provider = new PostgreSqlDatabaseProvider(pgOptions);
         var service = new DapperAuditQueryService(_mockConnection.Object, provider);

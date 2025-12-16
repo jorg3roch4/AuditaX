@@ -43,14 +43,14 @@ AuditaX.PostgreSql         # For PostgreSQL database
   "AuditaX": {
     "TableName": "AuditLog",
     "Schema": "dbo",
-    "ChangeLogFormat": "Json",
+    "LogFormat": "Json",
     "AutoCreateTable": true,
     "EnableLogging": true,
     "Entities": {
       "Product": {
         "SourceName": "Product",
         "Key": "ProductId",
-        "AuditProperties": [ "Name", "Price", "Stock" ]
+        "Properties": [ "Name", "Price", "Stock" ]
       }
     }
   }
@@ -64,16 +64,13 @@ services.AddAuditaX(options =>
 {
     options.TableName = "AuditLog";
     options.Schema = "audit";
-    options.ChangeLogFormat = ChangeLogFormat.Json;
+    options.LogFormat = LogFormat.Json;
     options.AutoCreateTable = true;
     options.EnableLogging = true;
 
-    options.ConfigureEntity<Product>(entity =>
-    {
-        entity.HasSourceName("Products");
-        entity.HasKey(p => p.ProductId.ToString());
-        entity.AuditProperties(p => p.Name, p => p.Price, p => p.Stock);
-    });
+    options.ConfigureEntity<Product>("Product")
+        .WithKey(p => p.ProductId)
+        .Properties("Name", "Price", "Stock");
 });
 ```
 
@@ -92,7 +89,7 @@ services.AddAuditaX(configuration)    // Load from appsettings.json
 |--------|------|---------|-------------|
 | `TableName` | string | `"AuditLog"` | Audit log table name |
 | `Schema` | string | `"dbo"` | Database schema |
-| `ChangeLogFormat` | enum | `Json` | `Json` or `Xml` |
+| `LogFormat` | enum | `Json` | `Json` or `Xml` |
 | `AutoCreateTable` | bool | `true` | Create table if not exists |
 | `EnableLogging` | bool | `true` | Enable/disable auditing |
 
@@ -106,7 +103,7 @@ Each entity to be audited needs configuration:
     "EntityTypeName": {
       "SourceName": "DisplayNameInAuditLog",
       "Key": "PrimaryKeyPropertyName",
-      "AuditProperties": [ "Prop1", "Prop2" ]
+      "Properties": [ "Prop1", "Prop2" ]
     }
   }
 }
@@ -114,7 +111,7 @@ Each entity to be audited needs configuration:
 
 - **SourceName**: Name stored in audit log (defaults to type name)
 - **Key**: Property used as `SourceKey` in audit log
-- **AuditProperties**: Properties tracked for changes (Update action)
+- **Properties**: Properties tracked for changes (Update action)
 
 ## Custom User Provider
 

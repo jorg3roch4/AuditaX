@@ -15,14 +15,14 @@ public class SqlServerProviderPaginationTests
         {
             TableName = "AuditLog",
             Schema = "dbo",
-            ChangeLogFormat = ChangeLogFormat.Json
+            LogFormat = LogFormat.Json
         };
 
         _xmlOptions = new AuditaXOptions
         {
             TableName = "AuditLog",
             Schema = "dbo",
-            ChangeLogFormat = ChangeLogFormat.Xml
+            LogFormat = LogFormat.Xml
         };
     }
 

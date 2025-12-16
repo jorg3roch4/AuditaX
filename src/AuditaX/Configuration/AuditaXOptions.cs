@@ -1,25 +1,22 @@
-using System;
-using System.Collections.Generic;
-using Microsoft.Extensions.Logging;
+using System.Text.Json.Serialization;
 using AuditaX.Enums;
-using AuditaX.Interfaces;
 
 namespace AuditaX.Configuration;
 
 /// <summary>
-/// Runtime options for AuditaX, combining settings from appsettings and fluent configuration.
+/// Configuration options for AuditaX.
+/// Compatible with both FluentAPI and appsettings.json.
 /// </summary>
 public sealed class AuditaXOptions
 {
+    // ══════════════════════════════════════════════════════════
+    // Global configuration (serializable for appsettings.json)
+    // ══════════════════════════════════════════════════════════
+
     /// <summary>
     /// Enables logging for audit operations. Default is false.
     /// </summary>
     public bool EnableLogging { get; set; } = false;
-
-    /// <summary>
-    /// Minimum log level for audit operations. Default is Information.
-    /// </summary>
-    public LogLevel MinimumLogLevel { get; set; } = LogLevel.Information;
 
     /// <summary>
     /// Name of the audit log table. Default is "AuditLog".
@@ -38,122 +35,130 @@ public sealed class AuditaXOptions
     public bool AutoCreateTable { get; set; } = false;
 
     /// <summary>
-    /// Format for the ChangeLog field storage.
-    /// Default is XML for backward compatibility with existing data.
+    /// Format for storing audit log entries.
+    /// Default is Xml for backward compatibility.
     /// </summary>
-    public ChangeLogFormat ChangeLogFormat { get; set; } = ChangeLogFormat.Xml;
+    public LogFormat LogFormat { get; set; } = LogFormat.Xml;
+
+    // ══════════════════════════════════════════════════════════
+    // Entity configurations (serializable for appsettings.json)
+    // ══════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Entity configurations registered via fluent API (type-based lookup).
+    /// Entity configurations.
+    /// Key is the entity class name, value is its configuration.
     /// </summary>
-    internal Dictionary<Type, AuditEntityConfiguration> EntityConfigurations { get; } = [];
+    public Dictionary<string, EntityOptions> Entities { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    // ══════════════════════════════════════════════════════════
+    // Internal caches (not serialized)
+    // ══════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Entity configurations registered via appsettings (name-based lookup).
-    /// Key is the entity name (e.g., "Product"), value is the configuration.
+    /// Cache for entity configurations by Type for fast lookup.
     /// </summary>
-    internal Dictionary<string, AuditEntityConfiguration> NamedEntityConfigurations { get; } = new(StringComparer.OrdinalIgnoreCase);
+    [JsonIgnore]
+    internal Dictionary<Type, EntityOptions> TypeCache { get; } = [];
 
     /// <summary>
-    /// Related entity configurations registered via fluent API.
+    /// Cache for related entity configurations by Type.
     /// </summary>
-    internal Dictionary<Type, RelatedEntityConfiguration> RelatedConfigurations { get; } = [];
+    [JsonIgnore]
+    internal Dictionary<Type, RelatedEntityOptions> RelatedEntityCache { get; } = [];
+
+    // ══════════════════════════════════════════════════════════
+    // FluentAPI methods
+    // ══════════════════════════════════════════════════════════
 
     /// <summary>
-    /// User provider factory for dependency injection.
+    /// Configures an entity for auditing using FluentAPI.
     /// </summary>
-    internal Func<IServiceProvider, IAuditUserProvider>? UserProviderFactory { get; set; }
-
-    /// <summary>
-    /// Configures entities to be audited using the fluent API.
-    /// </summary>
-    /// <param name="configure">Action to configure entities.</param>
-    /// <returns>This options instance for chaining.</returns>
-    public AuditaXOptions ConfigureEntities(Action<AuditaXOptionsBuilder> configure)
+    /// <typeparam name="TEntity">The entity type to configure.</typeparam>
+    /// <param name="displayName">Optional display name for the entity in audit logs.</param>
+    /// <returns>A builder for further configuration.</returns>
+    public EntityOptionsBuilder<TEntity> ConfigureEntity<TEntity>(string? displayName = null)
+        where TEntity : class
     {
-        var builder = new AuditaXOptionsBuilder(this);
-        configure(builder);
-        return this;
+        var entityName = typeof(TEntity).Name;
+        var options = new EntityOptions
+        {
+            DisplayName = displayName ?? entityName,
+            EntityType = typeof(TEntity)
+        };
+
+        Entities[entityName] = options;
+        TypeCache[typeof(TEntity)] = options;
+
+        return new EntityOptionsBuilder<TEntity>(options, this);
     }
+
+    // ══════════════════════════════════════════════════════════
+    // Lookup methods
+    // ══════════════════════════════════════════════════════════
 
     /// <summary>
     /// Gets the entity configuration for the specified type.
-    /// First tries type-based lookup (fluent API), then falls back to name-based lookup (appsettings).
     /// </summary>
-    /// <param name="entityType">The entity type.</param>
+    /// <param name="type">The entity type.</param>
     /// <returns>The entity configuration, or null if not found.</returns>
-    public AuditEntityConfiguration? GetEntityConfiguration(Type entityType)
+    public EntityOptions? GetEntity(Type type)
     {
-        // First try type-based lookup (fluent API configurations)
-        if (EntityConfigurations.TryGetValue(entityType, out var config))
-        {
-            return config;
-        }
+        // First check the type cache (FluentAPI configurations)
+        if (TypeCache.TryGetValue(type, out var cached))
+            return cached;
 
         // Fall back to name-based lookup (appsettings configurations)
-        if (NamedEntityConfigurations.TryGetValue(entityType.Name, out config))
+        if (Entities.TryGetValue(type.Name, out var options))
         {
-            // Set the EntityType now that we know it
-            config.EntityType = entityType;
+            // Set runtime properties
+            options.EntityType = type;
+            options.ResolveKeySelector();
 
-            // Create a KeySelector from KeyPropertyName using reflection
-            // This is for appsettings-based configurations that don't have a compiled KeySelector
-            if (config.KeyPropertyName is not null)
+            // Resolve related entities
+            foreach (var (relatedName, relatedOptions) in options.RelatedEntities)
             {
-                var keyProperty = entityType.GetProperty(config.KeyPropertyName);
-                if (keyProperty is not null)
-                {
-                    config.KeySelector = entity => keyProperty.GetValue(entity)?.ToString() ?? string.Empty;
-                }
+                relatedOptions.RelatedName = relatedName;
+                relatedOptions.ParentEntityOptions = options;
             }
 
-            // Cache the configuration by type for faster future lookups
-            EntityConfigurations[entityType] = config;
-            return config;
+            // Cache for future lookups
+            TypeCache[type] = options;
+            return options;
         }
 
         return null;
     }
 
     /// <summary>
-    /// Gets the entity configuration by entity name (for appsettings-based configurations).
+    /// Gets the entity configuration by entity name.
     /// </summary>
-    /// <param name="entityName">The entity name.</param>
+    /// <param name="name">The entity name.</param>
     /// <returns>The entity configuration, or null if not found.</returns>
-    public AuditEntityConfiguration? GetEntityConfigurationByName(string entityName)
+    public EntityOptions? GetEntity(string name)
     {
-        return NamedEntityConfigurations.TryGetValue(entityName, out var config) ? config : null;
+        return Entities.TryGetValue(name, out var options) ? options : null;
     }
 
     /// <summary>
     /// Gets the related entity configuration for the specified type.
     /// </summary>
-    /// <param name="entityType">The related entity type.</param>
+    /// <param name="type">The related entity type.</param>
     /// <returns>The related entity configuration, or null if not found.</returns>
-    public RelatedEntityConfiguration? GetRelatedConfiguration(Type entityType)
+    public RelatedEntityOptions? GetRelatedEntity(Type type)
     {
-        return RelatedConfigurations.TryGetValue(entityType, out var config) ? config : null;
+        return RelatedEntityCache.TryGetValue(type, out var options) ? options : null;
     }
 
-    /// <summary>
-    /// Determines if the specified type is configured as an auditable entity.
-    /// Checks both type-based (fluent API) and name-based (appsettings) configurations.
-    /// </summary>
-    /// <param name="entityType">The entity type to check.</param>
-    /// <returns>True if the entity is auditable, otherwise false.</returns>
-    public bool IsAuditableEntity(Type entityType)
-    {
-        return EntityConfigurations.ContainsKey(entityType) ||
-               NamedEntityConfigurations.ContainsKey(entityType.Name);
-    }
+    // ══════════════════════════════════════════════════════════
+    // Internal methods
+    // ══════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Determines if the specified type is configured as a related entity.
+    /// Registers a related entity configuration in the cache.
+    /// Called by EntityOptionsBuilder when configuring related entities via FluentAPI.
     /// </summary>
-    /// <param name="entityType">The entity type to check.</param>
-    /// <returns>True if the entity is a related entity, otherwise false.</returns>
-    public bool IsRelatedEntity(Type entityType)
+    internal void RegisterRelatedEntity(Type relatedType, RelatedEntityOptions options)
     {
-        return RelatedConfigurations.ContainsKey(entityType);
+        RelatedEntityCache[relatedType] = options;
     }
 }

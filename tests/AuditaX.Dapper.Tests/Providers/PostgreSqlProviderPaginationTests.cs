@@ -15,14 +15,14 @@ public class PostgreSqlProviderPaginationTests
         {
             TableName = "audit_log",
             Schema = "public",
-            ChangeLogFormat = ChangeLogFormat.Json
+            LogFormat = LogFormat.Json
         };
 
         _xmlOptions = new AuditaXOptions
         {
             TableName = "audit_log",
             Schema = "public",
-            ChangeLogFormat = ChangeLogFormat.Xml
+            LogFormat = LogFormat.Xml
         };
     }
 

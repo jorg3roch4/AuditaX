@@ -18,7 +18,7 @@ public class TableStructureValidationTests
         {
             TableName = "AuditLog",
             Schema = "dbo",
-            ChangeLogFormat = ChangeLogFormat.Json
+            LogFormat = LogFormat.Json
         };
         var provider = new SqlServerDatabaseProvider(options);
 
@@ -38,7 +38,7 @@ public class TableStructureValidationTests
         {
             TableName = "AuditLog",
             Schema = "dbo",
-            ChangeLogFormat = ChangeLogFormat.Json
+            LogFormat = LogFormat.Json
         };
         var provider = new SqlServerDatabaseProvider(options);
 
@@ -59,7 +59,7 @@ public class TableStructureValidationTests
         {
             TableName = "AuditLog",
             Schema = "dbo",
-            ChangeLogFormat = ChangeLogFormat.Xml
+            LogFormat = LogFormat.Xml
         };
         var provider = new SqlServerDatabaseProvider(options);
 
@@ -80,7 +80,7 @@ public class TableStructureValidationTests
     public void SqlServer_ValidateColumn_CorrectLogId_ShouldReturnTrue()
     {
         // Arrange
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var provider = new SqlServerDatabaseProvider(options);
         var actual = new TableColumnInfo
         {
@@ -102,7 +102,7 @@ public class TableStructureValidationTests
     public void SqlServer_ValidateColumn_WrongLogIdType_ShouldReturnFalse()
     {
         // Arrange
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var provider = new SqlServerDatabaseProvider(options);
         var actual = new TableColumnInfo
         {
@@ -124,7 +124,7 @@ public class TableStructureValidationTests
     public void SqlServer_ValidateColumn_CorrectSourceName_ShouldReturnTrue()
     {
         // Arrange
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var provider = new SqlServerDatabaseProvider(options);
         var actual = new TableColumnInfo
         {
@@ -146,7 +146,7 @@ public class TableStructureValidationTests
     public void SqlServer_ValidateColumn_SourceNameTooShort_ShouldReturnFalse()
     {
         // Arrange
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var provider = new SqlServerDatabaseProvider(options);
         var actual = new TableColumnInfo
         {
@@ -168,7 +168,7 @@ public class TableStructureValidationTests
     public void SqlServer_ValidateColumn_SourceNameLongerThanMinimum_ShouldReturnTrue()
     {
         // Arrange
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var provider = new SqlServerDatabaseProvider(options);
         var actual = new TableColumnInfo
         {
@@ -190,7 +190,7 @@ public class TableStructureValidationTests
     public void SqlServer_ValidateColumn_NullableWhenRequired_ShouldReturnFalse()
     {
         // Arrange
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var provider = new SqlServerDatabaseProvider(options);
         var actual = new TableColumnInfo
         {
@@ -212,7 +212,7 @@ public class TableStructureValidationTests
     public void SqlServer_ValidateColumn_AuditLogJsonCorrect_ShouldReturnTrue()
     {
         // Arrange
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var provider = new SqlServerDatabaseProvider(options);
         var actual = new TableColumnInfo
         {
@@ -234,7 +234,7 @@ public class TableStructureValidationTests
     public void SqlServer_ValidateColumn_AuditLogXmlCorrect_ShouldReturnTrue()
     {
         // Arrange
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Xml };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Xml };
         var provider = new SqlServerDatabaseProvider(options);
         var actual = new TableColumnInfo
         {
@@ -256,7 +256,7 @@ public class TableStructureValidationTests
     public void SqlServer_ValidateColumn_AuditLogWrongType_ShouldReturnFalse()
     {
         // Arrange
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var provider = new SqlServerDatabaseProvider(options);
         var actual = new TableColumnInfo
         {
@@ -278,7 +278,7 @@ public class TableStructureValidationTests
     public void SqlServer_ValidateColumn_AuditLogNotMax_ShouldReturnFalse()
     {
         // Arrange
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var provider = new SqlServerDatabaseProvider(options);
         var actual = new TableColumnInfo
         {
@@ -332,7 +332,7 @@ public class TableStructureValidationTests
     public void SqlServer_ValidateColumn_OldSchemaAuditLogId_ShouldNotMatchLogId()
     {
         // This simulates the old incorrect schema that had AuditLogId INT instead of LogId UNIQUEIDENTIFIER
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var provider = new SqlServerDatabaseProvider(options);
 
         // Old incorrect column
@@ -354,7 +354,7 @@ public class TableStructureValidationTests
     public void SqlServer_ValidateColumn_OldSchemaChangesColumn_ShouldNotMatchAuditLog()
     {
         // This simulates the old incorrect schema that had "Changes" column instead of "AuditLog"
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var provider = new SqlServerDatabaseProvider(options);
 
         // Old incorrect column

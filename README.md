@@ -44,13 +44,13 @@ Of course, there's absolutely no obligation. If you prefer, simply starring the 
 
 ---
 
-## 🎉 What's New in 1.0.1
+## 🎉 What's New in 1.0.2
 
-- **Breaking**: Renamed appsettings.json properties to match FluentAPI (`KeyProperty` → `Key`, `AuditableProperties` → `AuditProperties`)
-- Fixed documentation with correct audit table scripts
-- Improved startup validation with detailed structure checking
-- Added `AuditTableStructureMismatchException` for clear error messages
-- Fixed `AddAuditaXInterceptor` method name in documentation
+- **Breaking**: Renamed `.AuditProperties()` to `.Properties()` in FluentAPI for consistency
+- **Breaking**: Removed `.OnAdded()` and `.OnRemoved()` methods for related entities, replaced with unified `.Properties()`
+- **Breaking**: Renamed `CaptureProperties` to `Properties` in appsettings.json for related entities
+- **New**: Field serialization now uses `value` for Added/Removed actions, `before`/`after` for Updated
+- **New**: Added support for `Modified` state on related entities (Updated action)
 
 See [CHANGELOG.md](CHANGELOG.md) for full details.
 
@@ -97,13 +97,13 @@ dotnet add package AuditaX.PostgreSql
   "AuditaX": {
     "TableName": "AuditLog",
     "Schema": "dbo",
-    "ChangeLogFormat": "Json",
+    "LogFormat": "Json",
     "AutoCreateTable": true,
     "EnableLogging": true,
     "Entities": {
       "Product": {
         "Key": "Id",
-        "AuditProperties": [ "Name", "Price", "Stock" ]
+        "Properties": [ "Name", "Price", "Stock" ]
       }
     }
   }
@@ -126,14 +126,11 @@ services.AddAuditaX(options =>
     options.Schema = "dbo";
     options.AutoCreateTable = true;
     options.EnableLogging = true;
-    options.ChangeLogFormat = ChangeLogFormat.Json;
+    options.LogFormat = LogFormat.Json;
 
-    options.ConfigureEntities(entities =>
-    {
-        entities.AuditEntity<Product>("Product")
-            .WithKey(p => p.Id)
-            .AuditProperties("Name", "Price", "Stock");
-    });
+    options.ConfigureEntity<Product>("Product")
+        .WithKey(p => p.Id)
+        .Properties("Name", "Price", "Stock");
 })
 .UseDapper<DapperContext>()
 .UseSqlServer()
@@ -260,7 +257,16 @@ await dbContext.SaveChangesAsync(); // Update audit log created automatically
       "timestamp": "2025-12-11T12:55:38.6777639Z",
       "related": "ProductTag",
       "fields": [
-        { "name": "Tag", "after": "Gaming" }
+        { "name": "Tag", "value": "Gaming" }
+      ]
+    },
+    {
+      "action": "Removed",
+      "user": "demo@auditax.sample",
+      "timestamp": "2025-12-11T12:55:38.7375026Z",
+      "related": "ProductTag",
+      "fields": [
+        { "name": "Tag", "value": "Gaming" }
       ]
     },
     {
@@ -275,11 +281,18 @@ await dbContext.SaveChangesAsync(); // Update audit log created automatically
 ### XML Format
 ```xml
 <AuditLog>
-  <Entry Action="Created" User="Anonymous" Timestamp="2025-12-12T14:38:01.9671416Z" />
-  <Entry Action="Updated" User="Anonymous" Timestamp="2025-12-12T14:41:12.5715243Z">
+  <Entry Action="Created" User="demo@auditax.sample" Timestamp="2025-12-12T14:38:01.9671416Z" />
+  <Entry Action="Updated" User="demo@auditax.sample" Timestamp="2025-12-12T14:41:12.5715243Z">
     <Field Name="Price" Before="9.99" After="12.99" />
     <Field Name="Stock" Before="100" After="85" />
   </Entry>
+  <Entry Action="Added" User="demo@auditax.sample" Timestamp="2025-12-12T14:42:00.1234567Z" Related="ProductTag">
+    <Field Name="Tag" Value="Gaming" />
+  </Entry>
+  <Entry Action="Removed" User="demo@auditax.sample" Timestamp="2025-12-12T14:43:00.1234567Z" Related="ProductTag">
+    <Field Name="Tag" Value="Gaming" />
+  </Entry>
+  <Entry Action="Deleted" User="demo@auditax.sample" Timestamp="2025-12-12T14:44:00.1234567Z" />
 </AuditLog>
 ```
 
@@ -366,26 +379,6 @@ The `samples` folder contains working examples:
 - `AuditaX.Sample.EntityFramework` - Console app demonstrating EF Core integration
 - `AuditaX.Sample.DatabaseSetup` - Tool to create sample databases
 
-### Running the Samples
-
-Before running the samples, you need to create the sample databases:
-
-```bash
-cd samples/AuditaX.Sample.DatabaseSetup
-dotnet run
-```
-
-This interactive tool creates the required databases for SQL Server and/or PostgreSQL. Then run the samples:
-
-```bash
-# Dapper sample (interactive menu to select DB + format)
-cd samples/AuditaX.Sample.Dapper
-dotnet run
-
-# EF Core sample (interactive menu to select DB + format)
-cd samples/AuditaX.Sample.EntityFramework
-dotnet run
-```
 
 ---
 
@@ -421,9 +414,3 @@ AuditaX will always support the **current LTS version** plus the **next standard
 
 - .NET 10.0 or later
 - SQL Server 2016+ or PostgreSQL 12+
-
----
-
-## 📄 License
-
-[Apache 2.0 License](LICENSE)

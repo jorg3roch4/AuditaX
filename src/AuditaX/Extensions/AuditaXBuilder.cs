@@ -94,7 +94,7 @@ public sealed class AuditaXBuilder
 
     /// <summary>
     /// Enables startup validation which checks that the audit table exists and
-    /// the column type matches the configured ChangeLogFormat.
+    /// the column type matches the configured LogFormat.
     /// If validation fails, the application will terminate with a critical error.
     /// </summary>
     /// <returns>This builder for chaining.</returns>

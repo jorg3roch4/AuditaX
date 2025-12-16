@@ -76,7 +76,7 @@ public class DemoRunner
             product.Id.ToString(),
             AuditAction.Added,
             "ProductTag",
-            [new FieldChange { Name = "Tag", After = tag1.Tag }]);
+            [new FieldChange { Name = "Tag", Value = tag1.Tag }]);
 
         AnsiConsole.MarkupLine($"Added Tag: [yellow]{tag1.Tag}[/] (ID: {tag1.Id})");
 
@@ -88,7 +88,7 @@ public class DemoRunner
             product.Id.ToString(),
             AuditAction.Added,
             "ProductTag",
-            [new FieldChange { Name = "Tag", After = tag2.Tag }]);
+            [new FieldChange { Name = "Tag", Value = tag2.Tag }]);
 
         AnsiConsole.MarkupLine($"Added Tag: [yellow]{tag2.Tag}[/] (ID: {tag2.Id})");
         AnsiConsole.MarkupLine("[dim]Related entity additions logged.[/]\n");
@@ -103,7 +103,7 @@ public class DemoRunner
             product.Id.ToString(),
             AuditAction.Removed,
             "ProductTag",
-            [new FieldChange { Name = "Tag", Before = tag2.Tag }]);
+            [new FieldChange { Name = "Tag", Value = tag2.Tag }]);
 
         AnsiConsole.MarkupLine($"Removed Tag: [yellow]{tag2.Tag}[/]");
         AnsiConsole.MarkupLine("[dim]Related entity removal logged.[/]\n");
@@ -132,11 +132,25 @@ public class DemoRunner
 
             foreach (var entry in entries)
             {
-                var details = entry.Related is not null
-                    ? $"Related: {entry.Related}"
-                    : string.Join(", ", entry.Fields
+                string details;
+                if (entry.Related is not null)
+                {
+                    // For related entities, show the field values
+                    var fieldDetails = entry.Fields
+                        .Select(f => f.Value is not null
+                            ? $"{f.Name}: {f.Value}"
+                            : $"{f.Name}: {f.Before} -> {f.After}")
+                        .ToList();
+                    details = fieldDetails.Count > 0
+                        ? $"{entry.Related} ({string.Join(", ", fieldDetails)})"
+                        : $"Related: {entry.Related}";
+                }
+                else
+                {
+                    details = string.Join(", ", entry.Fields
                         .Where(f => f.Before != null || f.After != null)
                         .Select(f => $"{f.Name}: {f.Before ?? "null"} -> {f.After ?? "null"}"));
+                }
 
                 table.AddRow(
                     entry.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"),

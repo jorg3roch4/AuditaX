@@ -224,19 +224,27 @@ public sealed class XmlChangeLogService : IChangeLogService
             var fieldElement = new XElement(FieldElement,
                 new XAttribute(NameAttribute, field.Name));
 
-            if (field.Before is not null)
+            // For Added/Removed actions, use Value only
+            // For Updated action, use Before/After
+            if (action == AuditAction.Added || action == AuditAction.Removed)
             {
-                fieldElement.Add(new XAttribute(BeforeAttribute, field.Before));
+                var value = field.Value ?? field.After ?? field.Before;
+                if (value is not null)
+                {
+                    fieldElement.Add(new XAttribute(ValueAttribute, value));
+                }
             }
-
-            if (field.After is not null)
+            else
             {
-                fieldElement.Add(new XAttribute(AfterAttribute, field.After));
-            }
+                if (field.Before is not null)
+                {
+                    fieldElement.Add(new XAttribute(BeforeAttribute, field.Before));
+                }
 
-            if (field.Value is not null)
-            {
-                fieldElement.Add(new XAttribute(ValueAttribute, field.Value));
+                if (field.After is not null)
+                {
+                    fieldElement.Add(new XAttribute(AfterAttribute, field.After));
+                }
             }
 
             entry.Add(fieldElement);

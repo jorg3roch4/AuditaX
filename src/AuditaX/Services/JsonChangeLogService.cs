@@ -174,13 +174,25 @@ public sealed class JsonChangeLogService : IChangeLogService
             entry.Fields = [];
             foreach (var field in fields)
             {
-                entry.Fields.Add(new JsonFieldChange
+                // For Added/Removed actions, use Value only
+                // For Updated action, use Before/After
+                if (action == AuditAction.Added || action == AuditAction.Removed)
                 {
-                    Name = field.Name,
-                    Before = field.Before,
-                    After = field.After,
-                    Value = field.Value
-                });
+                    entry.Fields.Add(new JsonFieldChange
+                    {
+                        Name = field.Name,
+                        Value = field.Value ?? field.After ?? field.Before
+                    });
+                }
+                else
+                {
+                    entry.Fields.Add(new JsonFieldChange
+                    {
+                        Name = field.Name,
+                        Before = field.Before,
+                        After = field.After
+                    });
+                }
             }
         }
 

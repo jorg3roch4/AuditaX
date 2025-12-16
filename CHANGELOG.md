@@ -2,12 +2,29 @@
 
 All notable changes to AuditaX will be documented in this file.
 
+## [1.0.2] - 2025-12-16
+
+### Breaking Changes
+- **Fluent API**: Renamed `.AuditProperties()` to `.Properties()` for consistency
+- **Fluent API**: Removed `.OnAdded()` and `.OnRemoved()` methods for related entities, replaced with unified `.Properties()`
+- **appsettings.json**: Renamed `CaptureProperties` to `Properties` for related entities configuration
+
+### Changed
+- **Field serialization**: Added/Removed actions now use `value` field instead of `after`/`before`
+- **Field serialization**: Updated action continues to use `before`/`after` fields
+- Updated all documentation with correct JSON/XML examples
+
+### Added
+- Added support for `Modified` state on related entities (Updated action with `before`/`after` fields)
+
+---
+
 ## [1.0.1] - 2025-12-16
 
 ### Breaking Changes
 - **appsettings.json property names renamed** to match FluentAPI method names:
   - `KeyProperty` → `Key` (matches `.WithKey()`)
-  - `AuditableProperties` → `AuditProperties` (matches `.AuditProperties()`)
+  - `AuditableProperties` → `Properties` (matches `.Properties()`)
   - `KeyProperty` in RelatedEntities → `ParentKey` (matches `.WithParentKey()`)
 
 ### Fixed

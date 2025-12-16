@@ -20,7 +20,7 @@ public class ServiceExtensionsTests
         {
             options.TableName = "CustomAuditLog";
             options.Schema = "audit";
-            options.ChangeLogFormat = ChangeLogFormat.Json;
+            options.LogFormat = LogFormat.Json;
         });
 
         var provider = services.BuildServiceProvider();
@@ -29,7 +29,7 @@ public class ServiceExtensionsTests
         var options = provider.GetRequiredService<AuditaXOptions>();
         options.TableName.Should().Be("CustomAuditLog");
         options.Schema.Should().Be("audit");
-        options.ChangeLogFormat.Should().Be(ChangeLogFormat.Json);
+        options.LogFormat.Should().Be(LogFormat.Json);
 
         provider.GetService<IChangeLogService>().Should().NotBeNull();
         // Note: IAuditService is registered but requires IAuditRepository from an ORM provider
@@ -49,7 +49,7 @@ public class ServiceExtensionsTests
                 { "AuditaX:Schema", "custom" },
                 { "AuditaX:AutoCreateTable", "true" },
                 { "AuditaX:EnableLogging", "true" },
-                { "AuditaX:ChangeLogFormat", "Json" }
+                { "AuditaX:LogFormat", "Json" }
             })
             .Build();
 
@@ -64,7 +64,7 @@ public class ServiceExtensionsTests
         options.Schema.Should().Be("custom");
         options.AutoCreateTable.Should().BeTrue();
         options.EnableLogging.Should().BeTrue();
-        options.ChangeLogFormat.Should().Be(ChangeLogFormat.Json);
+        options.LogFormat.Should().Be(LogFormat.Json);
     }
 
     [Fact]
@@ -147,13 +147,13 @@ public class ServiceExtensionsTests
     }
 
     [Fact]
-    public void ChangeLogFormat_Xml_ShouldProduceXml()
+    public void LogFormat_Xml_ShouldProduceXml()
     {
         // Arrange
         var services = new ServiceCollection();
         services.AddAuditaX(options =>
         {
-            options.ChangeLogFormat = ChangeLogFormat.Xml;
+            options.LogFormat = LogFormat.Xml;
         });
 
         var provider = services.BuildServiceProvider();
@@ -167,13 +167,13 @@ public class ServiceExtensionsTests
     }
 
     [Fact]
-    public void ChangeLogFormat_Json_ShouldProduceJson()
+    public void LogFormat_Json_ShouldProduceJson()
     {
         // Arrange
         var services = new ServiceCollection();
         services.AddAuditaX(options =>
         {
-            options.ChangeLogFormat = ChangeLogFormat.Json;
+            options.LogFormat = LogFormat.Json;
         });
 
         var provider = services.BuildServiceProvider();

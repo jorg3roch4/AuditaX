@@ -95,19 +95,19 @@ CREATE TABLE customers (
   "AuditaX": {
     "TableName": "audit_log",
     "Schema": "public",
-    "ChangeLogFormat": "Json",
+    "LogFormat": "Json",
     "AutoCreateTable": true,
     "EnableLogging": true,
     "Entities": {
       "Product": {
         "SourceName": "Product",
         "Key": "ProductId",
-        "AuditProperties": ["Name", "Description", "Price", "Stock"]
+        "Properties": ["Name", "Description", "Price", "Stock"]
       },
       "Customer": {
         "SourceName": "Customer",
         "Key": "CustomerId",
-        "AuditProperties": ["Name", "Email", "Phone"]
+        "Properties": ["Name", "Email", "Phone"]
       }
     }
   }

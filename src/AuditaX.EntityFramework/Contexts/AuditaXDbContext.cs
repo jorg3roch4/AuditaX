@@ -33,7 +33,7 @@ internal class AuditaXDbContext : DbContext
 
         var tableName = _auditaXOptions.TableName;
         var schema = _auditaXOptions.Schema;
-        var useJson = _auditaXOptions.ChangeLogFormat == ChangeLogFormat.Json;
+        var useJson = _auditaXOptions.LogFormat == LogFormat.Json;
 
         // Get column names from the database provider
         var logIdColumn = _databaseProvider.LogIdColumn;

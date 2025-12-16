@@ -83,12 +83,9 @@ public class EntityFrameworkServiceExtensionsTests
 
         services.AddAuditaX(options =>
         {
-            options.ConfigureEntities(e =>
-            {
-                e.AuditEntity<Product>("Product")
-                    .WithKey(p => p.Id)
-                    .AuditProperties("Name");
-            });
+            options.ConfigureEntity<Product>("Product")
+                .WithKey(p => p.Id)
+                .Properties("Name");
         })
         .UseEntityFramework<TestDbContext>()
         .UseSqlServer();
@@ -118,12 +115,9 @@ public class EntityFrameworkServiceExtensionsTests
 
         services.AddAuditaX(options =>
         {
-            options.ConfigureEntities(e =>
-            {
-                e.AuditEntity<Product>("Product")
-                    .WithKey(p => p.Id)
-                    .AuditProperties("Name");
-            });
+            options.ConfigureEntity<Product>("Product")
+                .WithKey(p => p.Id)
+                .Properties("Name");
         })
         .UseEntityFramework<TestDbContext>()
         .UsePostgreSql();

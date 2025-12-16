@@ -17,9 +17,9 @@ public sealed class ChangeLogService(AuditaXOptions options) : IChangeLogService
     private readonly XmlChangeLogService _xmlService = new();
     private readonly JsonChangeLogService _jsonService = new();
 
-    private readonly IChangeLogService _writeService = options.ChangeLogFormat switch
+    private readonly IChangeLogService _writeService = options.LogFormat switch
     {
-        ChangeLogFormat.Json => new JsonChangeLogService(),
+        LogFormat.Json => new JsonChangeLogService(),
         _ => new XmlChangeLogService()
     };
 
@@ -87,33 +87,33 @@ public sealed class ChangeLogService(AuditaXOptions options) : IChangeLogService
     /// </summary>
     /// <param name="auditLog">The audit log string to analyze.</param>
     /// <returns>The detected format.</returns>
-    public static ChangeLogFormat DetectFormatType(string? auditLog)
+    public static LogFormat DetectFormatType(string? auditLog)
     {
         if (string.IsNullOrWhiteSpace(auditLog))
         {
-            return ChangeLogFormat.Xml; // Default
+            return LogFormat.Xml; // Default
         }
 
         var trimmed = auditLog.TrimStart();
 
         if (trimmed.StartsWith('{') || trimmed.StartsWith('['))
         {
-            return ChangeLogFormat.Json;
+            return LogFormat.Json;
         }
 
         if (trimmed.StartsWith('<'))
         {
-            return ChangeLogFormat.Xml;
+            return LogFormat.Xml;
         }
 
         // Default to XML for backward compatibility
-        return ChangeLogFormat.Xml;
+        return LogFormat.Xml;
     }
 
     private IChangeLogService DetectFormat(string? auditLog)
     {
         var format = DetectFormatType(auditLog);
-        return format == ChangeLogFormat.Json ? _jsonService : _xmlService;
+        return format == LogFormat.Json ? _jsonService : _xmlService;
     }
 
     private IChangeLogService? DetectServiceForExistingData(string? existingAuditLog)

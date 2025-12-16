@@ -44,7 +44,7 @@ public sealed class AuditaXStartupHostedService : IHostedService
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         LogInformation("AuditaX startup validation starting...");
-        LogInformation($"Configuration: TableName={_options.TableName}, Schema={_options.Schema}, Format={_options.ChangeLogFormat}, AutoCreateTable={_options.AutoCreateTable}");
+        LogInformation($"Configuration: TableName={_options.TableName}, Schema={_options.Schema}, Format={_options.LogFormat}, AutoCreateTable={_options.AutoCreateTable}");
 
         try
         {
@@ -78,10 +78,10 @@ public sealed class AuditaXStartupHostedService : IHostedService
         catch (AuditColumnFormatMismatchException ex)
         {
             LogCritical(ex, $"AuditaX startup validation failed: Column format mismatch in table '{ex.TableName}'.");
-            LogCritical(null, $"Configuration specifies ChangeLogFormat.{ex.ExpectedFormat} (expects '{ex.ExpectedColumnType}' column type)");
+            LogCritical(null, $"Configuration specifies LogFormat.{ex.ExpectedFormat} (expects '{ex.ExpectedColumnType}' column type)");
             LogCritical(null, $"But the actual column '{ex.ColumnName}' has type '{ex.ActualColumnType}'");
             LogCritical(null, "To fix this issue, either:");
-            LogCritical(null, "  1. Change ChangeLogFormat in your configuration to match the database column type, or");
+            LogCritical(null, "  1. Change LogFormat in your configuration to match the database column type, or");
             LogCritical(null, "  2. Recreate the audit table with the correct column type using the appropriate script.");
 
             // Stop the application

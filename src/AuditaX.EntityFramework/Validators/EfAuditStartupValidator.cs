@@ -194,14 +194,14 @@ public sealed class EfAuditStartupValidator : IAuditStartupValidator
                 var actualColumn = actualColumns.First(c =>
                     c.ColumnName.Equals(_databaseProvider.AuditLogColumn, System.StringComparison.OrdinalIgnoreCase));
 
-                var expectedColumnType = _options.ChangeLogFormat == ChangeLogFormat.Xml
+                var expectedColumnType = _options.LogFormat == LogFormat.Xml
                     ? _databaseProvider.ExpectedXmlColumnType
                     : _databaseProvider.ExpectedJsonColumnType;
 
                 throw new AuditColumnFormatMismatchException(
                     _databaseProvider.FullTableName,
                     _databaseProvider.AuditLogColumn,
-                    _options.ChangeLogFormat,
+                    _options.LogFormat,
                     expectedColumnType,
                     actualColumn.DataType);
             }

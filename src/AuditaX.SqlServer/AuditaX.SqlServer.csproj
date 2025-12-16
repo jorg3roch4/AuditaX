@@ -14,9 +14,9 @@
 
         <!-- Package Identity -->
         <PackageId>AuditaX.SqlServer</PackageId>
-        <Version>1.0.1</Version>
-        <AssemblyVersion>1.0.1</AssemblyVersion>
-        <FileVersion>1.0.1</FileVersion>
+        <Version>1.0.2</Version>
+        <AssemblyVersion>1.0.2</AssemblyVersion>
+        <FileVersion>1.0.2</FileVersion>
         <Product>AuditaX</Product>
 
         <!-- Package Metadata -->
@@ -25,7 +25,7 @@
         <Description>SQL Server database provider for AuditaX audit logging with optimized queries and native type support.</Description>
         <Copyright>Copyright (c) 2025 jorg3roch4</Copyright>
         <PackageTags>audit;logging;sqlserver;database;provider;dotnet</PackageTags>
-        <PackageReleaseNotes>v1.0.1 - Improved table structure validation with detailed error messages.</PackageReleaseNotes>
+        <PackageReleaseNotes>v1.0.2 - Compatibility updates for properties and related entities.</PackageReleaseNotes>
         <NeutralLanguage>en</NeutralLanguage>
         <MinClientVersion>6.0</MinClientVersion>
 

@@ -26,15 +26,15 @@ Npgsql
     "Schema": "public",
     "AutoCreateTable": true,
     "EnableLogging": true,
-    "ChangeLogFormat": "Json",
+    "LogFormat": "Json",
     "Entities": {
       "Product": {
         "Key": "Id",
-        "AuditProperties": ["Name", "Description", "Price", "Stock", "IsActive"],
+        "Properties": ["Name", "Description", "Price", "Stock", "IsActive"],
         "RelatedEntities": {
           "ProductTag": {
             "ParentKey": "ProductId",
-            "CaptureProperties": ["Tag"]
+            "Properties": ["Tag"]
           }
         }
       }
@@ -52,18 +52,14 @@ builder.Services.AddAuditaX(options =>
     options.Schema = "public";
     options.AutoCreateTable = true;
     options.EnableLogging = true;
-    options.ChangeLogFormat = ChangeLogFormat.Json;
+    options.LogFormat = LogFormat.Json;
 
-    options.ConfigureEntities(entities =>
-    {
-        entities.AuditEntity<Product>("Product")
-            .WithKey(p => p.Id)
-            .AuditProperties("Name", "Description", "Price", "Stock", "IsActive")
-            .WithRelatedEntity<ProductTag>("ProductTag")
-                .WithParentKey(t => t.ProductId)
-                .OnAdded(t => new Dictionary<string, string?> { ["Tag"] = t.Tag })
-                .OnRemoved(t => new Dictionary<string, string?> { ["Tag"] = t.Tag });
-    });
+    options.ConfigureEntity<Product>("Product")
+        .WithKey(p => p.Id)
+        .Properties("Name", "Description", "Price", "Stock", "IsActive")
+        .WithRelatedEntity<ProductTag>("ProductTag")
+            .WithParentKey(t => t.ProductId)
+            .Properties("Tag");
 })
 .UseDapper<DapperContext>()
 .UsePostgreSql()
@@ -211,7 +207,16 @@ CREATE INDEX ix_audit_log_source_key ON public.audit_log (source_key) INCLUDE (s
       "timestamp": "2024-12-15T11:00:00Z",
       "related": "ProductTag",
       "fields": [
-        { "name": "Tag", "after": "Gaming" }
+        { "name": "Tag", "value": "Gaming" }
+      ]
+    },
+    {
+      "action": "Removed",
+      "user": "admin@example.com",
+      "timestamp": "2024-12-15T11:30:00Z",
+      "related": "ProductTag",
+      "fields": [
+        { "name": "Tag", "value": "Gaming" }
       ]
     },
     {
@@ -242,11 +247,11 @@ var result = await auditQueryService.GetBySourceNameAndKeyAsync("Product", "42")
 ```
 
 **Returns:** `AuditQueryResult?`
-| Property | Value |
-|----------|-------|
-| SourceName | Product |
-| SourceKey | 42 |
-| AuditLog | `{"auditLog":[...]}` |
+| Property         | Value                            |
+|----------------|--------------------------|
+| SourceName  | Product                        |
+| SourceKey      | 42                                 |
+| AuditLog        | `{"auditLog":[...]}` |
 
 ### Get audit logs by entity type (with pagination)
 
@@ -255,11 +260,11 @@ var results = await auditQueryService.GetBySourceNameAsync("Product", skip: 0, t
 ```
 
 **Returns:** `IEnumerable<AuditQueryResult>`
-| SourceName | SourceKey | AuditLog |
-|------------|-----------|----------|
-| Product | 1 | `{"auditLog":[...]}` |
-| Product | 2 | `{"auditLog":[...]}` |
-| Product | 42 | `{"auditLog":[...]}` |
+| SourceName | SourceKey | AuditLog                       |
+|----------------|-------------|--------------------------|
+| Product          | 1                | `{"auditLog":[...]}` |
+| Product          | 2                | `{"auditLog":[...]}` |
+| Product          | 42              | `{"auditLog":[...]}` |
 
 ### Get audit logs by action type
 
@@ -268,9 +273,9 @@ var results = await auditQueryService.GetBySourceNameAndActionAsync("Product", A
 ```
 
 **Returns:** `IEnumerable<AuditQueryResult>`
-| SourceName | SourceKey | AuditLog |
-|------------|-----------|----------|
-| Product | 42 | `{"auditLog":[{"action":"Updated",...}]}` |
+| SourceName | SourceKey | AuditLog                                                             |
+|----------------|------------|-----------------------------------------------------|
+| Product          | 42             | `{"auditLog":[{"action":"Updated",...}]}` |
 
 ### Get audit logs by date range
 

@@ -18,7 +18,7 @@ public class PostgreSqlTableStructureValidationTests
         {
             TableName = "AuditLog",
             Schema = "public",
-            ChangeLogFormat = ChangeLogFormat.Json
+            LogFormat = LogFormat.Json
         };
         var provider = new PostgreSqlDatabaseProvider(options);
 
@@ -38,7 +38,7 @@ public class PostgreSqlTableStructureValidationTests
         {
             TableName = "AuditLog",
             Schema = "public",
-            ChangeLogFormat = ChangeLogFormat.Json
+            LogFormat = LogFormat.Json
         };
         var provider = new PostgreSqlDatabaseProvider(options);
 
@@ -60,7 +60,7 @@ public class PostgreSqlTableStructureValidationTests
         {
             TableName = "AuditLog",
             Schema = "public",
-            ChangeLogFormat = ChangeLogFormat.Xml
+            LogFormat = LogFormat.Xml
         };
         var provider = new PostgreSqlDatabaseProvider(options);
 
@@ -80,7 +80,7 @@ public class PostgreSqlTableStructureValidationTests
     public void PostgreSql_ValidateColumn_CorrectLogId_ShouldReturnTrue()
     {
         // Arrange
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var provider = new PostgreSqlDatabaseProvider(options);
         var actual = new TableColumnInfo
         {
@@ -102,7 +102,7 @@ public class PostgreSqlTableStructureValidationTests
     public void PostgreSql_ValidateColumn_WrongLogIdType_ShouldReturnFalse()
     {
         // Arrange
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var provider = new PostgreSqlDatabaseProvider(options);
         var actual = new TableColumnInfo
         {
@@ -124,7 +124,7 @@ public class PostgreSqlTableStructureValidationTests
     public void PostgreSql_ValidateColumn_CorrectSourceName_ShouldReturnTrue()
     {
         // Arrange
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var provider = new PostgreSqlDatabaseProvider(options);
         var actual = new TableColumnInfo
         {
@@ -146,7 +146,7 @@ public class PostgreSqlTableStructureValidationTests
     public void PostgreSql_ValidateColumn_SourceNameAsText_ShouldReturnTrue()
     {
         // Arrange
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var provider = new PostgreSqlDatabaseProvider(options);
         var actual = new TableColumnInfo
         {
@@ -168,7 +168,7 @@ public class PostgreSqlTableStructureValidationTests
     public void PostgreSql_ValidateColumn_SourceNameTooShort_ShouldReturnFalse()
     {
         // Arrange
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var provider = new PostgreSqlDatabaseProvider(options);
         var actual = new TableColumnInfo
         {
@@ -190,7 +190,7 @@ public class PostgreSqlTableStructureValidationTests
     public void PostgreSql_ValidateColumn_AuditLogJsonAsJsonb_ShouldReturnTrue()
     {
         // Arrange
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var provider = new PostgreSqlDatabaseProvider(options);
         var actual = new TableColumnInfo
         {
@@ -212,7 +212,7 @@ public class PostgreSqlTableStructureValidationTests
     public void PostgreSql_ValidateColumn_AuditLogJsonAsText_ShouldReturnTrue()
     {
         // Arrange - text is still accepted for backward compatibility
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var provider = new PostgreSqlDatabaseProvider(options);
         var actual = new TableColumnInfo
         {
@@ -234,7 +234,7 @@ public class PostgreSqlTableStructureValidationTests
     public void PostgreSql_ValidateColumn_AuditLogXmlCorrect_ShouldReturnTrue()
     {
         // Arrange
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Xml };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Xml };
         var provider = new PostgreSqlDatabaseProvider(options);
         var actual = new TableColumnInfo
         {
@@ -256,7 +256,7 @@ public class PostgreSqlTableStructureValidationTests
     public void PostgreSql_ValidateColumn_NullableWhenRequired_ShouldReturnFalse()
     {
         // Arrange
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var provider = new PostgreSqlDatabaseProvider(options);
         var actual = new TableColumnInfo
         {
@@ -328,7 +328,7 @@ public class PostgreSqlTableStructureValidationTests
     public void PostgreSql_ValidateColumn_OldSchemaAuditLogId_ShouldNotMatchLogId()
     {
         // This simulates the old incorrect schema that had audit_log_id SERIAL instead of log_id UUID
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var provider = new PostgreSqlDatabaseProvider(options);
 
         // Old incorrect column
@@ -350,7 +350,7 @@ public class PostgreSqlTableStructureValidationTests
     public void PostgreSql_ValidateColumn_OldSchemaChangesColumn_ShouldNotMatchAuditLog()
     {
         // This simulates the old incorrect schema that had "changes" column instead of "audit_log"
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var provider = new PostgreSqlDatabaseProvider(options);
 
         // Old incorrect column

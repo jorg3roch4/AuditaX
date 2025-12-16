@@ -49,7 +49,7 @@ services.AddAuditaX(configuration)
   "AuditaX": {
     "TableName": "audit_log",
     "Schema": "public",
-    "ChangeLogFormat": "Json",
+    "LogFormat": "Json",
     "AutoCreateTable": true,
     "EnableLogging": true
   }

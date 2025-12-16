@@ -1,6 +1,5 @@
 using AuditaX.Configuration;
 using AuditaX.Enums;
-using Microsoft.Extensions.Logging;
 
 namespace AuditaX.Tests.Configuration;
 
@@ -14,101 +13,83 @@ public class AuditaXOptionsTests
 
         // Assert
         options.EnableLogging.Should().BeFalse();
-        options.MinimumLogLevel.Should().Be(LogLevel.Information);
         options.TableName.Should().Be("AuditLog");
         options.Schema.Should().Be("dbo");
         options.AutoCreateTable.Should().BeFalse();
-        options.ChangeLogFormat.Should().Be(ChangeLogFormat.Xml);
+        options.LogFormat.Should().Be(LogFormat.Xml);
     }
 
     [Fact]
-    public void ConfigureEntities_ShouldRegisterEntity()
+    public void ConfigureEntity_ShouldRegisterEntity()
     {
         // Arrange
         var options = new AuditaXOptions();
 
         // Act
-        options.ConfigureEntities(builder =>
-        {
-            builder.AuditEntity<TestEntity>("TestEntity")
-                .WithKey(e => e.Id)
-                .AuditProperties("Name");
-        });
+        options.ConfigureEntity<TestEntity>("TestEntity")
+            .WithKey(e => e.Id)
+            .Properties("Name");
 
         // Assert
-        options.IsAuditableEntity(typeof(TestEntity)).Should().BeTrue();
-        options.GetEntityConfiguration(typeof(TestEntity)).Should().NotBeNull();
+        options.GetEntity(typeof(TestEntity)).Should().NotBeNull();
     }
 
     [Fact]
-    public void ConfigureEntities_WithRelated_ShouldRegisterBoth()
+    public void ConfigureEntity_WithRelated_ShouldRegisterBoth()
     {
         // Arrange
         var options = new AuditaXOptions();
 
         // Act
-        options.ConfigureEntities(builder =>
-        {
-            builder.AuditEntity<TestEntity>("TestEntity")
-                .WithKey(e => e.Id)
-                .AuditProperties("Name")
-                .WithRelatedEntity<TestRelatedEntity>("TestRelated")
-                .WithParentKey(r => r.ParentId)
-                .OnAdded(r => new Dictionary<string, string?> { ["Value"] = r.Value });
-        });
+        options.ConfigureEntity<TestEntity>("TestEntity")
+            .WithKey(e => e.Id)
+            .Properties("Name")
+            .WithRelatedEntity<TestRelatedEntity>("TestRelated")
+            .WithParentKey(r => r.ParentId)
+            .Properties("Value");
 
         // Assert
-        options.IsAuditableEntity(typeof(TestEntity)).Should().BeTrue();
-        options.IsRelatedEntity(typeof(TestRelatedEntity)).Should().BeTrue();
+        options.GetEntity(typeof(TestEntity)).Should().NotBeNull();
+        options.GetRelatedEntity(typeof(TestRelatedEntity)).Should().NotBeNull();
     }
 
     [Fact]
-    public void GetEntityConfiguration_ForUnregistered_ShouldReturnNull()
+    public void GetEntity_ForUnregistered_ShouldReturnNull()
     {
         // Arrange
         var options = new AuditaXOptions();
 
         // Act
-        var config = options.GetEntityConfiguration(typeof(TestEntity));
+        var config = options.GetEntity(typeof(TestEntity));
 
         // Assert
         config.Should().BeNull();
     }
 
     [Fact]
-    public void IsAuditableEntity_ForUnregistered_ShouldReturnFalse()
-    {
-        // Arrange
-        var options = new AuditaXOptions();
-
-        // Act & Assert
-        options.IsAuditableEntity(typeof(TestEntity)).Should().BeFalse();
-    }
-
-    [Fact]
-    public void ChangeLogFormat_Json_ShouldBeConfigurable()
+    public void LogFormat_Json_ShouldBeConfigurable()
     {
         // Arrange & Act
         var options = new AuditaXOptions
         {
-            ChangeLogFormat = ChangeLogFormat.Json
+            LogFormat = LogFormat.Json
         };
 
         // Assert
-        options.ChangeLogFormat.Should().Be(ChangeLogFormat.Json);
+        options.LogFormat.Should().Be(LogFormat.Json);
     }
 
     [Fact]
-    public void ChangeLogFormat_Xml_ShouldBeConfigurable()
+    public void LogFormat_Xml_ShouldBeConfigurable()
     {
         // Arrange & Act
         var options = new AuditaXOptions
         {
-            ChangeLogFormat = ChangeLogFormat.Xml
+            LogFormat = LogFormat.Xml
         };
 
         // Assert
-        options.ChangeLogFormat.Should().Be(ChangeLogFormat.Xml);
+        options.LogFormat.Should().Be(LogFormat.Xml);
     }
 
     [Fact]
@@ -164,49 +145,33 @@ public class AuditaXOptionsTests
     }
 
     [Fact]
-    public void MinimumLogLevel_ShouldBeConfigurable()
-    {
-        // Arrange & Act
-        var options = new AuditaXOptions
-        {
-            MinimumLogLevel = LogLevel.Debug
-        };
-
-        // Assert
-        options.MinimumLogLevel.Should().Be(LogLevel.Debug);
-    }
-
-    [Fact]
-    public void ConfigureEntities_MultipleEntities_ShouldRegisterAll()
+    public void ConfigureEntity_MultipleEntities_ShouldRegisterAll()
     {
         // Arrange
         var options = new AuditaXOptions();
 
         // Act
-        options.ConfigureEntities(builder =>
-        {
-            builder.AuditEntity<TestEntity>("TestEntity")
-                .WithKey(e => e.Id)
-                .AuditProperties("Name");
+        options.ConfigureEntity<TestEntity>("TestEntity")
+            .WithKey(e => e.Id)
+            .Properties("Name");
 
-            builder.AuditEntity<AnotherTestEntity>("AnotherTestEntity")
-                .WithKey(e => e.Id)
-                .AuditProperties("Description");
-        });
+        options.ConfigureEntity<AnotherTestEntity>("AnotherTestEntity")
+            .WithKey(e => e.Id)
+            .Properties("Description");
 
         // Assert
-        options.IsAuditableEntity(typeof(TestEntity)).Should().BeTrue();
-        options.IsAuditableEntity(typeof(AnotherTestEntity)).Should().BeTrue();
+        options.GetEntity(typeof(TestEntity)).Should().NotBeNull();
+        options.GetEntity(typeof(AnotherTestEntity)).Should().NotBeNull();
     }
 
     [Fact]
-    public void IsRelatedEntity_ForUnregistered_ShouldReturnFalse()
+    public void GetRelatedEntity_ForUnregistered_ShouldReturnNull()
     {
         // Arrange
         var options = new AuditaXOptions();
 
         // Act & Assert
-        options.IsRelatedEntity(typeof(TestRelatedEntity)).Should().BeFalse();
+        options.GetRelatedEntity(typeof(TestRelatedEntity)).Should().BeNull();
     }
 
     // Test entities

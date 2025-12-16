@@ -5,7 +5,7 @@ namespace AuditaX.Exceptions;
 
 /// <summary>
 /// Exception thrown when the audit log column type in the database does not match
-/// the configured ChangeLogFormat (XML vs JSON).
+/// the configured LogFormat (XML vs JSON).
 /// </summary>
 public class AuditColumnFormatMismatchException : Exception
 {
@@ -22,7 +22,7 @@ public class AuditColumnFormatMismatchException : Exception
     /// <summary>
     /// Gets the expected format based on configuration.
     /// </summary>
-    public ChangeLogFormat ExpectedFormat { get; }
+    public LogFormat ExpectedFormat { get; }
 
     /// <summary>
     /// Gets the actual column type in the database.
@@ -45,7 +45,7 @@ public class AuditColumnFormatMismatchException : Exception
     public AuditColumnFormatMismatchException(
         string tableName,
         string columnName,
-        ChangeLogFormat expectedFormat,
+        LogFormat expectedFormat,
         string expectedColumnType,
         string actualColumnType)
         : base(BuildMessage(tableName, columnName, expectedFormat, expectedColumnType, actualColumnType))
@@ -69,7 +69,7 @@ public class AuditColumnFormatMismatchException : Exception
     public AuditColumnFormatMismatchException(
         string tableName,
         string columnName,
-        ChangeLogFormat expectedFormat,
+        LogFormat expectedFormat,
         string expectedColumnType,
         string actualColumnType,
         Exception innerException)
@@ -85,12 +85,12 @@ public class AuditColumnFormatMismatchException : Exception
     private static string BuildMessage(
         string tableName,
         string columnName,
-        ChangeLogFormat expectedFormat,
+        LogFormat expectedFormat,
         string expectedColumnType,
         string actualColumnType)
     {
         return $"Audit column format mismatch in table '{tableName}'. " +
-               $"Configuration specifies ChangeLogFormat.{expectedFormat} which requires column '{columnName}' " +
+               $"Configuration specifies LogFormat.{expectedFormat} which requires column '{columnName}' " +
                $"to be of type '{expectedColumnType}', but the actual column type is '{actualColumnType}'. " +
                $"Please either:\n" +
                $"  1. Change the configuration to match the database column type, or\n" +

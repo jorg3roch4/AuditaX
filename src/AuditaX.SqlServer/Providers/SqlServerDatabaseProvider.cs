@@ -59,7 +59,7 @@ public sealed class SqlServerDatabaseProvider(AuditaXOptions options) : IDatabas
     {
         get
         {
-            var columnType = options.ChangeLogFormat == ChangeLogFormat.Json
+            var columnType = options.LogFormat == LogFormat.Json
                 ? "NVARCHAR(MAX)"
                 : "XML";
 
@@ -122,11 +122,11 @@ public sealed class SqlServerDatabaseProvider(AuditaXOptions options) : IDatabas
     /// <inheritdoc />
     public IReadOnlyList<ExpectedColumnDefinition> GetExpectedTableStructure()
     {
-        var auditLogType = options.ChangeLogFormat == ChangeLogFormat.Xml
+        var auditLogType = options.LogFormat == LogFormat.Xml
             ? new[] { "xml" }
             : new[] { "nvarchar", "varchar" };
 
-        var auditLogMinLength = options.ChangeLogFormat == ChangeLogFormat.Xml
+        var auditLogMinLength = options.LogFormat == LogFormat.Xml
             ? (int?)null
             : -1; // -1 means MAX
 
@@ -224,25 +224,25 @@ END";
 
     /// <inheritdoc />
     public string GetSelectBySourceNameAndDateSql(int skip, int take) =>
-        options.ChangeLogFormat == ChangeLogFormat.Json
+        options.LogFormat == LogFormat.Json
             ? GetSelectBySourceNameAndDateJsonSql(skip, take)
             : GetSelectBySourceNameAndDateXmlSql(skip, take);
 
     /// <inheritdoc />
     public string SelectBySourceNameAndActionSql =>
-        options.ChangeLogFormat == ChangeLogFormat.Json
+        options.LogFormat == LogFormat.Json
             ? SelectBySourceNameAndActionJsonSql
             : SelectBySourceNameAndActionXmlSql;
 
     /// <inheritdoc />
     public string SelectBySourceNameActionAndDateSql =>
-        options.ChangeLogFormat == ChangeLogFormat.Json
+        options.LogFormat == LogFormat.Json
             ? SelectBySourceNameActionAndDateJsonSql
             : SelectBySourceNameActionAndDateXmlSql;
 
     /// <inheritdoc />
     public string GetSelectSummaryBySourceNameSql(int skip, int take) =>
-        options.ChangeLogFormat == ChangeLogFormat.Json
+        options.LogFormat == LogFormat.Json
             ? GetSelectSummaryBySourceNameJsonSql(skip, take)
             : GetSelectSummaryBySourceNameXmlSql(skip, take);
 

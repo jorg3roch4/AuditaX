@@ -116,7 +116,7 @@ Provides the current user for audit logging. Default implementation uses `HttpCo
 |--------|------|---------|-------------|
 | `TableName` | string | `"AuditLog"` | Name of the audit log table |
 | `Schema` | string | `"dbo"` | Database schema |
-| `ChangeLogFormat` | string | `"Json"` | `"Json"` or `"Xml"` |
+| `LogFormat` | string | `"Json"` | `"Json"` or `"Xml"` |
 | `AutoCreateTable` | bool | `true` | Create table if not exists |
 | `EnableLogging` | bool | `true` | Enable/disable audit logging |
 | `Entities` | object | - | Entity-specific configuration |
@@ -129,7 +129,7 @@ Provides the current user for audit logging. Default implementation uses `HttpCo
     "EntityTypeName": {
       "SourceName": "DisplayName",
       "Key": "PrimaryKeyPropertyName",
-      "AuditProperties": [ "Prop1", "Prop2", "Prop3" ]
+      "Properties": [ "Prop1", "Prop2", "Prop3" ]
     }
   }
 }
@@ -142,16 +142,13 @@ services.AddAuditaX(options =>
 {
     options.TableName = "AuditLog";
     options.Schema = "audit";
-    options.ChangeLogFormat = ChangeLogFormat.Xml;
+    options.LogFormat = LogFormat.Xml;
     options.AutoCreateTable = true;
     options.EnableLogging = true;
 
-    options.ConfigureEntity<Product>(entity =>
-    {
-        entity.HasSourceName("Products");
-        entity.HasKey(p => p.ProductId.ToString());
-        entity.AuditProperties(p => p.Name, p => p.Price, p => p.Stock);
-    });
+    options.ConfigureEntity<Product>("Product")
+        .WithKey(p => p.ProductId)
+        .Properties("Name", "Price", "Stock");
 })
 .UseDapper<DapperContext>()
 .UseSqlServer()

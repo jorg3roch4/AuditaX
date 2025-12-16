@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -76,18 +72,18 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
             var entityType = entry.Entity.GetType();
 
             // Check if this is a configured auditable entity
-            var entityConfig = _options.GetEntityConfiguration(entityType);
-            if (entityConfig is not null)
+            var entityOptions = _options.GetEntity(entityType);
+            if (entityOptions is not null)
             {
-                ProcessEntityChanges(context, entry, entityConfig, user, auditLogs);
+                ProcessEntityChanges(context, entry, entityOptions, user, auditLogs);
                 continue;
             }
 
             // Check if this is a configured related entity
-            var relatedConfig = _options.GetRelatedConfiguration(entityType);
-            if (relatedConfig is not null)
+            var relatedOptions = _options.GetRelatedEntity(entityType);
+            if (relatedOptions is not null)
             {
-                ProcessRelatedEntityChanges(context, entry, relatedConfig, user, auditLogs);
+                ProcessRelatedEntityChanges(context, entry, relatedOptions, user, auditLogs);
             }
         }
     }
@@ -95,28 +91,29 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
     private void ProcessEntityChanges(
         DbContext context,
         EntityEntry entry,
-        AuditEntityConfiguration config,
+        EntityOptions entityOptions,
         string user,
         DbSet<Entities.AuditLog> auditLogs)
     {
-        var sourceKey = config.KeySelector(entry.Entity);
+        var sourceKey = entityOptions.GetKey(entry.Entity);
+        var displayName = entityOptions.DisplayName ?? entry.Entity.GetType().Name;
 
         switch (entry.State)
         {
             case EntityState.Added:
-                CreateAuditEntry(auditLogs, config.EntityName, sourceKey, AuditAction.Created, user);
+                CreateAuditEntry(auditLogs, displayName, sourceKey, AuditAction.Created, user);
                 break;
 
             case EntityState.Modified:
-                var changes = GetFieldChanges(entry, config);
+                var changes = GetFieldChanges(entry, entityOptions);
                 if (changes.Count > 0)
                 {
-                    UpdateAuditEntry(context, auditLogs, config.EntityName, sourceKey, changes, user);
+                    UpdateAuditEntry(context, auditLogs, displayName, sourceKey, changes, user);
                 }
                 break;
 
             case EntityState.Deleted:
-                UpdateAuditEntryWithAction(context, auditLogs, config.EntityName, sourceKey, AuditAction.Deleted, user);
+                UpdateAuditEntryWithAction(context, auditLogs, displayName, sourceKey, AuditAction.Deleted, user);
                 break;
         }
     }
@@ -124,42 +121,64 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
     private void ProcessRelatedEntityChanges(
         DbContext context,
         EntityEntry entry,
-        RelatedEntityConfiguration config,
+        RelatedEntityOptions relatedOptions,
         string user,
         DbSet<Entities.AuditLog> auditLogs)
     {
-        var parentKey = config.ParentKeySelector(entry.Entity);
-        var parentConfig = config.ParentConfiguration;
+        var parentKey = relatedOptions.GetParentKey(entry.Entity);
+        var parentOptions = relatedOptions.ParentEntityOptions;
+
+        if (parentOptions is null)
+            return;
+
+        var parentDisplayName = parentOptions.DisplayName ?? "Unknown";
+        var relatedName = relatedOptions.RelatedName ?? "Related";
 
         switch (entry.State)
         {
             case EntityState.Added:
-                var addedFields = config.OnAddedMapper(entry.Entity);
+                var addedFields = relatedOptions.GetFieldChanges(entry.Entity);
                 if (addedFields.Count > 0)
                 {
                     UpdateAuditEntryWithRelated(
                         context,
                         auditLogs,
-                        parentConfig.EntityName,
+                        parentDisplayName,
                         parentKey,
                         AuditAction.Added,
-                        config.RelatedName,
+                        relatedName,
                         addedFields,
                         user);
                 }
                 break;
 
+            case EntityState.Modified:
+                var modifiedFields = GetRelatedFieldChanges(entry, relatedOptions);
+                if (modifiedFields.Count > 0)
+                {
+                    UpdateAuditEntryWithRelated(
+                        context,
+                        auditLogs,
+                        parentDisplayName,
+                        parentKey,
+                        AuditAction.Updated,
+                        relatedName,
+                        modifiedFields,
+                        user);
+                }
+                break;
+
             case EntityState.Deleted:
-                var removedFields = config.OnRemovedMapper(entry.Entity);
+                var removedFields = relatedOptions.GetFieldChanges(entry.Entity);
                 if (removedFields.Count > 0)
                 {
                     UpdateAuditEntryWithRelated(
                         context,
                         auditLogs,
-                        parentConfig.EntityName,
+                        parentDisplayName,
                         parentKey,
                         AuditAction.Removed,
-                        config.RelatedName,
+                        relatedName,
                         removedFields,
                         user);
                 }
@@ -167,13 +186,46 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
         }
     }
 
-    private List<FieldChange> GetFieldChanges(EntityEntry entry, AuditEntityConfiguration config)
+    private List<FieldChange> GetFieldChanges(EntityEntry entry, EntityOptions entityOptions)
     {
         List<FieldChange> changes = [];
 
         foreach (var property in entry.Properties)
         {
-            if (!config.AuditableProperties.Contains(property.Metadata.Name))
+            if (!entityOptions.ShouldAuditProperty(property.Metadata.Name))
+            {
+                continue;
+            }
+
+            if (!property.IsModified)
+            {
+                continue;
+            }
+
+            var originalValue = _changeLogService.ConvertToString(property.OriginalValue);
+            var currentValue = _changeLogService.ConvertToString(property.CurrentValue);
+
+            if (_changeLogService.HasChanged(property.OriginalValue, property.CurrentValue))
+            {
+                changes.Add(new FieldChange
+                {
+                    Name = property.Metadata.Name,
+                    Before = originalValue,
+                    After = currentValue
+                });
+            }
+        }
+
+        return changes;
+    }
+
+    private List<FieldChange> GetRelatedFieldChanges(EntityEntry entry, RelatedEntityOptions relatedOptions)
+    {
+        List<FieldChange> changes = [];
+
+        foreach (var property in entry.Properties)
+        {
+            if (!relatedOptions.ShouldAuditProperty(property.Metadata.Name))
             {
                 continue;
             }

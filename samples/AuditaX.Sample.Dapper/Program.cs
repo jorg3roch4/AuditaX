@@ -109,7 +109,7 @@ static SampleConfiguration SelectConfiguration()
     return new SampleConfiguration
     {
         Database = database == "SQL Server" ? DatabaseType.SqlServer : DatabaseType.PostgreSql,
-        Format = format == "JSON" ? ChangeLogFormat.Json : ChangeLogFormat.Xml,
+        Format = format == "JSON" ? LogFormat.Json : LogFormat.Xml,
         ConfigMode = configMode.StartsWith("FluentApi") ? ConfigurationMode.FluentApi : ConfigurationMode.AppSettings
     };
 }
@@ -123,7 +123,7 @@ static SampleConfiguration ParseConfiguration(string[] args)
     return new SampleConfiguration
     {
         Database = db == "postgresql" || db == "pg" ? DatabaseType.PostgreSql : DatabaseType.SqlServer,
-        Format = fmt == "xml" ? ChangeLogFormat.Xml : ChangeLogFormat.Json,
+        Format = fmt == "xml" ? LogFormat.Xml : LogFormat.Json,
         ConfigMode = mode == "appsettings" ? ConfigurationMode.AppSettings : ConfigurationMode.FluentApi
     };
 }
@@ -142,7 +142,7 @@ static void ConfigureAuditaX(IServiceCollection services, IConfiguration configu
         {
             options.TableName = tableName;
             options.Schema = schema;
-            options.ChangeLogFormat = config.Format;
+            options.LogFormat = config.Format;
         });
     }
     else
@@ -154,18 +154,14 @@ static void ConfigureAuditaX(IServiceCollection services, IConfiguration configu
             options.Schema = schema;
             options.AutoCreateTable = true;
             options.EnableLogging = true;
-            options.ChangeLogFormat = config.Format;
+            options.LogFormat = config.Format;
 
-            options.ConfigureEntities(entities =>
-            {
-                entities.AuditEntity<Product>("Product")
-                    .WithKey(p => p.Id)
-                    .AuditProperties("Name", "Description", "Price", "Stock", "IsActive")
-                    .WithRelatedEntity<ProductTag>("ProductTag")
-                        .WithParentKey(t => t.ProductId)
-                        .OnAdded(t => new Dictionary<string, string?> { ["Tag"] = t.Tag })
-                        .OnRemoved(t => new Dictionary<string, string?> { ["Tag"] = t.Tag });
-            });
+            options.ConfigureEntity<Product>("Product")
+                .WithKey(p => p.Id)
+                .Properties("Name", "Description", "Price", "Stock", "IsActive")
+                .WithRelatedEntity<ProductTag>("ProductTag")
+                    .WithParentKey(t => t.ProductId)
+                    .Properties("Tag");
         });
     }
 

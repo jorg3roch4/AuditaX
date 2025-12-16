@@ -25,15 +25,15 @@ Npgsql.EntityFrameworkCore.PostgreSQL
     "Schema": "public",
     "AutoCreateTable": true,
     "EnableLogging": true,
-    "ChangeLogFormat": "Xml",
+    "LogFormat": "Xml",
     "Entities": {
       "Product": {
         "Key": "Id",
-        "AuditProperties": ["Name", "Description", "Price", "Stock", "IsActive"],
+        "Properties": ["Name", "Description", "Price", "Stock", "IsActive"],
         "RelatedEntities": {
           "ProductTag": {
             "ParentKey": "ProductId",
-            "CaptureProperties": ["Tag"]
+            "Properties": ["Tag"]
           }
         }
       }
@@ -51,18 +51,14 @@ builder.Services.AddAuditaX(options =>
     options.Schema = "public";
     options.AutoCreateTable = true;
     options.EnableLogging = true;
-    options.ChangeLogFormat = ChangeLogFormat.Xml;
+    options.LogFormat = LogFormat.Xml;
 
-    options.ConfigureEntities(entities =>
-    {
-        entities.AuditEntity<Product>("Product")
-            .WithKey(p => p.Id)
-            .AuditProperties("Name", "Description", "Price", "Stock", "IsActive")
-            .WithRelatedEntity<ProductTag>("ProductTag")
-                .WithParentKey(t => t.ProductId)
-                .OnAdded(t => new Dictionary<string, string?> { ["Tag"] = t.Tag })
-                .OnRemoved(t => new Dictionary<string, string?> { ["Tag"] = t.Tag });
-    });
+    options.ConfigureEntity<Product>("Product")
+        .WithKey(p => p.Id)
+        .Properties("Name", "Description", "Price", "Stock", "IsActive")
+        .WithRelatedEntity<ProductTag>("ProductTag")
+            .WithParentKey(t => t.ProductId)
+            .Properties("Tag");
 })
 .UseEntityFramework<AppDbContext>()
 .UsePostgreSql()
@@ -172,7 +168,10 @@ CREATE INDEX ix_audit_log_source_key ON public.audit_log (source_key) INCLUDE (s
     <Field Name="Stock" Before="100" After="95" />
   </Entry>
   <Entry Action="Added" User="admin@example.com" Timestamp="2024-12-15T11:00:00Z" Related="ProductTag">
-    <Field Name="Tag" After="Gaming" />
+    <Field Name="Tag" Value="Gaming" />
+  </Entry>
+  <Entry Action="Removed" User="admin@example.com" Timestamp="2024-12-15T11:30:00Z" Related="ProductTag">
+    <Field Name="Tag" Value="Gaming" />
   </Entry>
   <Entry Action="Deleted" User="admin@example.com" Timestamp="2024-12-15T12:00:00Z" />
 </AuditLog>

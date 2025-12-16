@@ -48,28 +48,28 @@ public class DapperAuditUnitOfWork(
     private (string SourceName, string SourceKey) GetEntityInfo<T>(T entity) where T : class
     {
         var entityType = typeof(T);
-        var config = options.GetEntityConfiguration(entityType)
+        var config = options.GetEntity(entityType)
             ?? throw new InvalidOperationException(
                 $"Entity type '{entityType.Name}' is not configured for auditing. " +
                 $"Configure it using AuditaX options in appsettings.json or fluent API.");
 
-        var sourceKey = config.KeySelector(entity);
+        var sourceKey = config.GetKey(entity);
 
-        return (config.EntityName, sourceKey);
+        return (config.DisplayName ?? entityType.Name, sourceKey);
     }
 
     private List<FieldChange> GetFieldChanges<T>(T original, T modified) where T : class
     {
         var changes = new List<FieldChange>();
         var entityType = typeof(T);
-        var config = options.GetEntityConfiguration(entityType);
+        var config = options.GetEntity(entityType);
 
         if (config is null)
         {
             return changes;
         }
 
-        foreach (var propertyName in config.AuditableProperties)
+        foreach (var propertyName in config.Properties)
         {
             var property = entityType.GetProperty(propertyName);
             if (property is null)

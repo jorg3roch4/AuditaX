@@ -48,7 +48,7 @@ services.AddAuditaX(configuration)
   "AuditaX": {
     "TableName": "AuditLog",
     "Schema": "dbo",
-    "ChangeLogFormat": "Json",
+    "LogFormat": "Json",
     "AutoCreateTable": true,
     "EnableLogging": true
   }

@@ -1,9 +1,9 @@
 namespace AuditaX.Enums;
 
 /// <summary>
-/// Specifies the format used to store audit log entries in the ChangeLog field.
+/// Specifies the format used to store audit log entries.
 /// </summary>
-public enum ChangeLogFormat
+public enum LogFormat
 {
     /// <summary>
     /// XML format. Default for backward compatibility.

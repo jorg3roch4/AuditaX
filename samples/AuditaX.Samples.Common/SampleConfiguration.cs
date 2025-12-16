@@ -9,13 +9,13 @@ namespace AuditaX.Samples.Common;
 public class SampleConfiguration
 {
     public DatabaseType Database { get; set; }
-    public ChangeLogFormat Format { get; set; }
+    public LogFormat Format { get; set; }
     public ConfigurationMode ConfigMode { get; set; }
 
     public string GetDatabaseName(string ormPrefix)
     {
         var dbPrefix = Database == DatabaseType.SqlServer ? "SqlServer" : "PostgreSql";
-        var formatSuffix = Format == ChangeLogFormat.Json ? "Json" : "Xml";
+        var formatSuffix = Format == LogFormat.Json ? "Json" : "Xml";
 
         return Database == DatabaseType.SqlServer
             ? $"AuditaX{ormPrefix}{dbPrefix}{formatSuffix}"
@@ -34,7 +34,7 @@ public class SampleConfiguration
     public string GetDisplayName()
     {
         var db = Database == DatabaseType.SqlServer ? "SQL Server" : "PostgreSQL";
-        var format = Format == ChangeLogFormat.Json ? "JSON" : "XML";
+        var format = Format == LogFormat.Json ? "JSON" : "XML";
         var config = ConfigMode == ConfigurationMode.FluentApi ? "FluentApi" : "AppSettings";
         return $"{db} + {format} + {config}";
     }

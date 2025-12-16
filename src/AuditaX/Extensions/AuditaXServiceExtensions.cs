@@ -1,8 +1,6 @@
-using System;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging;
 using AuditaX.Configuration;
 using AuditaX.Enums;
 using AuditaX.Interfaces;
@@ -16,6 +14,11 @@ namespace AuditaX.Extensions;
 /// </summary>
 public static class AuditaXServiceExtensions
 {
+    /// <summary>
+    /// Configuration section name in appsettings.json.
+    /// </summary>
+    private const string SectionName = "AuditaX";
+
     /// <summary>
     /// Adds AuditaX services with fluent configuration only.
     /// </summary>
@@ -42,11 +45,7 @@ public static class AuditaXServiceExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var settings = new AuditaXSettings();
-        configuration.GetSection(AuditaXSettings.SectionName).Bind(settings);
-
-        var options = MapSettingsToOptions(settings);
-
+        var options = LoadFromConfiguration(configuration);
         return AddAuditaXCore(services, options);
     }
 
@@ -63,10 +62,7 @@ public static class AuditaXServiceExtensions
         IConfiguration configuration,
         Action<AuditaXOptions> configure)
     {
-        var settings = new AuditaXSettings();
-        configuration.GetSection(AuditaXSettings.SectionName).Bind(settings);
-
-        var options = MapSettingsToOptions(settings);
+        var options = LoadFromConfiguration(configuration);
 
         // Apply fluent configuration on top of appsettings
         configure(options);
@@ -74,41 +70,76 @@ public static class AuditaXServiceExtensions
         return AddAuditaXCore(services, options);
     }
 
-    private static AuditaXOptions MapSettingsToOptions(AuditaXSettings settings)
+    /// <summary>
+    /// Loads AuditaXOptions from IConfiguration.
+    /// </summary>
+    private static AuditaXOptions LoadFromConfiguration(IConfiguration configuration)
     {
-        var options = new AuditaXOptions
-        {
-            EnableLogging = settings.EnableLogging,
-            TableName = settings.TableName,
-            Schema = settings.Schema,
-            AutoCreateTable = settings.AutoCreateTable
-        };
+        var section = configuration.GetSection(SectionName);
+        var options = new AuditaXOptions();
 
-        // Parse log level
-        if (Enum.TryParse<LogLevel>(settings.MinimumLogLevel, true, out var logLevel))
+        // Bind simple properties
+        if (section["EnableLogging"] is { } enableLogging)
+            options.EnableLogging = bool.TryParse(enableLogging, out var el) && el;
+
+        if (section["TableName"] is { } tableName)
+            options.TableName = tableName;
+
+        if (section["Schema"] is { } schema)
+            options.Schema = schema;
+
+        if (section["AutoCreateTable"] is { } autoCreate)
+            options.AutoCreateTable = bool.TryParse(autoCreate, out var ac) && ac;
+
+        if (section["LogFormat"] is { } logFormat)
         {
-            options.MinimumLogLevel = logLevel;
+            if (Enum.TryParse<LogFormat>(logFormat, true, out var lf))
+                options.LogFormat = lf;
         }
 
-        // Parse ChangeLog format
-        if (Enum.TryParse<ChangeLogFormat>(settings.ChangeLogFormat, true, out var changeLogFormat))
+        // Bind entity configurations
+        var entitiesSection = section.GetSection("Entities");
+        foreach (var entitySection in entitiesSection.GetChildren())
         {
-            options.ChangeLogFormat = changeLogFormat;
-        }
-
-        // Map entity configurations from appsettings
-        foreach (var (entityName, entitySettings) in settings.Entities)
-        {
-            var entityConfig = new Configuration.AuditEntityConfiguration
+            var entityName = entitySection.Key;
+            var entityOptions = new EntityOptions
             {
-                EntityName = entitySettings.SourceName ?? entityName,
-                EntityType = null, // Will be resolved at runtime
-                KeyPropertyName = entitySettings.Key,
-                AuditableProperties = [.. entitySettings.AuditProperties]
+                DisplayName = entitySection["DisplayName"] ?? entityName,
+                Key = entitySection["Key"] ?? "Id"
             };
 
-            // Store in the name-based dictionary
-            options.NamedEntityConfigurations[entityName] = entityConfig;
+            // Bind properties list
+            var propertiesSection = entitySection.GetSection("Properties");
+            foreach (var prop in propertiesSection.GetChildren())
+            {
+                if (prop.Value is not null)
+                    entityOptions.Properties.Add(prop.Value);
+            }
+
+            // Bind related entities
+            var relatedSection = entitySection.GetSection("RelatedEntities");
+            foreach (var relatedEntitySection in relatedSection.GetChildren())
+            {
+                var relatedName = relatedEntitySection.Key;
+                var relatedOptions = new RelatedEntityOptions
+                {
+                    RelatedName = relatedName,
+                    ParentKey = relatedEntitySection["ParentKey"] ?? string.Empty,
+                    ParentEntityOptions = entityOptions
+                };
+
+                // Bind properties
+                var relatedPropertiesSection = relatedEntitySection.GetSection("Properties");
+                foreach (var prop in relatedPropertiesSection.GetChildren())
+                {
+                    if (prop.Value is not null)
+                        relatedOptions.Properties.Add(prop.Value);
+                }
+
+                entityOptions.RelatedEntities[relatedName] = relatedOptions;
+            }
+
+            options.Entities[entityName] = entityOptions;
         }
 
         return options;
@@ -122,15 +153,12 @@ public static class AuditaXServiceExtensions
         services.AddSingleton(options);
 
         // Register core services
-        // ChangeLogService requires AuditaXOptions to determine write format (XML/JSON)
-        services.AddScoped<IChangeLogService>(sp => new ChangeLogService(sp.GetRequiredService<AuditaXOptions>()));
+        services.AddScoped<IChangeLogService>(sp =>
+            new ChangeLogService(sp.GetRequiredService<AuditaXOptions>()));
         services.AddScoped<IAuditService, AuditService>();
 
         // Register default anonymous user provider (can be overridden by UseUserProvider)
         services.TryAddScoped<IAuditUserProvider, AnonymousUserProvider>();
-
-        // Note: Logging is provided by the host application.
-        // AuditaX will use ILogger<T> if available and EnableLogging is true.
 
         return new AuditaXBuilder(services, options);
     }

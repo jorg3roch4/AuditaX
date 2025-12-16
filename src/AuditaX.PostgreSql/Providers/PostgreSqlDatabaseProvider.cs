@@ -46,7 +46,7 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
     {
         get
         {
-            var castSuffix = options.ChangeLogFormat == ChangeLogFormat.Json ? "::jsonb" : "::xml";
+            var castSuffix = options.LogFormat == LogFormat.Json ? "::jsonb" : "::xml";
             return $@"INSERT INTO {FullTableName} (""{LogIdColumn}"", ""{SourceNameColumn}"", ""{SourceKeyColumn}"", ""{AuditLogColumn}"")
            VALUES (@LogId, @SourceName, @SourceKey, @AuditLogXml{castSuffix})";
         }
@@ -57,7 +57,7 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
     {
         get
         {
-            var castSuffix = options.ChangeLogFormat == ChangeLogFormat.Json ? "::jsonb" : "::xml";
+            var castSuffix = options.LogFormat == LogFormat.Json ? "::jsonb" : "::xml";
             return $@"UPDATE {FullTableName}
            SET ""{AuditLogColumn}"" = @AuditLogXml{castSuffix}
            WHERE ""{SourceNameColumn}"" = @SourceName AND ""{SourceKeyColumn}"" = @SourceKey";
@@ -76,7 +76,7 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
     {
         get
         {
-            var columnType = options.ChangeLogFormat == ChangeLogFormat.Json
+            var columnType = options.LogFormat == LogFormat.Json
                 ? "JSONB"
                 : "XML";
 
@@ -140,7 +140,7 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
     /// <inheritdoc />
     public IReadOnlyList<ExpectedColumnDefinition> GetExpectedTableStructure()
     {
-        var auditLogType = options.ChangeLogFormat == ChangeLogFormat.Xml
+        var auditLogType = options.LogFormat == LogFormat.Xml
             ? new[] { "xml" }
             : new[] { "jsonb", "json", "text" };
 
@@ -228,25 +228,25 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
 
     /// <inheritdoc />
     public string GetSelectBySourceNameAndDateSql(int skip, int take) =>
-        options.ChangeLogFormat == ChangeLogFormat.Json
+        options.LogFormat == LogFormat.Json
             ? GetSelectBySourceNameAndDateJsonSql(skip, take)
             : GetSelectBySourceNameAndDateXmlSql(skip, take);
 
     /// <inheritdoc />
     public string SelectBySourceNameAndActionSql =>
-        options.ChangeLogFormat == ChangeLogFormat.Json
+        options.LogFormat == LogFormat.Json
             ? SelectBySourceNameAndActionJsonSql
             : SelectBySourceNameAndActionXmlSql;
 
     /// <inheritdoc />
     public string SelectBySourceNameActionAndDateSql =>
-        options.ChangeLogFormat == ChangeLogFormat.Json
+        options.LogFormat == LogFormat.Json
             ? SelectBySourceNameActionAndDateJsonSql
             : SelectBySourceNameActionAndDateXmlSql;
 
     /// <inheritdoc />
     public string GetSelectSummaryBySourceNameSql(int skip, int take) =>
-        options.ChangeLogFormat == ChangeLogFormat.Json
+        options.LogFormat == LogFormat.Json
             ? GetSelectSummaryBySourceNameJsonSql(skip, take)
             : GetSelectSummaryBySourceNameXmlSql(skip, take);
 

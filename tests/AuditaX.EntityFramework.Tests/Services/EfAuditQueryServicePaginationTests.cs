@@ -20,14 +20,14 @@ public class EfAuditQueryServicePaginationTests
         {
             TableName = "AuditLog",
             Schema = "dbo",
-            ChangeLogFormat = ChangeLogFormat.Json
+            LogFormat = LogFormat.Json
         };
 
         _postgreSqlOptions = new AuditaXOptions
         {
             TableName = "audit_log",
             Schema = "public",
-            ChangeLogFormat = ChangeLogFormat.Json
+            LogFormat = LogFormat.Json
         };
     }
 
@@ -341,7 +341,7 @@ public class EfAuditQueryServicePaginationTests
         {
             TableName = "audit_log",
             Schema = "public",
-            ChangeLogFormat = ChangeLogFormat.Xml
+            LogFormat = LogFormat.Xml
         };
         var provider = new PostgreSqlDatabaseProvider(pgXmlOptions);
         var service = new EfAuditQueryService(context, provider);

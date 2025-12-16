@@ -28,14 +28,14 @@ dotnet add package AuditaX.SqlServer   # or AuditaX.PostgreSql
   "AuditaX": {
     "TableName": "AuditLog",
     "Schema": "dbo",
-    "ChangeLogFormat": "Json",
+    "LogFormat": "Json",
     "AutoCreateTable": true,
     "EnableLogging": true,
     "Entities": {
       "Product": {
         "SourceName": "Product",
         "Key": "ProductId",
-        "AuditProperties": [ "Name", "Price", "Stock" ]
+        "Properties": [ "Name", "Price", "Stock" ]
       }
     }
   }

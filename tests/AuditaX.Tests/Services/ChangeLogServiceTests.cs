@@ -25,7 +25,7 @@ public class ChangeLogServiceTests
     public void JsonFormat_ShouldGenerateJson()
     {
         // Arrange
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var service = new ChangeLogService(options);
 
         // Act
@@ -39,12 +39,12 @@ public class ChangeLogServiceTests
     public void AutoDetect_ShouldParseXml()
     {
         // Arrange
-        var xmlOptions = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Xml };
+        var xmlOptions = new AuditaXOptions { LogFormat = LogFormat.Xml };
         var xmlService = new ChangeLogService(xmlOptions);
         var xml = xmlService.CreateEntry(null, "test@example.com");
 
         // Use a different service configured for JSON to test auto-detection
-        var jsonOptions = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var jsonOptions = new AuditaXOptions { LogFormat = LogFormat.Json };
         var jsonService = new ChangeLogService(jsonOptions);
 
         // Act
@@ -59,12 +59,12 @@ public class ChangeLogServiceTests
     public void AutoDetect_ShouldParseJson()
     {
         // Arrange
-        var jsonOptions = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var jsonOptions = new AuditaXOptions { LogFormat = LogFormat.Json };
         var jsonService = new ChangeLogService(jsonOptions);
         var json = jsonService.CreateEntry(null, "test@example.com");
 
         // Use a different service configured for XML to test auto-detection
-        var xmlOptions = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Xml };
+        var xmlOptions = new AuditaXOptions { LogFormat = LogFormat.Xml };
         var xmlService = new ChangeLogService(xmlOptions);
 
         // Act
@@ -79,12 +79,12 @@ public class ChangeLogServiceTests
     public void PreserveFormat_WhenAppendingToXml_ShouldStayXml()
     {
         // Arrange - Create initial XML entry
-        var xmlOptions = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Xml };
+        var xmlOptions = new AuditaXOptions { LogFormat = LogFormat.Xml };
         var xmlService = new ChangeLogService(xmlOptions);
         var xml = xmlService.CreateEntry(null, "first@example.com");
 
         // Create a service configured for JSON
-        var jsonOptions = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var jsonOptions = new AuditaXOptions { LogFormat = LogFormat.Json };
         var jsonService = new ChangeLogService(jsonOptions);
 
         // Act - Append using JSON-configured service
@@ -103,12 +103,12 @@ public class ChangeLogServiceTests
     public void PreserveFormat_WhenAppendingToJson_ShouldStayJson()
     {
         // Arrange - Create initial JSON entry
-        var jsonOptions = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var jsonOptions = new AuditaXOptions { LogFormat = LogFormat.Json };
         var jsonService = new ChangeLogService(jsonOptions);
         var json = jsonService.CreateEntry(null, "first@example.com");
 
         // Create a service configured for XML
-        var xmlOptions = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Xml };
+        var xmlOptions = new AuditaXOptions { LogFormat = LogFormat.Xml };
         var xmlService = new ChangeLogService(xmlOptions);
 
         // Act - Append using XML-configured service
@@ -127,33 +127,33 @@ public class ChangeLogServiceTests
     public void DetectFormatType_ShouldDetectXml()
     {
         // Act & Assert
-        ChangeLogService.DetectFormatType("<AuditLog>").Should().Be(ChangeLogFormat.Xml);
-        ChangeLogService.DetectFormatType("  <AuditLog>").Should().Be(ChangeLogFormat.Xml);
+        ChangeLogService.DetectFormatType("<AuditLog>").Should().Be(LogFormat.Xml);
+        ChangeLogService.DetectFormatType("  <AuditLog>").Should().Be(LogFormat.Xml);
     }
 
     [Fact]
     public void DetectFormatType_ShouldDetectJson()
     {
         // Act & Assert
-        ChangeLogService.DetectFormatType("{\"auditLog\":[]}").Should().Be(ChangeLogFormat.Json);
-        ChangeLogService.DetectFormatType("  {\"auditLog\":[]}").Should().Be(ChangeLogFormat.Json);
-        ChangeLogService.DetectFormatType("[{\"action\":\"Created\"}]").Should().Be(ChangeLogFormat.Json);
+        ChangeLogService.DetectFormatType("{\"auditLog\":[]}").Should().Be(LogFormat.Json);
+        ChangeLogService.DetectFormatType("  {\"auditLog\":[]}").Should().Be(LogFormat.Json);
+        ChangeLogService.DetectFormatType("[{\"action\":\"Created\"}]").Should().Be(LogFormat.Json);
     }
 
     [Fact]
     public void DetectFormatType_WithNull_ShouldDefaultToXml()
     {
         // Act & Assert
-        ChangeLogService.DetectFormatType(null).Should().Be(ChangeLogFormat.Xml);
-        ChangeLogService.DetectFormatType("").Should().Be(ChangeLogFormat.Xml);
-        ChangeLogService.DetectFormatType("   ").Should().Be(ChangeLogFormat.Xml);
+        ChangeLogService.DetectFormatType(null).Should().Be(LogFormat.Xml);
+        ChangeLogService.DetectFormatType("").Should().Be(LogFormat.Xml);
+        ChangeLogService.DetectFormatType("   ").Should().Be(LogFormat.Xml);
     }
 
     [Fact]
     public void FullWorkflow_WithXml()
     {
         // Arrange
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Xml };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Xml };
         var service = new ChangeLogService(options);
         var user = "test@example.com";
 
@@ -184,7 +184,7 @@ public class ChangeLogServiceTests
     public void FullWorkflow_WithJson()
     {
         // Arrange
-        var options = new AuditaXOptions { ChangeLogFormat = ChangeLogFormat.Json };
+        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
         var service = new ChangeLogService(options);
         var user = "test@example.com";
 
