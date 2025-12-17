@@ -94,7 +94,7 @@ public class EntityFrameworkServiceExtensionsTests
         services.AddDbContext<TestDbContext>((sp, options) =>
         {
             options.UseInMemoryDatabase("TestDb_Interceptor_SqlServer");
-            options.AddAuditaXInterceptor(sp);
+            options.UseAuditaX(sp);
         });
 
         var provider = services.BuildServiceProvider();
@@ -126,7 +126,7 @@ public class EntityFrameworkServiceExtensionsTests
         services.AddDbContext<TestDbContext>((sp, options) =>
         {
             options.UseInMemoryDatabase("TestDb_Interceptor_PostgreSql");
-            options.AddAuditaXInterceptor(sp);
+            options.UseAuditaX(sp);
         });
 
         var provider = services.BuildServiceProvider();

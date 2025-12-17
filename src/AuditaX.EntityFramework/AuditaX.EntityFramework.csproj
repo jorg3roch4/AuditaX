@@ -14,9 +14,9 @@
 
         <!-- Package Identity -->
         <PackageId>AuditaX.EntityFramework</PackageId>
-        <Version>1.0.2</Version>
-        <AssemblyVersion>1.0.2</AssemblyVersion>
-        <FileVersion>1.0.2</FileVersion>
+        <Version>1.0.3</Version>
+        <AssemblyVersion>1.0.3</AssemblyVersion>
+        <FileVersion>1.0.3</FileVersion>
         <Product>AuditaX</Product>
 
         <!-- Package Metadata -->
@@ -25,7 +25,7 @@
         <Description>Entity Framework Core integration for AuditaX with automatic change tracking via SaveChanges interceptors.</Description>
         <Copyright>Copyright (c) 2025 jorg3roch4</Copyright>
         <PackageTags>audit;logging;entityframework;efcore;orm;entity-tracking;dotnet</PackageTags>
-        <PackageReleaseNotes>v1.0.2 - Compatibility updates for properties and related entities.</PackageReleaseNotes>
+        <PackageReleaseNotes>v1.0.3 - Lookup Properties: resolve FK values to display names in audit logs.</PackageReleaseNotes>
         <NeutralLanguage>en</NeutralLanguage>
         <MinClientVersion>6.0</MinClientVersion>
 

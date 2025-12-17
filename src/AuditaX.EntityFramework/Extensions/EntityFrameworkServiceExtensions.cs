@@ -1,11 +1,14 @@
 using System;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using AuditaX.EntityFramework.Contexts;
+using AuditaX.EntityFramework.Customizers;
 using AuditaX.EntityFramework.Interceptors;
 using AuditaX.EntityFramework.Repositories;
 using AuditaX.EntityFramework.Services;
 using AuditaX.EntityFramework.Validators;
+using AuditaX.Configuration;
 using AuditaX.Extensions;
 using AuditaX.Interfaces;
 
@@ -120,18 +123,59 @@ public static class EntityFrameworkServiceExtensions
     }
 
     /// <summary>
-    /// Adds the AuditaX interceptor to a DbContextOptionsBuilder.
-    /// Call this when configuring your DbContext to enable automatic change tracking.
+    /// Configures AuditaX for automatic audit logging on this DbContext.
+    /// <para>
+    /// <b>IMPORTANT:</b> This method is REQUIRED for Entity Framework Core automatic change tracking.
+    /// Without it, entity changes will not be audited.
+    /// </para>
     /// </summary>
     /// <param name="optionsBuilder">The DbContext options builder.</param>
-    /// <param name="serviceProvider">The service provider.</param>
+    /// <param name="serviceProvider">The service provider (use the (sp, options) overload of AddDbContext).</param>
     /// <returns>The options builder for chaining.</returns>
-    public static DbContextOptionsBuilder AddAuditaXInterceptor(
+    /// <remarks>
+    /// <para>This method performs two critical operations:</para>
+    /// <list type="number">
+    /// <item><description>Configures the model customizer to add AuditLog entity to your DbContext model automatically.</description></item>
+    /// <item><description>Adds the SaveChanges interceptor that captures all entity changes.</description></item>
+    /// </list>
+    /// <para>
+    /// Example usage:
+    /// <code>
+    /// // Configure AuditaX FIRST
+    /// services.AddAuditaX(options => { ... })
+    ///     .UseEntityFramework&lt;AppDbContext&gt;()
+    ///     .UseSqlServer();
+    ///
+    /// // Then register DbContext WITH AuditaX
+    /// services.AddDbContext&lt;AppDbContext&gt;((sp, options) =>
+    /// {
+    ///     options.UseSqlServer(connectionString);
+    ///     options.UseAuditaX(sp);  // Required for automatic auditing
+    /// });
+    /// </code>
+    /// </para>
+    /// </remarks>
+    public static DbContextOptionsBuilder UseAuditaX(
         this DbContextOptionsBuilder optionsBuilder,
         IServiceProvider serviceProvider)
     {
+        // Configure the model customizer options (runs once)
+        if (!AuditaXModelCustomizerOptions.IsConfigured)
+        {
+            var options = serviceProvider.GetRequiredService<AuditaXOptions>();
+            var databaseProvider = serviceProvider.GetRequiredService<IDatabaseProvider>();
+
+            AuditaXModelCustomizerOptions.Options = options;
+            AuditaXModelCustomizerOptions.DatabaseProvider = databaseProvider;
+        }
+
+        // Replace the default model customizer with ours (adds AuditLog to the model)
+        optionsBuilder.ReplaceService<IModelCustomizer, AuditaXModelCustomizer>();
+
+        // Add the interceptor for automatic change tracking
         var interceptor = serviceProvider.GetRequiredService<AuditSaveChangesInterceptor>();
         optionsBuilder.AddInterceptors(interceptor);
+
         return optionsBuilder;
     }
 }

@@ -14,9 +14,9 @@
 
         <!-- Package Identity -->
         <PackageId>AuditaX.Dapper</PackageId>
-        <Version>1.0.2</Version>
-        <AssemblyVersion>1.0.2</AssemblyVersion>
-        <FileVersion>1.0.2</FileVersion>
+        <Version>1.0.3</Version>
+        <AssemblyVersion>1.0.3</AssemblyVersion>
+        <FileVersion>1.0.3</FileVersion>
         <Product>AuditaX</Product>
 
         <!-- Package Metadata -->
@@ -25,7 +25,7 @@
         <Description>Dapper ORM integration for AuditaX with IAuditUnitOfWork for manual audit control in lightweight data access scenarios.</Description>
         <Copyright>Copyright (c) 2025 jorg3roch4</Copyright>
         <PackageTags>audit;logging;dapper;orm;entity-tracking;dotnet</PackageTags>
-        <PackageReleaseNotes>v1.0.2 - Compatibility updates for properties and related entities.</PackageReleaseNotes>
+        <PackageReleaseNotes>v1.0.3 - Lookup Properties for EF Core: resolve FK values to display names.</PackageReleaseNotes>
         <NeutralLanguage>en</NeutralLanguage>
         <MinClientVersion>6.0</MinClientVersion>
 

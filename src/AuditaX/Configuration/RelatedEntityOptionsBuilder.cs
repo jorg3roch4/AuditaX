@@ -58,6 +58,27 @@ public sealed class RelatedEntityOptionsBuilder<TParent, TRelated>
     }
 
     /// <summary>
+    /// Configures a lookup to resolve values from another entity.
+    /// Used to capture display values (e.g., RoleName) instead of foreign key IDs.
+    /// </summary>
+    /// <typeparam name="TLookup">The type of the lookup entity.</typeparam>
+    /// <param name="lookupName">The name to identify this lookup (e.g., "Roles").</param>
+    /// <returns>A builder for configuring the lookup.</returns>
+    public LookupOptionsBuilder<TParent, TRelated, TLookup> WithLookup<TLookup>(string lookupName)
+        where TLookup : class
+    {
+        var lookupOptions = new LookupOptions
+        {
+            EntityType = typeof(TLookup),
+            EntityName = lookupName
+        };
+
+        _options.Lookups[lookupName] = lookupOptions;
+
+        return new LookupOptionsBuilder<TParent, TRelated, TLookup>(lookupOptions, this);
+    }
+
+    /// <summary>
     /// Configures another related entity for the same parent.
     /// </summary>
     /// <typeparam name="TOtherRelated">The type of the other related entity.</typeparam>

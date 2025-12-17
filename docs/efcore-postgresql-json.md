@@ -75,10 +75,7 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Register DbContext
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+// Step 1: Configure AuditaX FIRST (before DbContext registration)
 // Option A: Configure from appsettings.json
 builder.Services.AddAuditaX(builder.Configuration)
     .UseEntityFramework<AppDbContext>()
@@ -91,9 +88,23 @@ builder.Services.AddAuditaX(builder.Configuration)
 //     .UsePostgreSql()
 //     .ValidateOnStartup();
 
+// Step 2: Register DbContext WITH AuditaX
+// IMPORTANT: Use (sp, options) to access the service provider
+builder.Services.AddDbContext<AppDbContext>((sp, options) =>
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+
+    // This line enables automatic audit logging - REQUIRED for EF Core
+    options.UseAuditaX(sp);
+});
+
 var app = builder.Build();
 app.Run();
 ```
+
+> **Important:** The call to `UseAuditaX(sp)` is required for automatic change tracking. Without it, entity changes will not be audited.
+
+> **Warning:** Do NOT use `QueryTrackingBehavior.NoTracking` in your DbContext. AuditaX requires the ChangeTracker to detect entity changes.
 
 ### AppDbContext
 

@@ -146,7 +146,35 @@ public sealed class AuditaXOptions
     /// <returns>The related entity configuration, or null if not found.</returns>
     public RelatedEntityOptions? GetRelatedEntity(Type type)
     {
-        return RelatedEntityCache.TryGetValue(type, out var options) ? options : null;
+        // First check the cache (FluentAPI configurations)
+        if (RelatedEntityCache.TryGetValue(type, out var cached))
+            return cached;
+
+        // Fall back to name-based lookup in all entities (appsettings configurations)
+        var typeName = type.Name;
+        foreach (var (_, entityOptions) in Entities)
+        {
+            if (entityOptions.RelatedEntities.TryGetValue(typeName, out var relatedOptions))
+            {
+                // Set runtime properties
+                relatedOptions.EntityType = type;
+                relatedOptions.RelatedName = typeName;
+                relatedOptions.ParentEntityOptions = entityOptions;
+                relatedOptions.ResolveParentKeySelector();
+
+                // Initialize lookup EntityNames from dictionary keys
+                foreach (var (lookupName, lookupOptions) in relatedOptions.Lookups)
+                {
+                    lookupOptions.EntityName = lookupName;
+                }
+
+                // Cache for future lookups
+                RelatedEntityCache[type] = relatedOptions;
+                return relatedOptions;
+            }
+        }
+
+        return null;
     }
 
     // ══════════════════════════════════════════════════════════

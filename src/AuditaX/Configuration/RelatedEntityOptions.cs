@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Text.Json.Serialization;
 using AuditaX.Models;
 
@@ -19,6 +20,13 @@ public sealed class RelatedEntityOptions
     /// These are captured for Added, Removed, and Updated actions.
     /// </summary>
     public List<string> Properties { get; set; } = [];
+
+    /// <summary>
+    /// Lookup configurations for resolving values from other entities.
+    /// Key is the lookup entity name (e.g., "Roles"), value is the lookup configuration.
+    /// Used to capture display values (e.g., RoleName) instead of foreign key IDs.
+    /// </summary>
+    public Dictionary<string, LookupOptions> Lookups { get; set; } = [];
 
     // ══════════════════════════════════════════════════════════
     // Runtime properties (not serialized)
@@ -68,11 +76,56 @@ public sealed class RelatedEntityOptions
     }
 
     /// <summary>
+    /// Resolves the lookup selectors using reflection when loaded from appsettings.
+    /// Must be called after EntityType is set and lookup EntityTypes are resolved.
+    /// </summary>
+    public void ResolveLookupSelectors()
+    {
+        if (EntityType is null)
+            return;
+
+        foreach (var (name, lookup) in Lookups)
+        {
+            lookup.EntityName = name;
+            lookup.ResolveForeignKeySelector(EntityType);
+            lookup.ResolveKeySelector();
+        }
+    }
+
+    /// <summary>
     /// Gets the parent key value from a related entity instance.
     /// </summary>
     public string GetParentKey(object entity)
     {
         return ParentKeySelector?.Invoke(entity) ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Checks if this related entity has any lookups configured.
+    /// </summary>
+    public bool HasLookups => Lookups.Count > 0;
+
+    /// <summary>
+    /// Checks if any lookups need to be resolved (EntityType not set).
+    /// </summary>
+    public bool HasUnresolvedLookups => Lookups.Values.Any(l => !l.IsResolved);
+
+    /// <summary>
+    /// Gets the lookup names that need to be resolved.
+    /// </summary>
+    public IEnumerable<string> GetUnresolvedLookupNames()
+    {
+        return Lookups
+            .Where(kvp => !kvp.Value.IsResolved)
+            .Select(kvp => kvp.Key);
+    }
+
+    /// <summary>
+    /// Gets a lookup by name.
+    /// </summary>
+    public LookupOptions? GetLookup(string name)
+    {
+        return Lookups.TryGetValue(name, out var lookup) ? lookup : null;
     }
 
     /// <summary>

@@ -1,120 +1,106 @@
 # SQL Scripts
 
-This folder contains SQL scripts for setting up AuditaX and sample databases.
+Scripts para configurar las bases de datos de ejemplo de AuditaX.
 
-## Structure
+## Estructura
 
 ```
 scripts/
-├── AuditLog/           # Audit log table scripts
-│   ├── SqlServer/
-│   │   └── AuditLog_Create.sql
-│   └── PostgreSql/
-│       └── audit_log_create.sql
+├── SqlServer/
+│   ├── 00_AuditaX_Create.sql           # Crear base de datos
+│   ├── 01_Products_Create.sql          # Tabla Products
+│   ├── 02_ProductTags_Create.sql       # Tabla ProductTags
+│   ├── 03_Users_Create.sql             # Tabla Users
+│   ├── 04_Roles_Create.sql             # Tabla Roles
+│   ├── 05_UserRoles_Create.sql         # Tabla UserRoles
+│   ├── 99_AuditLogDJ_Create.sql        # AuditLog Dapper JSON (alternativo)
+│   ├── 99_AuditLogDX_Create.sql        # AuditLog Dapper XML (alternativo)
+│   ├── 99_AuditLogEFJ_Create.sql       # AuditLog EF Core JSON (alternativo)
+│   └── 99_AuditLogEFX_Create.sql       # AuditLog EF Core XML (alternativo)
 │
-└── Samples/            # Sample database scripts
-    ├── SqlServer/
-    │   └── Samples_Create.sql
-    └── PostgreSql/
-        └── samples_create.sql
+└── PostgreSQL/
+    ├── 00_auditax_create.sql           # Crear base de datos
+    ├── 01_products_create.sql          # Tabla products
+    ├── 02_product_tags_create.sql      # Tabla product_tags
+    ├── 03_users_create.sql             # Tabla users
+    ├── 04_roles_create.sql             # Tabla roles
+    ├── 05_user_roles_create.sql        # Tabla user_roles
+    ├── 99_audit_log_dj_create.sql      # audit_log Dapper JSON (alternativo)
+    ├── 99_audit_log_dx_create.sql      # audit_log Dapper XML (alternativo)
+    ├── 99_audit_log_efj_create.sql     # audit_log EF Core JSON (alternativo)
+    └── 99_audit_log_efx_create.sql     # audit_log EF Core XML (alternativo)
 ```
 
-## AuditLog Scripts
+## Bases de Datos
 
-These scripts create the audit log table. Note that AuditaX can create the table automatically if `AutoCreateTable: true` is set in configuration.
+| Proveedor | Base de Datos | Descripción |
+|-----------|---------------|-------------|
+| SQL Server | `AuditaX` | Base de datos única para todos los ejemplos |
+| PostgreSQL | `auditax` | Base de datos única para todos los ejemplos |
 
-### SQL Server
+## Tablas de AuditLog
 
-```sql
--- scripts/AuditLog/SqlServer/AuditLog.Json.sql (or AuditLog.Xml.sql)
-CREATE TABLE [dbo].[AuditLog] (
-    [LogId] UNIQUEIDENTIFIER NOT NULL DEFAULT NEWSEQUENTIALID(),
-    [SourceName] NVARCHAR(50) NOT NULL,
-    [SourceKey] NVARCHAR(900) NOT NULL,
-    [AuditLog] NVARCHAR(MAX) NOT NULL,  -- Use XML type for XML format
-    CONSTRAINT [PK_AuditLog] PRIMARY KEY CLUSTERED ([LogId]),
-    CONSTRAINT [UQ_AuditLog_Source] UNIQUE ([SourceName], [SourceKey])
-);
+Cada combinación de ORM + formato tiene su propia tabla de AuditLog:
 
-CREATE INDEX IX_AuditLog_SourceName ON [dbo].[AuditLog] ([SourceName]) INCLUDE ([SourceKey]);
-CREATE INDEX IX_AuditLog_SourceKey ON [dbo].[AuditLog] ([SourceKey]) INCLUDE ([SourceName]);
-```
+| Ejemplo | SQL Server | PostgreSQL |
+|---------|------------|------------|
+| Dapper + JSON | `AuditLogDJ` | `audit_log_dj` |
+| Dapper + XML | `AuditLogDX` | `audit_log_dx` |
+| EF Core + JSON | `AuditLogEFJ` | `audit_log_efj` |
+| EF Core + XML | `AuditLogEFX` | `audit_log_efx` |
 
-### PostgreSQL
+## Scripts 00-05 vs 99_*
 
-```sql
--- scripts/AuditLog/PostgreSql/audit_log.json.sql
-CREATE TABLE IF NOT EXISTS public.audit_log (
-    log_id UUID NOT NULL DEFAULT gen_random_uuid(),
-    source_name VARCHAR(50) NOT NULL,
-    source_key VARCHAR(900) NOT NULL,
-    audit_log JSONB NOT NULL,  -- Use XML type for XML format
-    CONSTRAINT pk_audit_log PRIMARY KEY (log_id),
-    CONSTRAINT uq_audit_log_source UNIQUE (source_name, source_key)
-);
+- **Scripts 00-05**: Ejecutados por DatabaseSetup. Crean la base de datos y las tablas de negocio.
+- **Scripts 99_***: **Alternativos** para entornos de producción donde el usuario no tenga permisos de crear tablas. Las tablas AuditLog se crean automáticamente con `AutoCreateTable = true`.
 
-CREATE INDEX IF NOT EXISTS ix_audit_log_source_name ON public.audit_log (source_name);
-CREATE INDEX IF NOT EXISTS ix_audit_log_source_key ON public.audit_log (source_key);
-```
+## Uso con DatabaseSetup Tool
 
-## Sample Database Scripts
-
-These scripts create sample tables used by the sample applications.
-
-### SQL Server
-
-```sql
--- scripts/Samples/SqlServer/Samples_Create.sql
-CREATE DATABASE AuditaXSamples;
-GO
-
-USE AuditaXSamples;
-GO
-
-CREATE TABLE Products (
-    ProductId INT IDENTITY(1,1) PRIMARY KEY,
-    Name NVARCHAR(256) NOT NULL,
-    Description NVARCHAR(MAX),
-    Price DECIMAL(18,2) NOT NULL,
-    Stock INT NOT NULL DEFAULT 0,
-    CreatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt DATETIME2 NULL
-);
-```
-
-### PostgreSQL
-
-```sql
--- scripts/Samples/PostgreSql/samples_create.sql
-CREATE DATABASE auditax_samples;
-
-\c auditax_samples
-
-CREATE TABLE products (
-    product_id SERIAL PRIMARY KEY,
-    name VARCHAR(256) NOT NULL,
-    description TEXT,
-    price DECIMAL(18,2) NOT NULL,
-    stock INT NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ
-);
-```
-
-## Usage
-
-### SQL Server
 ```bash
-sqlcmd -S localhost -U sa -P YourPassword -i scripts/Samples/SqlServer/Samples_Create.sql
+# Crear ambas bases de datos
+dotnet run --project tools/AuditaX.Tools.DatabaseSetup -- all
+
+# Solo SQL Server
+dotnet run --project tools/AuditaX.Tools.DatabaseSetup -- sqlserver
+
+# Solo PostgreSQL
+dotnet run --project tools/AuditaX.Tools.DatabaseSetup -- postgresql
+```
+
+## Uso Manual
+
+### SQL Server
+
+```bash
+# Ejecutar todos los scripts en orden
+sqlcmd -S localhost -U sa -P sa -i scripts/SqlServer/00_AuditaX_Create.sql
+sqlcmd -S localhost -U sa -P sa -d AuditaX -i scripts/SqlServer/01_Products_Create.sql
+sqlcmd -S localhost -U sa -P sa -d AuditaX -i scripts/SqlServer/02_ProductTags_Create.sql
+sqlcmd -S localhost -U sa -P sa -d AuditaX -i scripts/SqlServer/03_Users_Create.sql
+sqlcmd -S localhost -U sa -P sa -d AuditaX -i scripts/SqlServer/04_Roles_Create.sql
+sqlcmd -S localhost -U sa -P sa -d AuditaX -i scripts/SqlServer/05_UserRoles_Create.sql
+
+# Opcional: Crear tablas AuditLog manualmente (producción)
+sqlcmd -S localhost -U sa -P sa -d AuditaX -i scripts/SqlServer/99_AuditLogDJ_Create.sql
 ```
 
 ### PostgreSQL
+
 ```bash
-psql -U postgres -f scripts/Samples/PostgreSql/samples_create.sql
+# Ejecutar todos los scripts en orden
+psql -U postgres -f scripts/PostgreSQL/00_auditax_create.sql
+psql -U postgres -d auditax -f scripts/PostgreSQL/01_products_create.sql
+psql -U postgres -d auditax -f scripts/PostgreSQL/02_product_tags_create.sql
+psql -U postgres -d auditax -f scripts/PostgreSQL/03_users_create.sql
+psql -U postgres -d auditax -f scripts/PostgreSQL/04_roles_create.sql
+psql -U postgres -d auditax -f scripts/PostgreSQL/05_user_roles_create.sql
+
+# Opcional: Crear tablas audit_log manualmente (producción)
+psql -U postgres -d auditax -f scripts/PostgreSQL/99_audit_log_dj_create.sql
 ```
 
-## Notes
+## Notas
 
-- The audit log table is created automatically by AuditaX when `AutoCreateTable: true`
-- Sample scripts are provided for manual setup or testing
-- Adjust schema names and connection parameters as needed
+- Las tablas AuditLog se crean automáticamente cuando `AutoCreateTable = true` en la configuración
+- Los scripts `99_*` son para entornos donde no hay permisos de CREATE TABLE
+- El DatabaseSetup Tool solo ejecuta scripts 00-05, no los 99_*

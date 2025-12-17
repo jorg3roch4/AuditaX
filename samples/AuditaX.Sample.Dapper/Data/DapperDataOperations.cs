@@ -15,6 +15,9 @@ public class DapperDataOperations : IDemoDataOperations
     private readonly IDbConnection _connection;
     private readonly DatabaseType _databaseType;
 
+    public IDbConnection Connection => _connection;
+    public DatabaseType DatabaseType => _databaseType;
+
     public DapperDataOperations(IDbConnection connection, DatabaseType databaseType)
     {
         _connection = connection;
@@ -98,5 +101,120 @@ public class DapperDataOperations : IDemoDataOperations
             : "DELETE FROM product_tags WHERE id = @Id";
 
         await _connection.ExecuteAsync(sql, new { Id = tagId });
+    }
+
+    // ============================================================================
+    // User/Role/UserRole Operations (Identity-like scenario)
+    // ============================================================================
+
+    public async Task<User> CreateUserAsync(User user)
+    {
+        if (_databaseType == DatabaseType.SqlServer)
+        {
+            var sql = @"
+                INSERT INTO Users (UserId, UserName, Email, PhoneNumber, IsActive)
+                VALUES (@UserId, @UserName, @Email, @PhoneNumber, @IsActive)";
+
+            await _connection.ExecuteAsync(sql, user);
+        }
+        else
+        {
+            var sql = @"
+                INSERT INTO users (user_id, user_name, email, phone_number, is_active)
+                VALUES (@UserId, @UserName, @Email, @PhoneNumber, @IsActive)";
+
+            await _connection.ExecuteAsync(sql, user);
+        }
+
+        return user;
+    }
+
+    public async Task UpdateUserAsync(User user)
+    {
+        if (_databaseType == DatabaseType.SqlServer)
+        {
+            var sql = @"
+                UPDATE Users
+                SET UserName = @UserName, Email = @Email, PhoneNumber = @PhoneNumber, IsActive = @IsActive
+                WHERE UserId = @UserId";
+
+            await _connection.ExecuteAsync(sql, user);
+        }
+        else
+        {
+            var sql = @"
+                UPDATE users
+                SET user_name = @UserName, email = @Email, phone_number = @PhoneNumber, is_active = @IsActive
+                WHERE user_id = @UserId";
+
+            await _connection.ExecuteAsync(sql, user);
+        }
+    }
+
+    public async Task<Role> CreateRoleAsync(Role role)
+    {
+        if (_databaseType == DatabaseType.SqlServer)
+        {
+            var sql = @"
+                INSERT INTO Roles (RoleId, RoleName, Description)
+                VALUES (@RoleId, @RoleName, @Description)";
+
+            await _connection.ExecuteAsync(sql, role);
+        }
+        else
+        {
+            var sql = @"
+                INSERT INTO roles (role_id, role_name, description)
+                VALUES (@RoleId, @RoleName, @Description)";
+
+            await _connection.ExecuteAsync(sql, role);
+        }
+
+        return role;
+    }
+
+    public async Task<Role?> GetRoleByIdAsync(string roleId)
+    {
+        if (_databaseType == DatabaseType.SqlServer)
+        {
+            var sql = "SELECT RoleId, RoleName, Description FROM Roles WHERE RoleId = @RoleId";
+            return await _connection.QuerySingleOrDefaultAsync<Role>(sql, new { RoleId = roleId });
+        }
+        else
+        {
+            var sql = "SELECT role_id as RoleId, role_name as RoleName, description as Description FROM roles WHERE role_id = @RoleId";
+            return await _connection.QuerySingleOrDefaultAsync<Role>(sql, new { RoleId = roleId });
+        }
+    }
+
+    public async Task<UserRole> CreateUserRoleAsync(UserRole userRole)
+    {
+        if (_databaseType == DatabaseType.SqlServer)
+        {
+            var sql = @"
+                INSERT INTO UserRoles (UserId, RoleId)
+                VALUES (@UserId, @RoleId)";
+
+            await _connection.ExecuteAsync(sql, userRole);
+        }
+        else
+        {
+            var sql = @"
+                INSERT INTO user_roles (user_id, role_id)
+                VALUES (@UserId, @RoleId)";
+
+            await _connection.ExecuteAsync(sql, userRole);
+        }
+
+        return userRole;
+    }
+
+    public async Task DeleteUserRoleAsync(string userId, string roleId)
+    {
+        var sql = _databaseType == DatabaseType.SqlServer
+            ? "DELETE FROM UserRoles WHERE UserId = @UserId AND RoleId = @RoleId"
+            : "DELETE FROM user_roles WHERE user_id = @UserId AND role_id = @RoleId";
+
+        await _connection.ExecuteAsync(sql, new { UserId = userId, RoleId = roleId });
     }
 }

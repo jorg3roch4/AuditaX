@@ -2,6 +2,12 @@
 
 Complete documentation for configuring and using AuditaX with different ORMs, databases, and serialization formats.
 
+## Guides
+
+- [Dapper Audit Guide](./dapper-audit-guide.md) - Complete guide for auditing with Dapper (IAuditUnitOfWork, Related Entities, Lookups)
+- [Related Entities and Lookups (EF Core)](./related-entities-and-lookups.md) - Track child entities and resolve FK values to display names
+- [Querying Audit Logs](./querying-audit-logs.md) - Complete guide to IAuditQueryService
+
 ## Configuration Guides
 
 Choose your combination:

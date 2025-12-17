@@ -38,19 +38,21 @@ Of course, there's absolutely no obligation. If you prefer, simply starring the 
 - **Flexible Change Log Format**: JSON or XML serialization
 - **Automatic Change Tracking**: EF Core interceptors capture all changes
 - **Manual Audit Control**: `IAuditUnitOfWork` for Dapper repositories
+- **Related Entities**: Track child entity changes under parent audit log
+- **Lookup Properties**: Resolve FK values to display names (e.g., RoleId → "Administrator")
 - **Configuration Options**: appsettings.json or Fluent API
 - **Auto Table Creation**: Creates audit table on startup if needed
 - **Startup Validation**: Validates table structure and configuration
 
 ---
 
-## 🎉 What's New in 1.0.2
+## 🎉 What's New in 1.0.3
 
-- **Breaking**: Renamed `.AuditProperties()` to `.Properties()` in FluentAPI for consistency
-- **Breaking**: Removed `.OnAdded()` and `.OnRemoved()` methods for related entities, replaced with unified `.Properties()`
-- **Breaking**: Renamed `CaptureProperties` to `Properties` in appsettings.json for related entities
-- **New**: Field serialization now uses `value` for Added/Removed actions, `before`/`after` for Updated
-- **New**: Added support for `Modified` state on related entities (Updated action)
+- **New**: Lookup Properties - Resolve FK values to display names (e.g., show "Administrator" instead of RoleId GUID) - Works with both EF Core (automatic) and Dapper (manual)
+- **New**: Support for auditing junction tables with human-readable values (ideal for ASP.NET Identity scenarios)
+- **New**: Pre-existing records support - Entities created before AuditaX was enabled now get audited on first action
+- **Fixed**: EF Core `AuditLog` entity configuration - No longer throws "Cannot create a DbSet for 'AuditLog'" error (automatically configured via `IModelCustomizer`)
+- **Fixed**: EF Core auto-increment ID bug - Entities with database-generated IDs (IDENTITY/SERIAL) now log the correct ID instead of "0"
 
 See [CHANGELOG.md](CHANGELOG.md) for full details.
 
@@ -190,15 +192,82 @@ public class ProductRepository(DapperContext context, IAuditUnitOfWork audit)
 
         return affected > 0;
     }
+
+    // Related entity operations
+    public async Task AddTagAsync(Product product, ProductTag tag)
+    {
+        using var connection = context.CreateConnection();
+        const string sql = "INSERT INTO ProductTags (ProductId, Tag) VALUES (@ProductId, @Tag)";
+
+        await connection.ExecuteAsync(sql, tag);
+        await audit.LogRelatedAddedAsync(product, tag);
+    }
+
+    public async Task UpdateTagAsync(Product product, ProductTag original, ProductTag modified)
+    {
+        using var connection = context.CreateConnection();
+        const string sql = "UPDATE ProductTags SET Tag = @Tag WHERE Id = @Id";
+
+        await connection.ExecuteAsync(sql, modified);
+        await audit.LogRelatedUpdatedAsync(product, original, modified);
+    }
+
+    public async Task RemoveTagAsync(Product product, ProductTag tag)
+    {
+        using var connection = context.CreateConnection();
+        const string sql = "DELETE FROM ProductTags WHERE Id = @Id";
+
+        await connection.ExecuteAsync(sql, new { tag.Id });
+        await audit.LogRelatedRemovedAsync(product, tag);
+    }
 }
 ```
 
 ### With Entity Framework Core (Automatic)
 
-EF Core uses interceptors for automatic audit logging. Just configure your entities and AuditaX handles the rest:
+EF Core uses interceptors for automatic audit logging. Configure AuditaX first, then register your DbContext with the interceptor:
+
+**Step 1: Configure AuditaX**
 
 ```csharp
-// Entity changes are automatically tracked
+// Configure AuditaX BEFORE registering DbContext
+services.AddAuditaX(options =>
+{
+    options.TableName = "AuditLog";
+    options.Schema = "dbo";
+    options.AutoCreateTable = true;
+    options.LogFormat = LogFormat.Json;
+
+    options.ConfigureEntity<Product>("Product")
+        .WithKey(p => p.Id)
+        .Properties("Name", "Price", "Stock");
+})
+.UseEntityFramework<AppDbContext>()
+.UseSqlServer()
+.ValidateOnStartup();
+```
+
+**Step 2: Register DbContext with AuditaX**
+
+```csharp
+// IMPORTANT: Use (sp, options) to access the service provider
+services.AddDbContext<AppDbContext>((sp, options) =>
+{
+    options.UseSqlServer(connectionString);
+
+    // This line enables automatic audit logging
+    options.UseAuditaX(sp);
+});
+```
+
+> **Note:** The call to `UseAuditaX(sp)` is required for automatic change tracking. Without it, entity changes will not be audited.
+
+> **Important:** AuditaX requires EF Core's ChangeTracker to detect entity changes. Do NOT use `QueryTrackingBehavior.NoTracking` in your DbContext, as this disables change tracking and AuditaX will not be able to audit entity modifications.
+
+**Step 3: Use your DbContext normally**
+
+```csharp
+// Entity changes are automatically tracked - no manual logging needed!
 var product = new Product { Name = "Widget", Price = 9.99m };
 dbContext.Products.Add(product);
 await dbContext.SaveChangesAsync(); // Audit log created automatically
@@ -357,6 +426,8 @@ See [Querying Audit Logs](./docs/querying-audit-logs.md) for complete documentat
 See the [docs](./docs) folder for detailed documentation:
 
 **Guides:**
+- [Dapper Audit Guide](./docs/dapper-audit-guide.md) - Complete guide to manual auditing with Dapper
+- [Related Entities and Lookups](./docs/related-entities-and-lookups.md) - Track child entities and resolve FK values
 - [Querying Audit Logs](./docs/querying-audit-logs.md) - Complete guide to IAuditQueryService
 
 **Configuration by Stack:**
@@ -377,7 +448,27 @@ The `samples` folder contains working examples:
 
 - `AuditaX.Sample.Dapper` - Console app demonstrating Dapper integration
 - `AuditaX.Sample.EntityFramework` - Console app demonstrating EF Core integration
-- `AuditaX.Sample.DatabaseSetup` - Tool to create sample databases
+
+### Database Setup
+
+Use the DatabaseSetup tool to create sample databases:
+
+```bash
+# Create both SQL Server and PostgreSQL databases
+dotnet run --project tools/AuditaX.Tools.DatabaseSetup -- all
+
+# Create SQL Server only
+dotnet run --project tools/AuditaX.Tools.DatabaseSetup -- sqlserver
+
+# Create PostgreSQL only
+dotnet run --project tools/AuditaX.Tools.DatabaseSetup -- postgresql
+```
+
+This creates:
+- **SQL Server:** `AuditaX` database with Products, ProductTags, Users, Roles, UserRoles tables
+- **PostgreSQL:** `auditax` database with the same tables (snake_case naming)
+
+AuditLog tables are created automatically by AuditaX when `AutoCreateTable = true`.
 
 
 ---
