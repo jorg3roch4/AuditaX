@@ -1,0 +1,6 @@
+[1.0.4] - Fix EF Core audit log on re-creation of deleted entities
+
+Fix UNIQUE constraint violation in AuditSaveChangesInterceptor when
+re-creating an entity with the same ID after deletion. CreateAuditEntry
+now checks for existing audit logs before inserting, matching the pattern
+already used by UpdateAuditEntry and UpdateAuditEntryWithAction.

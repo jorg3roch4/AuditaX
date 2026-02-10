@@ -1,0 +1,84 @@
+# AuditaX
+
+> Flexible Entity Audit Logging for .NET 10+
+
+AuditaX is a modern, extensible audit logging library for .NET applications. It provides a unified approach to tracking entity changes across different ORMs (Dapper, Entity Framework Core) and database providers (SQL Server, PostgreSQL), with support for both automatic and manual audit control.
+
+Key features:
+- Automatic change tracking with EF Core interceptors
+- Manual audit control with `IAuditUnitOfWork` for Dapper
+- Related entities tracking (child entities under parent audit log)
+- Lookup properties (resolve FK values to display names)
+- JSON or XML serialization formats
+- Auto table creation on startup
+
+## Installation
+
+Choose packages based on your ORM and database:
+
+```bash
+# For Dapper + SQL Server
+dotnet add package AuditaX
+dotnet add package AuditaX.Dapper
+dotnet add package AuditaX.SqlServer
+
+# For EF Core + PostgreSQL
+dotnet add package AuditaX
+dotnet add package AuditaX.EntityFramework
+dotnet add package AuditaX.PostgreSql
+```
+
+## Documentation
+
+- [README](https://github.com/jorg3roch4/AuditaX/blob/main/README.md): Quick start and overview
+- [Dapper Audit Guide](https://github.com/jorg3roch4/AuditaX/blob/main/docs/dapper-audit-guide.md): Complete guide to manual auditing
+- [Related Entities and Lookups](https://github.com/jorg3roch4/AuditaX/blob/main/docs/related-entities-and-lookups.md): Track child entities and resolve FK values
+- [Querying Audit Logs](https://github.com/jorg3roch4/AuditaX/blob/main/docs/querying-audit-logs.md): IAuditQueryService reference
+
+### Configuration by Stack
+- [Dapper + SQL Server + JSON](https://github.com/jorg3roch4/AuditaX/blob/main/docs/dapper-sqlserver-json.md)
+- [Dapper + SQL Server + XML](https://github.com/jorg3roch4/AuditaX/blob/main/docs/dapper-sqlserver-xml.md)
+- [Dapper + PostgreSQL + JSON](https://github.com/jorg3roch4/AuditaX/blob/main/docs/dapper-postgresql-json.md)
+- [Dapper + PostgreSQL + XML](https://github.com/jorg3roch4/AuditaX/blob/main/docs/dapper-postgresql-xml.md)
+- [EF Core + SQL Server + JSON](https://github.com/jorg3roch4/AuditaX/blob/main/docs/efcore-sqlserver-json.md)
+- [EF Core + SQL Server + XML](https://github.com/jorg3roch4/AuditaX/blob/main/docs/efcore-sqlserver-xml.md)
+- [EF Core + PostgreSQL + JSON](https://github.com/jorg3roch4/AuditaX/blob/main/docs/efcore-postgresql-json.md)
+- [EF Core + PostgreSQL + XML](https://github.com/jorg3roch4/AuditaX/blob/main/docs/efcore-postgresql-xml.md)
+
+## Basic Usage
+
+```csharp
+// Configuration
+services.AddAuditaX(options =>
+{
+    options.TableName = "AuditLog";
+    options.AutoCreateTable = true;
+    options.LogFormat = LogFormat.Json;
+
+    options.ConfigureEntity<Product>("Product")
+        .WithKey(p => p.Id)
+        .Properties("Name", "Price", "Stock");
+})
+.UseEntityFramework<AppDbContext>()
+.UseSqlServer()
+.ValidateOnStartup();
+
+// Register DbContext with AuditaX
+services.AddDbContext<AppDbContext>((sp, options) =>
+{
+    options.UseSqlServer(connectionString);
+    options.UseAuditaX(sp); // Enables automatic audit logging
+});
+```
+
+## Other Libraries from the Ecosystem
+
+If you're building .NET 10+ applications, you might also find these libraries useful:
+
+- **[MediateX](https://github.com/jorg3roch4/MediateX)**: Pure mediator pattern implementation. In-process messaging with request/response, CQRS, notifications, and streaming. Clean pipeline architecture with behaviors for cross-cutting concerns.
+
+- **[RabbitX](https://github.com/jorg3roch4/RabbitX)**: Modern RabbitMQ integration. Fluent API, publisher confirmations, retry policies with exponential backoff, dead letter exchange support, and RPC capabilities. Built on RabbitMQ.Client 7.x and Polly 8.x.
+
+- **[VaultaX](https://github.com/jorg3roch4/VaultaX)**: HashiCorp Vault integration. Transparent secret management where Vault secrets automatically overlay your appsettings.json values. Supports KV, Transit (signing/encryption), and PKI secret engines with automatic token renewal.
+
+All libraries share the same philosophy: modern .NET 10+ with C# 14, clean APIs, and comprehensive documentation.

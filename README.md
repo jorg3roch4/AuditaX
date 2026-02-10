@@ -4,7 +4,7 @@
 
 **Flexible Entity Audit Logging for .NET 10+**
 
-[![NuGet](https://img.shields.io/nuget/v/AuditaX.svg?style=flat-square)](https://www.nuget.org/packages/AuditaX)[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg?style=flat-square)](https://github.com/jorg3roch4/AuditaX/blob/main/LICENSE)[![C#](https://img.shields.io/badge/C%23-14-239120.svg?style=flat-square)](https://docs.microsoft.com/en-us/dotnet/csharp/)[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4.svg?style=flat-square)](https://dotnet.microsoft.com/)
+[![NuGet](https://img.shields.io/nuget/v/AuditaX.svg?style=flat-square)](https://www.nuget.org/packages/AuditaX)[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/jorg3roch4/AuditaX/blob/main/LICENSE)[![C#](https://img.shields.io/badge/C%23-14-239120.svg?style=flat-square)](https://docs.microsoft.com/en-us/dotnet/csharp/)[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4.svg?style=flat-square)](https://dotnet.microsoft.com/)
 
 **AuditaX** is a modern, extensible audit logging library for .NET applications. It provides a unified approach to tracking entity changes across different ORMs and database providers, with support for both automatic and manual audit control.
 
@@ -46,13 +46,9 @@ Of course, there's absolutely no obligation. If you prefer, simply starring the 
 
 ---
 
-## 🎉 What's New in 1.0.3
+## 🎉 What's New in 1.0.4
 
-- **New**: Lookup Properties - Resolve FK values to display names (e.g., show "Administrator" instead of RoleId GUID) - Works with both EF Core (automatic) and Dapper (manual)
-- **New**: Support for auditing junction tables with human-readable values (ideal for ASP.NET Identity scenarios)
-- **New**: Pre-existing records support - Entities created before AuditaX was enabled now get audited on first action
-- **Fixed**: EF Core `AuditLog` entity configuration - No longer throws "Cannot create a DbSet for 'AuditLog'" error (automatically configured via `IModelCustomizer`)
-- **Fixed**: EF Core auto-increment ID bug - Entities with database-generated IDs (IDENTITY/SERIAL) now log the correct ID instead of "0"
+- **Fixed**: EF Core audit log now handles re-creation of previously deleted entities - No more UNIQUE constraint violation when an entity is created, deleted, and re-created with the same ID
 
 See [CHANGELOG.md](CHANGELOG.md) for full details.
 

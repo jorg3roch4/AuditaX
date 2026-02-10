@@ -1,0 +1,63 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AuditaX/AuditaX.csproj" />
+    <Project Path="src/AuditaX.Dapper/AuditaX.Dapper.csproj" />
+    <Project Path="src/AuditaX.EntityFramework/AuditaX.EntityFramework.csproj" />
+    <Project Path="src/AuditaX.SqlServer/AuditaX.SqlServer.csproj" />
+    <Project Path="src/AuditaX.PostgreSql/AuditaX.PostgreSql.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AuditaX.Tests/AuditaX.Tests.csproj" />
+    <Project Path="tests/AuditaX.EntityFramework.Tests/AuditaX.EntityFramework.Tests.csproj" />
+    <Project Path="tests/AuditaX.Dapper.Tests/AuditaX.Dapper.Tests.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/AuditaX.Samples.Common/AuditaX.Samples.Common.csproj" />
+    <Project Path="samples/AuditaX.Sample.Dapper/AuditaX.Sample.Dapper.csproj" />
+    <Project Path="samples/AuditaX.Sample.EntityFramework/AuditaX.Sample.EntityFramework.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/AuditaX.Tools.DatabaseSetup/AuditaX.Tools.DatabaseSetup.csproj" />
+  </Folder>
+  <Folder Name="/scripts/">
+    <File Path="scripts/README.md" />
+    <Folder Name="/scripts/SQLServer/">
+      <File Path="scripts/SQLServer/00_AuditaX_Create.sql" />
+      <File Path="scripts/SQLServer/01_Products_Create.sql" />
+      <File Path="scripts/SQLServer/02_ProductTags_Create.sql" />
+      <File Path="scripts/SQLServer/03_Users_Create.sql" />
+      <File Path="scripts/SQLServer/04_Roles_Create.sql" />
+      <File Path="scripts/SQLServer/05_UserRoles_Create.sql" />
+      <File Path="scripts/SQLServer/99_AuditLogDJ_Create.sql" />
+      <File Path="scripts/SQLServer/99_AuditLogDX_Create.sql" />
+      <File Path="scripts/SQLServer/99_AuditLogEFJ_Create.sql" />
+      <File Path="scripts/SQLServer/99_AuditLogEFX_Create.sql" />
+    </Folder>
+    <Folder Name="/scripts/PostgreSQL/">
+      <File Path="scripts/PostgreSQL/00_auditax_create.sql" />
+      <File Path="scripts/PostgreSQL/01_products_create.sql" />
+      <File Path="scripts/PostgreSQL/02_product_tags_create.sql" />
+      <File Path="scripts/PostgreSQL/03_users_create.sql" />
+      <File Path="scripts/PostgreSQL/04_roles_create.sql" />
+      <File Path="scripts/PostgreSQL/05_user_roles_create.sql" />
+      <File Path="scripts/PostgreSQL/99_audit_log_dj_create.sql" />
+      <File Path="scripts/PostgreSQL/99_audit_log_dx_create.sql" />
+      <File Path="scripts/PostgreSQL/99_audit_log_efj_create.sql" />
+      <File Path="scripts/PostgreSQL/99_audit_log_efx_create.sql" />
+    </Folder>
+  </Folder>
+  <Folder Name="/docs/">
+    <File Path="docs/README.md" />
+    <File Path="docs/dapper-audit-guide.md" />
+    <File Path="docs/dapper-postgresql-json.md" />
+    <File Path="docs/dapper-postgresql-xml.md" />
+    <File Path="docs/dapper-sqlserver-json.md" />
+    <File Path="docs/dapper-sqlserver-xml.md" />
+    <File Path="docs/efcore-postgresql-json.md" />
+    <File Path="docs/efcore-postgresql-xml.md" />
+    <File Path="docs/efcore-sqlserver-json.md" />
+    <File Path="docs/efcore-sqlserver-xml.md" />
+    <File Path="docs/querying-audit-logs.md" />
+    <File Path="docs/related-entities-and-lookups.md" />
+  </Folder>
+</Solution>

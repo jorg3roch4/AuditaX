@@ -2,6 +2,16 @@
 
 All notable changes to AuditaX will be documented in this file.
 
+## [1.0.4] - 2026-02-09
+
+### Fixed
+- **EF Core re-creation audit bug**: Fixed UNIQUE constraint violation when re-creating a previously deleted entity with the same ID
+  - The `CreateAuditEntry` method in `AuditSaveChangesInterceptor` now checks for an existing audit log before inserting
+  - Applies the same lookup pattern already used by `UpdateAuditEntry` and `UpdateAuditEntryWithAction`
+  - Enables full lifecycle tracking: Created → Deleted → Re-created
+
+---
+
 ## [1.0.3] - 2025-12-16
 
 ### Added

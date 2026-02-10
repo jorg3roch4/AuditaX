@@ -461,14 +461,30 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
         AuditAction action,
         string user)
     {
-        var auditLogXml = _changeLogService.CreateEntry(null, user);
+        // Check for existing audit log (handles re-creation of previously deleted entities)
+        var existingLog = auditLogs.Local
+            .FirstOrDefault(a => a.SourceName == sourceName && a.SourceKey == sourceKey);
 
-        auditLogs.Add(new Entities.AuditLog
+        if (existingLog is null)
         {
-            SourceName = sourceName,
-            SourceKey = sourceKey,
-            AuditLogXml = auditLogXml
-        });
+            existingLog = auditLogs
+                .FirstOrDefault(a => a.SourceName == sourceName && a.SourceKey == sourceKey);
+        }
+
+        if (existingLog is not null)
+        {
+            existingLog.AuditLogXml = _changeLogService.CreateEntry(existingLog.AuditLogXml, user);
+        }
+        else
+        {
+            var auditLogXml = _changeLogService.CreateEntry(null, user);
+            auditLogs.Add(new Entities.AuditLog
+            {
+                SourceName = sourceName,
+                SourceKey = sourceKey,
+                AuditLogXml = auditLogXml
+            });
+        }
     }
 
     private void UpdateAuditEntry(
