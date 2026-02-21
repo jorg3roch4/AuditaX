@@ -188,6 +188,8 @@ Deleted Product Key: 12
 Deleted Product Key: 27
 ```
 
+> **Warning:** This method returns ALL matching records without pagination. For large tables, use `GetPagedBySourceNameAndActionAsync` instead.
+
 ---
 
 ### GetBySourceNameActionAndDateAsync
@@ -222,6 +224,8 @@ Console.WriteLine($"Products created in December 2025: {newProducts.Count()}");
 ```
 Products created in December 2025: 42
 ```
+
+> **Warning:** This method returns ALL matching records without pagination. For large tables, use `GetPagedBySourceNameActionAndDateAsync` instead.
 
 ---
 
@@ -300,11 +304,265 @@ Product 5: Added by sales@example.com at 12/13/2025 11:00 AM
 
 ---
 
+## Paged Query Methods (v1.1.0+)
+
+All paged methods return `PagedResult<T>` which includes both the result items and a `TotalCount` for building paginated UIs.
+
+```csharp
+public sealed record PagedResult<T>
+{
+    public IEnumerable<T> Items { get; init; } = [];
+    public int TotalCount { get; init; }
+}
+```
+
+### GetPagedBySourceNameAsync
+
+Gets audit logs by entity type with pagination and total count.
+
+```csharp
+Task<PagedResult<AuditQueryResult>> GetPagedBySourceNameAsync(
+    string sourceName,
+    int skip = 0,
+    int take = 100,
+    CancellationToken cancellationToken = default);
+```
+
+**Example:**
+```csharp
+var result = await auditQueryService.GetPagedBySourceNameAsync("Product", skip: 0, take: 20);
+
+Console.WriteLine($"Showing {result.Items.Count()} of {result.TotalCount} total records");
+
+foreach (var item in result.Items)
+{
+    Console.WriteLine($"  {item.SourceKey}: {item.AuditLog[..50]}...");
+}
+```
+
+**Result:**
+```
+Showing 20 of 1523 total records
+  1: {"auditLog":[{"action":"Created","user":"admin...
+  2: {"auditLog":[{"action":"Created","user":"admin...
+  ...
+```
+
+---
+
+### GetPagedBySourceNameAndDateAsync
+
+Gets audit logs filtered by date range with pagination and total count.
+
+```csharp
+Task<PagedResult<AuditQueryResult>> GetPagedBySourceNameAndDateAsync(
+    string sourceName,
+    DateTime fromDate,
+    DateTime? toDate = null,
+    int skip = 0,
+    int take = 100,
+    CancellationToken cancellationToken = default);
+```
+
+**Example:**
+```csharp
+var fromDate = DateTime.UtcNow.AddDays(-30);
+var result = await auditQueryService.GetPagedBySourceNameAndDateAsync(
+    "Product", fromDate, skip: 0, take: 25);
+
+Console.WriteLine($"Page 1: {result.Items.Count()} items, {result.TotalCount} total");
+```
+
+---
+
+### GetPagedBySourceNameAndActionAsync
+
+Gets audit logs filtered by action type with pagination and total count. This is the safe, paginated alternative to `GetBySourceNameAndActionAsync`.
+
+```csharp
+Task<PagedResult<AuditQueryResult>> GetPagedBySourceNameAndActionAsync(
+    string sourceName,
+    AuditAction action,
+    int skip = 0,
+    int take = 100,
+    CancellationToken cancellationToken = default);
+```
+
+**Example:**
+```csharp
+// Get deleted products, page by page
+var result = await auditQueryService.GetPagedBySourceNameAndActionAsync(
+    "Product", AuditAction.Deleted, skip: 0, take: 50);
+
+Console.WriteLine($"Deleted products: {result.TotalCount} total");
+foreach (var item in result.Items)
+{
+    Console.WriteLine($"  Product {item.SourceKey} was deleted");
+}
+```
+
+---
+
+### GetPagedBySourceNameActionAndDateAsync
+
+Gets audit logs filtered by action and date range with pagination and total count. This is the safe, paginated alternative to `GetBySourceNameActionAndDateAsync`.
+
+```csharp
+Task<PagedResult<AuditQueryResult>> GetPagedBySourceNameActionAndDateAsync(
+    string sourceName,
+    AuditAction action,
+    DateTime fromDate,
+    DateTime? toDate = null,
+    int skip = 0,
+    int take = 100,
+    CancellationToken cancellationToken = default);
+```
+
+**Example:**
+```csharp
+// Get products created this month
+var result = await auditQueryService.GetPagedBySourceNameActionAndDateAsync(
+    "Product",
+    AuditAction.Created,
+    DateTime.UtcNow.AddMonths(-1),
+    skip: 0,
+    take: 50);
+
+Console.WriteLine($"Products created this month: {result.TotalCount}");
+```
+
+---
+
+### GetPagedSummaryBySourceNameAsync
+
+Gets a paged summary of the last event for each entity, with total count.
+
+```csharp
+Task<PagedResult<AuditSummaryResult>> GetPagedSummaryBySourceNameAsync(
+    string sourceName,
+    int skip = 0,
+    int take = 100,
+    CancellationToken cancellationToken = default);
+```
+
+**Example:**
+```csharp
+var result = await auditQueryService.GetPagedSummaryBySourceNameAsync("Product", skip: 0, take: 10);
+
+Console.WriteLine($"Page 1 of {Math.Ceiling(result.TotalCount / 10.0)} ({result.TotalCount} entities)");
+
+foreach (var summary in result.Items)
+{
+    Console.WriteLine($"  {summary.SourceKey}: {summary.LastAction} by {summary.LastUser}");
+}
+```
+
+---
+
+### GetPagedSummaryBySourceNameAsync (Filtered)
+
+Gets a paged summary with optional `sourceKey` and date range filters.
+
+```csharp
+Task<PagedResult<AuditSummaryResult>> GetPagedSummaryBySourceNameAsync(
+    string sourceName,
+    string? sourceKey,
+    DateTime? fromDate,
+    DateTime? toDate,
+    int skip = 0,
+    int take = 100,
+    CancellationToken cancellationToken = default);
+```
+
+**Example:**
+```csharp
+// Filter summary by sourceKey
+var result = await auditQueryService.GetPagedSummaryBySourceNameAsync(
+    "Product",
+    sourceKey: "42",         // filter by specific entity
+    fromDate: null,          // no date filter
+    toDate: null,
+    skip: 0,
+    take: 10);
+
+// Filter summary by date range
+var recentResult = await auditQueryService.GetPagedSummaryBySourceNameAsync(
+    "Product",
+    sourceKey: null,                     // all entities
+    fromDate: DateTime.UtcNow.AddDays(-7),
+    toDate: null,                        // up to now
+    skip: 0,
+    take: 20);
+
+Console.WriteLine($"Products modified in last 7 days: {recentResult.TotalCount}");
+```
+
+---
+
+### GetParsedDetailBySourceNameAndKeyAsync
+
+Gets the parsed audit detail for a specific entity. Returns strongly-typed entries with `Before`/`After`/`Value` fields already parsed -- no raw XML/JSON handling required on the consumer side.
+
+```csharp
+Task<AuditDetailResult?> GetParsedDetailBySourceNameAndKeyAsync(
+    string sourceName,
+    string sourceKey,
+    CancellationToken cancellationToken = default);
+```
+
+**Example:**
+```csharp
+var detail = await auditQueryService.GetParsedDetailBySourceNameAndKeyAsync("Product", "42");
+
+if (detail != null)
+{
+    Console.WriteLine($"History for {detail.SourceName} #{detail.SourceKey}:");
+
+    foreach (var entry in detail.Entries)
+    {
+        Console.WriteLine($"  [{entry.Timestamp:g}] {entry.Action} by {entry.User}");
+
+        foreach (var field in entry.Fields)
+        {
+            if (field.Before != null || field.After != null)
+                Console.WriteLine($"    {field.Name}: {field.Before} -> {field.After}");
+            else
+                Console.WriteLine($"    {field.Name}: {field.Value}");
+        }
+    }
+}
+```
+
+**Result:**
+```
+History for Product #42:
+  [12/10/2025 9:00 AM] Created by admin@example.com
+    Name: Widget
+    Price: 149.99
+    Stock: 100
+  [12/12/2025 2:30 PM] Updated by sales@example.com
+    Price: 149.99 -> 129.99
+    Stock: 100 -> 85
+  [12/12/2025 2:35 PM] Added by sales@example.com
+    Tag: Sale
+```
+
+**Comparison with `GetBySourceNameAndKeyAsync`:**
+
+| | `GetBySourceNameAndKeyAsync` | `GetParsedDetailBySourceNameAndKeyAsync` |
+|---|---|---|
+| Returns | `AuditQueryResult` with raw JSON/XML string | `AuditDetailResult` with typed `List<AuditLogEntry>` |
+| Parsing | Consumer must parse XML/JSON externally | Already parsed by AuditaX |
+| XML `@` prefix | Consumer deals with `@Action`, `@User`, etc. | Clean property names: `Action`, `User`, etc. |
+| Field access | Navigate raw string | `entry.Fields[0].Before`, `entry.Fields[0].After` |
+
+---
+
 ## Result Models
 
 ### AuditQueryResult
 
-Returned by most query methods. Contains the full audit log.
+Returned by most query methods. Contains the full audit log as a raw string.
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -314,7 +572,7 @@ Returned by most query methods. Contains the full audit log.
 
 ### AuditSummaryResult
 
-Returned by `GetSummaryBySourceNameAsync`. Contains only the last event information.
+Returned by `GetSummaryBySourceNameAsync` and `GetPagedSummaryBySourceNameAsync`. Contains only the last event information.
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -323,6 +581,48 @@ Returned by `GetSummaryBySourceNameAsync`. Contains only the last event informat
 | `LastAction` | string | Last action performed (Created, Updated, Deleted, Added, Removed) |
 | `LastTimestamp` | DateTime | UTC timestamp of the last action |
 | `LastUser` | string | User who performed the last action |
+
+### PagedResult\<T\>
+
+Returned by all `GetPaged*` methods. Wraps the result items with a total count for pagination.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Items` | IEnumerable\<T\> | The items in the current page |
+| `TotalCount` | int | Total number of records matching the query (across all pages) |
+
+### AuditDetailResult
+
+Returned by `GetParsedDetailBySourceNameAndKeyAsync`. Contains fully parsed audit entries.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `SourceName` | string | Name of the audited entity |
+| `SourceKey` | string | Unique key of the entity instance |
+| `Entries` | List\<AuditLogEntry\> | Parsed audit entries with typed fields |
+
+### AuditLogEntry
+
+Each entry in `AuditDetailResult.Entries`.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Action` | AuditAction | The action (Created, Updated, Deleted, Added, Removed) |
+| `User` | string | User who performed the action |
+| `Timestamp` | DateTime | UTC timestamp |
+| `Related` | string? | Related entity name (for Added/Removed actions) |
+| `Fields` | List\<FieldChange\> | Field changes in this entry |
+
+### FieldChange
+
+Each field change in `AuditLogEntry.Fields`.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Name` | string | Field name |
+| `Before` | string? | Value before the change (for Updates) |
+| `After` | string? | Value after the change (for Updates) |
+| `Value` | string? | Field value (for Added/Removed actions) |
 
 ---
 
@@ -334,7 +634,53 @@ Returned by `GetSummaryBySourceNameAsync`. Contains only the last event informat
 
 - **GetSummaryBySourceNameAsync** is optimized for dashboards and reports where you only need the current state of entities.
 
-- All methods that return collections support **pagination** via `skip` and `take` parameters. Use pagination to avoid loading large result sets into memory.
+- **Always prefer `GetPaged*` methods** over the non-paged versions. The paged methods return a `TotalCount` and guarantee bounded result sets via `skip`/`take`. The non-paged `GetBySourceNameAndActionAsync` and `GetBySourceNameActionAndDateAsync` can return unbounded results.
+
+- All `GetPaged*` methods execute two queries internally: one for the data page and one for the COUNT. This is a standard pagination pattern and the overhead is minimal.
+
+---
+
+## Example: Building a Paginated API
+
+```csharp
+// Your consumer's wrapper (lives in your app, NOT in AuditaX)
+public class PagedResponse<T>
+{
+    public int PageNumber { get; set; }
+    public int PageSize { get; set; }
+    public int TotalCount { get; set; }
+    public IEnumerable<T> Data { get; set; } = [];
+}
+
+public class AuditController(IAuditQueryService auditQueryService)
+{
+    [HttpGet("products/audit")]
+    public async Task<PagedResponse<AuditSummaryResult>> GetProductAudit(
+        int pageNumber = 1, int pageSize = 20)
+    {
+        var skip = (pageNumber - 1) * pageSize;
+
+        var result = await auditQueryService.GetPagedSummaryBySourceNameAsync(
+            "Product", skip: skip, take: pageSize);
+
+        return new PagedResponse<AuditSummaryResult>
+        {
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalCount = result.TotalCount,
+            Data = result.Items
+        };
+    }
+
+    [HttpGet("products/{id}/history")]
+    public async Task<AuditDetailResult?> GetProductHistory(int id)
+    {
+        // Returns parsed entries, no raw XML/JSON
+        return await auditQueryService.GetParsedDetailBySourceNameAndKeyAsync(
+            "Product", id.ToString());
+    }
+}
+```
 
 ---
 
@@ -345,22 +691,25 @@ public class AuditDashboardService(IAuditQueryService auditQueryService)
 {
     public async Task<DashboardData> GetDashboardAsync()
     {
-        // Get summary of recent changes
-        var productSummary = await auditQueryService.GetSummaryBySourceNameAsync("Product", take: 10);
-        var orderSummary = await auditQueryService.GetSummaryBySourceNameAsync("Order", take: 10);
+        // Get paged summary of recent changes (with total count)
+        var productSummary = await auditQueryService.GetPagedSummaryBySourceNameAsync("Product", take: 10);
+        var orderSummary = await auditQueryService.GetPagedSummaryBySourceNameAsync("Order", take: 10);
 
-        // Get entities deleted today
+        // Get entities deleted today (paginated)
         var today = DateTime.UtcNow.Date;
-        var deletedToday = await auditQueryService.GetBySourceNameActionAndDateAsync(
+        var deletedToday = await auditQueryService.GetPagedBySourceNameActionAndDateAsync(
             "Product",
             AuditAction.Deleted,
-            today);
+            today,
+            take: 50);
 
         return new DashboardData
         {
-            RecentProductChanges = productSummary,
-            RecentOrderChanges = orderSummary,
-            DeletedTodayCount = deletedToday.Count()
+            RecentProductChanges = productSummary.Items,
+            TotalProducts = productSummary.TotalCount,
+            RecentOrderChanges = orderSummary.Items,
+            TotalOrders = orderSummary.TotalCount,
+            DeletedTodayCount = deletedToday.TotalCount
         };
     }
 }

@@ -99,7 +99,8 @@ public static class DapperServiceExtensions
         {
             var connection = connectionFactory(sp);
             var databaseProvider = sp.GetRequiredService<IDatabaseProvider>();
-            return new DapperAuditQueryService(connection, databaseProvider);
+            var changeLogService = sp.GetRequiredService<IChangeLogService>();
+            return new DapperAuditQueryService(connection, databaseProvider, changeLogService);
         });
 
         // Register IAuditUnitOfWork for use in repositories

@@ -6,6 +6,7 @@ using AuditaX.Interfaces;
 using AuditaX.SqlServer.Providers;
 using AuditaX.PostgreSql.Providers;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 
 namespace AuditaX.EntityFramework.Tests.Services;
 
@@ -13,6 +14,7 @@ public class EfAuditQueryServicePaginationTests
 {
     private readonly AuditaXOptions _sqlServerOptions;
     private readonly AuditaXOptions _postgreSqlOptions;
+    private readonly Mock<IChangeLogService> _mockChangeLogService;
 
     public EfAuditQueryServicePaginationTests()
     {
@@ -29,6 +31,8 @@ public class EfAuditQueryServicePaginationTests
             Schema = "public",
             LogFormat = LogFormat.Json
         };
+
+        _mockChangeLogService = new Mock<IChangeLogService>();
     }
 
     private TestDbContext CreateInMemoryContext(string dbName)
@@ -48,7 +52,7 @@ public class EfAuditQueryServicePaginationTests
         // Arrange
         using var context = CreateInMemoryContext("TestDb_Default_Pagination");
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
-        var service = new EfAuditQueryService(context, provider);
+        var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
 
         // Act & Assert - InMemory provider doesn't support raw SQL, but we test the method signature
         var action = async () => await service.GetBySourceNameAsync("Product");
@@ -63,7 +67,7 @@ public class EfAuditQueryServicePaginationTests
         // Arrange
         using var context = CreateInMemoryContext("TestDb_Explicit_Pagination");
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
-        var service = new EfAuditQueryService(context, provider);
+        var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
 
         // Act & Assert
         var action = async () => await service.GetBySourceNameAsync("Product", skip: 10, take: 20);
@@ -80,7 +84,7 @@ public class EfAuditQueryServicePaginationTests
         // Arrange
         using var context = CreateInMemoryContext($"TestDb_Various_{skip}_{take}");
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
-        var service = new EfAuditQueryService(context, provider);
+        var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
 
         // Act & Assert
         var action = async () => await service.GetBySourceNameAsync("Product", skip: skip, take: take);
@@ -98,7 +102,7 @@ public class EfAuditQueryServicePaginationTests
         // Arrange
         using var context = CreateInMemoryContext("TestDb_Date_Default");
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
-        var service = new EfAuditQueryService(context, provider);
+        var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
         var fromDate = DateTime.UtcNow.AddDays(-7);
 
         // Act & Assert
@@ -113,7 +117,7 @@ public class EfAuditQueryServicePaginationTests
         // Arrange
         using var context = CreateInMemoryContext("TestDb_Date_Explicit");
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
-        var service = new EfAuditQueryService(context, provider);
+        var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
         var fromDate = DateTime.UtcNow.AddDays(-7);
 
         // Act & Assert
@@ -133,7 +137,7 @@ public class EfAuditQueryServicePaginationTests
         // Arrange
         using var context = CreateInMemoryContext("TestDb_Date_Full");
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
-        var service = new EfAuditQueryService(context, provider);
+        var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
         var fromDate = DateTime.UtcNow.AddMonths(-1);
         var toDate = DateTime.UtcNow;
 
@@ -159,7 +163,7 @@ public class EfAuditQueryServicePaginationTests
         // Arrange
         using var context = CreateInMemoryContext("TestDb_Summary_Default");
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
-        var service = new EfAuditQueryService(context, provider);
+        var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
 
         // Act & Assert
         var action = async () => await service.GetSummaryBySourceNameAsync("Product");
@@ -173,7 +177,7 @@ public class EfAuditQueryServicePaginationTests
         // Arrange
         using var context = CreateInMemoryContext("TestDb_Summary_Explicit");
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
-        var service = new EfAuditQueryService(context, provider);
+        var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
 
         // Act & Assert
         var action = async () => await service.GetSummaryBySourceNameAsync("Product", skip: 5, take: 15);
@@ -187,7 +191,7 @@ public class EfAuditQueryServicePaginationTests
         // Arrange
         using var context = CreateInMemoryContext("TestDb_Summary_Token");
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
-        var service = new EfAuditQueryService(context, provider);
+        var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
         using var cts = new CancellationTokenSource();
 
         // Act & Assert
@@ -210,7 +214,7 @@ public class EfAuditQueryServicePaginationTests
         // Arrange
         using var context = CreateInMemoryContext("TestDb_Key_NoPagination");
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
-        var service = new EfAuditQueryService(context, provider);
+        var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
 
         // Act & Assert
         var action = async () => await service.GetBySourceNameAndKeyAsync("Product", "123");
@@ -224,7 +228,7 @@ public class EfAuditQueryServicePaginationTests
         // Arrange
         using var context = CreateInMemoryContext("TestDb_Action_NoPagination");
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
-        var service = new EfAuditQueryService(context, provider);
+        var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
 
         // Act & Assert
         var action = async () => await service.GetBySourceNameAndActionAsync("Product", AuditAction.Created);
@@ -238,7 +242,7 @@ public class EfAuditQueryServicePaginationTests
         // Arrange
         using var context = CreateInMemoryContext("TestDb_ActionDate_NoPagination");
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
-        var service = new EfAuditQueryService(context, provider);
+        var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
         var fromDate = DateTime.UtcNow.AddDays(-7);
 
         // Act & Assert
@@ -260,7 +264,7 @@ public class EfAuditQueryServicePaginationTests
         // Arrange
         using var context = CreateInMemoryContext("TestDb_Validation_Empty");
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
-        var service = new EfAuditQueryService(context, provider);
+        var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
 
         // Act & Assert
         var action = async () => await service.GetBySourceNameAsync("");
@@ -275,7 +279,7 @@ public class EfAuditQueryServicePaginationTests
         // Arrange
         using var context = CreateInMemoryContext("TestDb_Validation_Null");
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
-        var service = new EfAuditQueryService(context, provider);
+        var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
 
         // Act & Assert
         var action = async () => await service.GetBySourceNameAsync(null!);
@@ -290,7 +294,7 @@ public class EfAuditQueryServicePaginationTests
         // Arrange
         using var context = CreateInMemoryContext("TestDb_Validation_Whitespace");
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
-        var service = new EfAuditQueryService(context, provider);
+        var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
 
         // Act & Assert
         var action = async () => await service.GetSummaryBySourceNameAsync("   ");
@@ -305,7 +309,7 @@ public class EfAuditQueryServicePaginationTests
         // Arrange
         using var context = CreateInMemoryContext("TestDb_Validation_DateEmpty");
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
-        var service = new EfAuditQueryService(context, provider);
+        var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
 
         // Act & Assert
         var action = async () => await service.GetBySourceNameAndDateAsync("", DateTime.UtcNow);
@@ -324,7 +328,7 @@ public class EfAuditQueryServicePaginationTests
         // Arrange
         using var context = CreateInMemoryContext("TestDb_PostgreSql_Pagination");
         var provider = new PostgreSqlDatabaseProvider(_postgreSqlOptions);
-        var service = new EfAuditQueryService(context, provider);
+        var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
 
         // Act & Assert
         var action = async () => await service.GetBySourceNameAsync("Product", skip: 0, take: 50);
@@ -344,7 +348,7 @@ public class EfAuditQueryServicePaginationTests
             LogFormat = LogFormat.Xml
         };
         var provider = new PostgreSqlDatabaseProvider(pgXmlOptions);
-        var service = new EfAuditQueryService(context, provider);
+        var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
 
         // Act & Assert
         var action = async () => await service.GetSummaryBySourceNameAsync("Product", skip: 10, take: 25);
@@ -358,7 +362,7 @@ public class EfAuditQueryServicePaginationTests
         // Arrange
         using var context = CreateInMemoryContext("TestDb_PostgreSql_Date");
         var provider = new PostgreSqlDatabaseProvider(_postgreSqlOptions);
-        var service = new EfAuditQueryService(context, provider);
+        var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
         var fromDate = DateTime.UtcNow.AddDays(-30);
 
         // Act & Assert
@@ -384,7 +388,7 @@ public class EfAuditQueryServicePaginationTests
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
 
         // Act
-        var service = new EfAuditQueryService(context, provider);
+        var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
 
         // Assert
         service.Should().BeAssignableTo<IAuditQueryService>();
@@ -397,7 +401,7 @@ public class EfAuditQueryServicePaginationTests
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
 
         // Act & Assert
-        var action = () => new EfAuditQueryService(null!, provider);
+        var action = () => new EfAuditQueryService(null!, provider, _mockChangeLogService.Object);
 
         action.Should().Throw<ArgumentNullException>();
     }
@@ -409,7 +413,7 @@ public class EfAuditQueryServicePaginationTests
         using var context = CreateInMemoryContext("TestDb_NullProvider");
 
         // Act & Assert
-        var action = () => new EfAuditQueryService(context, null!);
+        var action = () => new EfAuditQueryService(context, null!, _mockChangeLogService.Object);
 
         action.Should().Throw<ArgumentNullException>();
     }

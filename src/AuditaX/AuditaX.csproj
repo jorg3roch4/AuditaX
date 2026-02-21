@@ -14,9 +14,9 @@
 
         <!-- Package Identity -->
         <PackageId>AuditaX</PackageId>
-        <Version>1.0.4</Version>
-        <AssemblyVersion>1.0.4</AssemblyVersion>
-        <FileVersion>1.0.4</FileVersion>
+        <Version>1.1.0</Version>
+        <AssemblyVersion>1.1.0</AssemblyVersion>
+        <FileVersion>1.1.0</FileVersion>
         <Product>AuditaX</Product>
 
         <!-- Package Metadata -->
@@ -25,7 +25,7 @@
         <Description>Core library for entity auditing in .NET 10+ with fluent configuration, multiple serialization formats (JSON/XML), and extensible architecture for ORMs and databases.</Description>
         <Copyright>Copyright (c) 2025 jorg3roch4</Copyright>
         <PackageTags>audit;logging;entity-tracking;change-history;dotnet;efcore;dapper;sqlserver;postgresql</PackageTags>
-        <PackageReleaseNotes>v1.0.4 - Fix: EF Core audit log now handles re-creation of previously deleted entities.</PackageReleaseNotes>
+        <PackageReleaseNotes>v1.1.0 - Added paged query results with TotalCount, parsed audit detail, and new IDatabaseProvider members for COUNT and paginated queries.</PackageReleaseNotes>
         <NeutralLanguage>en</NeutralLanguage>
         <MinClientVersion>6.0</MinClientVersion>
 

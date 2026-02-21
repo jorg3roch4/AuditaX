@@ -246,6 +246,55 @@ END";
             ? GetSelectSummaryBySourceNameJsonSql(skip, take)
             : GetSelectSummaryBySourceNameXmlSql(skip, take);
 
+    /// <inheritdoc />
+    public string CountBySourceNameSql =>
+        $"SELECT COUNT(*) FROM {FullTableName} WHERE [{SourceNameColumn}] = @SourceName";
+
+    /// <inheritdoc />
+    public string CountBySourceNameAndDateSql =>
+        options.LogFormat == LogFormat.Json
+            ? CountBySourceNameAndDateJsonSql
+            : CountBySourceNameAndDateXmlSql;
+
+    /// <inheritdoc />
+    public string CountBySourceNameAndActionSql =>
+        options.LogFormat == LogFormat.Json
+            ? CountBySourceNameAndActionJsonSql
+            : CountBySourceNameAndActionXmlSql;
+
+    /// <inheritdoc />
+    public string CountBySourceNameActionAndDateSql =>
+        options.LogFormat == LogFormat.Json
+            ? CountBySourceNameActionAndDateJsonSql
+            : CountBySourceNameActionAndDateXmlSql;
+
+    /// <inheritdoc />
+    public string CountSummaryBySourceNameSql => CountBySourceNameSql;
+
+    /// <inheritdoc />
+    public string GetSelectBySourceNameAndActionSql(int skip, int take) =>
+        options.LogFormat == LogFormat.Json
+            ? GetSelectBySourceNameAndActionJsonSql(skip, take)
+            : GetSelectBySourceNameAndActionXmlSql(skip, take);
+
+    /// <inheritdoc />
+    public string GetSelectBySourceNameActionAndDateSql(int skip, int take) =>
+        options.LogFormat == LogFormat.Json
+            ? GetSelectBySourceNameActionAndDateJsonSql(skip, take)
+            : GetSelectBySourceNameActionAndDateXmlSql(skip, take);
+
+    /// <inheritdoc />
+    public string GetSelectFilteredSummaryBySourceNameSql(int skip, int take, string? sourceKey, bool hasDateFilter) =>
+        options.LogFormat == LogFormat.Json
+            ? GetSelectFilteredSummaryBySourceNameJsonSql(skip, take, sourceKey, hasDateFilter)
+            : GetSelectFilteredSummaryBySourceNameXmlSql(skip, take, sourceKey, hasDateFilter);
+
+    /// <inheritdoc />
+    public string GetCountFilteredSummaryBySourceNameSql(string? sourceKey, bool hasDateFilter) =>
+        options.LogFormat == LogFormat.Json
+            ? GetCountFilteredSummaryBySourceNameJsonSql(sourceKey, hasDateFilter)
+            : GetCountFilteredSummaryBySourceNameXmlSql(sourceKey, hasDateFilter);
+
     #endregion
 
     #region XML Query Implementations
@@ -286,6 +335,79 @@ END";
            WHERE [{SourceNameColumn}] = @SourceName
            ORDER BY [{SourceKeyColumn}]
            OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY";
+
+    private string CountBySourceNameAndDateXmlSql =>
+        $@"SELECT COUNT(*) FROM {FullTableName}
+           WHERE [{SourceNameColumn}] = @SourceName
+             AND [{AuditLogColumn}].exist('/AuditLog/Entry[@Timestamp >= sql:variable(""@FromDate"") and @Timestamp <= sql:variable(""@ToDate"")]') = 1";
+
+    private string CountBySourceNameAndActionXmlSql =>
+        $@"SELECT COUNT(*) FROM {FullTableName}
+           WHERE [{SourceNameColumn}] = @SourceName
+             AND [{AuditLogColumn}].exist('/AuditLog/Entry[@Action = sql:variable(""@Action"")]') = 1";
+
+    private string CountBySourceNameActionAndDateXmlSql =>
+        $@"SELECT COUNT(*) FROM {FullTableName}
+           WHERE [{SourceNameColumn}] = @SourceName
+             AND [{AuditLogColumn}].exist('/AuditLog/Entry[@Action = sql:variable(""@Action"") and @Timestamp >= sql:variable(""@FromDate"") and @Timestamp <= sql:variable(""@ToDate"")]') = 1";
+
+    private string GetSelectBySourceNameAndActionXmlSql(int skip, int take) =>
+        $@"SELECT [{SourceNameColumn}] AS SourceName,
+                  [{SourceKeyColumn}] AS SourceKey,
+                  CAST([{AuditLogColumn}] AS NVARCHAR(MAX)) AS AuditLog
+           FROM {FullTableName}
+           WHERE [{SourceNameColumn}] = @SourceName
+             AND [{AuditLogColumn}].exist('/AuditLog/Entry[@Action = sql:variable(""@Action"")]') = 1
+           ORDER BY [{SourceKeyColumn}]
+           OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY";
+
+    private string GetSelectBySourceNameActionAndDateXmlSql(int skip, int take) =>
+        $@"SELECT [{SourceNameColumn}] AS SourceName,
+                  [{SourceKeyColumn}] AS SourceKey,
+                  CAST([{AuditLogColumn}] AS NVARCHAR(MAX)) AS AuditLog
+           FROM {FullTableName}
+           WHERE [{SourceNameColumn}] = @SourceName
+             AND [{AuditLogColumn}].exist('/AuditLog/Entry[@Action = sql:variable(""@Action"") and @Timestamp >= sql:variable(""@FromDate"") and @Timestamp <= sql:variable(""@ToDate"")]') = 1
+           ORDER BY [{SourceKeyColumn}]
+           OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY";
+
+    private string GetSelectFilteredSummaryBySourceNameXmlSql(int skip, int take, string? sourceKey, bool hasDateFilter)
+    {
+        var sb = new StringBuilder();
+        sb.Append($@"SELECT [{SourceNameColumn}] AS SourceName,
+                  [{SourceKeyColumn}] AS SourceKey,
+                  [{AuditLogColumn}].value('(/AuditLog/Entry[last()]/@Action)[1]', 'NVARCHAR(50)') AS LastAction,
+                  [{AuditLogColumn}].value('(/AuditLog/Entry[last()]/@Timestamp)[1]', 'DATETIME2') AS LastTimestamp,
+                  [{AuditLogColumn}].value('(/AuditLog/Entry[last()]/@User)[1]', 'NVARCHAR(200)') AS LastUser
+           FROM {FullTableName}
+           WHERE [{SourceNameColumn}] = @SourceName");
+
+        if (sourceKey is not null)
+            sb.Append($" AND [{SourceKeyColumn}] = @SourceKey");
+
+        if (hasDateFilter)
+            sb.Append($@" AND [{AuditLogColumn}].exist('/AuditLog/Entry[@Timestamp >= sql:variable(""@FromDate"") and @Timestamp <= sql:variable(""@ToDate"")]') = 1");
+
+        sb.Append($@"
+           ORDER BY [{SourceKeyColumn}]
+           OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY");
+
+        return sb.ToString();
+    }
+
+    private string GetCountFilteredSummaryBySourceNameXmlSql(string? sourceKey, bool hasDateFilter)
+    {
+        var sb = new StringBuilder();
+        sb.Append($"SELECT COUNT(*) FROM {FullTableName} WHERE [{SourceNameColumn}] = @SourceName");
+
+        if (sourceKey is not null)
+            sb.Append($" AND [{SourceKeyColumn}] = @SourceKey");
+
+        if (hasDateFilter)
+            sb.Append($@" AND [{AuditLogColumn}].exist('/AuditLog/Entry[@Timestamp >= sql:variable(""@FromDate"") and @Timestamp <= sql:variable(""@ToDate"")]') = 1");
+
+        return sb.ToString();
+    }
 
     #endregion
 
@@ -347,6 +469,115 @@ END";
            WHERE a.[{SourceNameColumn}] = @SourceName
            ORDER BY a.[{SourceKeyColumn}]
            OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY";
+
+    private string CountBySourceNameAndDateJsonSql =>
+        $@"SELECT COUNT(*) FROM {FullTableName}
+           WHERE [{SourceNameColumn}] = @SourceName
+             AND EXISTS (
+                 SELECT 1 FROM OPENJSON([{AuditLogColumn}], '$.entries')
+                 WHERE TRY_CAST(JSON_VALUE(value, '$.timestamp') AS DATETIME2) >= @FromDate
+                   AND TRY_CAST(JSON_VALUE(value, '$.timestamp') AS DATETIME2) <= @ToDate
+             )";
+
+    private string CountBySourceNameAndActionJsonSql =>
+        $@"SELECT COUNT(*) FROM {FullTableName}
+           WHERE [{SourceNameColumn}] = @SourceName
+             AND EXISTS (
+                 SELECT 1 FROM OPENJSON([{AuditLogColumn}], '$.entries')
+                 WHERE JSON_VALUE(value, '$.action') = @Action
+             )";
+
+    private string CountBySourceNameActionAndDateJsonSql =>
+        $@"SELECT COUNT(*) FROM {FullTableName}
+           WHERE [{SourceNameColumn}] = @SourceName
+             AND EXISTS (
+                 SELECT 1 FROM OPENJSON([{AuditLogColumn}], '$.entries')
+                 WHERE JSON_VALUE(value, '$.action') = @Action
+                   AND TRY_CAST(JSON_VALUE(value, '$.timestamp') AS DATETIME2) >= @FromDate
+                   AND TRY_CAST(JSON_VALUE(value, '$.timestamp') AS DATETIME2) <= @ToDate
+             )";
+
+    private string GetSelectBySourceNameAndActionJsonSql(int skip, int take) =>
+        $@"SELECT [{SourceNameColumn}] AS SourceName,
+                  [{SourceKeyColumn}] AS SourceKey,
+                  [{AuditLogColumn}] AS AuditLog
+           FROM {FullTableName}
+           WHERE [{SourceNameColumn}] = @SourceName
+             AND EXISTS (
+                 SELECT 1 FROM OPENJSON([{AuditLogColumn}], '$.entries')
+                 WHERE JSON_VALUE(value, '$.action') = @Action
+             )
+           ORDER BY [{SourceKeyColumn}]
+           OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY";
+
+    private string GetSelectBySourceNameActionAndDateJsonSql(int skip, int take) =>
+        $@"SELECT [{SourceNameColumn}] AS SourceName,
+                  [{SourceKeyColumn}] AS SourceKey,
+                  [{AuditLogColumn}] AS AuditLog
+           FROM {FullTableName}
+           WHERE [{SourceNameColumn}] = @SourceName
+             AND EXISTS (
+                 SELECT 1 FROM OPENJSON([{AuditLogColumn}], '$.entries')
+                 WHERE JSON_VALUE(value, '$.action') = @Action
+                   AND TRY_CAST(JSON_VALUE(value, '$.timestamp') AS DATETIME2) >= @FromDate
+                   AND TRY_CAST(JSON_VALUE(value, '$.timestamp') AS DATETIME2) <= @ToDate
+             )
+           ORDER BY [{SourceKeyColumn}]
+           OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY";
+
+    private string GetSelectFilteredSummaryBySourceNameJsonSql(int skip, int take, string? sourceKey, bool hasDateFilter)
+    {
+        var sb = new StringBuilder();
+        sb.Append($@"SELECT a.[{SourceNameColumn}] AS SourceName,
+                  a.[{SourceKeyColumn}] AS SourceKey,
+                  j.LastAction,
+                  j.LastTimestamp,
+                  j.LastUser
+           FROM {FullTableName} a
+           CROSS APPLY (
+               SELECT TOP 1
+                   JSON_VALUE(value, '$.action') AS LastAction,
+                   TRY_CAST(JSON_VALUE(value, '$.timestamp') AS DATETIME2) AS LastTimestamp,
+                   JSON_VALUE(value, '$.user') AS LastUser
+               FROM OPENJSON(a.[{AuditLogColumn}], '$.entries')
+               ORDER BY TRY_CAST(JSON_VALUE(value, '$.timestamp') AS DATETIME2) DESC
+           ) j
+           WHERE a.[{SourceNameColumn}] = @SourceName");
+
+        if (sourceKey is not null)
+            sb.Append($" AND a.[{SourceKeyColumn}] = @SourceKey");
+
+        if (hasDateFilter)
+            sb.Append($@" AND EXISTS (
+                 SELECT 1 FROM OPENJSON(a.[{AuditLogColumn}], '$.entries')
+                 WHERE TRY_CAST(JSON_VALUE(value, '$.timestamp') AS DATETIME2) >= @FromDate
+                   AND TRY_CAST(JSON_VALUE(value, '$.timestamp') AS DATETIME2) <= @ToDate
+             )");
+
+        sb.Append($@"
+           ORDER BY a.[{SourceKeyColumn}]
+           OFFSET @Skip ROWS FETCH NEXT @Take ROWS ONLY");
+
+        return sb.ToString();
+    }
+
+    private string GetCountFilteredSummaryBySourceNameJsonSql(string? sourceKey, bool hasDateFilter)
+    {
+        var sb = new StringBuilder();
+        sb.Append($"SELECT COUNT(*) FROM {FullTableName} WHERE [{SourceNameColumn}] = @SourceName");
+
+        if (sourceKey is not null)
+            sb.Append($" AND [{SourceKeyColumn}] = @SourceKey");
+
+        if (hasDateFilter)
+            sb.Append($@" AND EXISTS (
+                 SELECT 1 FROM OPENJSON([{AuditLogColumn}], '$.entries')
+                 WHERE TRY_CAST(JSON_VALUE(value, '$.timestamp') AS DATETIME2) >= @FromDate
+                   AND TRY_CAST(JSON_VALUE(value, '$.timestamp') AS DATETIME2) <= @ToDate
+             )");
+
+        return sb.ToString();
+    }
 
     #endregion
 }

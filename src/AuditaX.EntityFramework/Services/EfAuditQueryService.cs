@@ -2,6 +2,7 @@ using System.Data.Common;
 using AuditaX.Enums;
 using AuditaX.Interfaces;
 using AuditaX.Models;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace AuditaX.EntityFramework.Services;
 
@@ -11,12 +12,15 @@ namespace AuditaX.EntityFramework.Services;
 /// </summary>
 /// <param name="context">The DbContext.</param>
 /// <param name="provider">The database provider for SQL queries.</param>
+/// <param name="changeLogService">The change log service for parsing audit logs.</param>
 public sealed class EfAuditQueryService(
     DbContext context,
-    IDatabaseProvider provider) : IAuditQueryService
+    IDatabaseProvider provider,
+    IChangeLogService changeLogService) : IAuditQueryService
 {
     private readonly DbContext _context = context ?? throw new ArgumentNullException(nameof(context));
     private readonly IDatabaseProvider _provider = provider ?? throw new ArgumentNullException(nameof(provider));
+    private readonly IChangeLogService _changeLogService = changeLogService ?? throw new ArgumentNullException(nameof(changeLogService));
 
     /// <inheritdoc />
     public async Task<IEnumerable<AuditQueryResult>> GetBySourceNameAsync(
@@ -202,12 +206,309 @@ public sealed class EfAuditQueryService(
         return results;
     }
 
+    /// <inheritdoc />
+    public async Task<PagedResult<AuditQueryResult>> GetPagedBySourceNameAsync(
+        string sourceName,
+        int skip = 0,
+        int take = 100,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(sourceName))
+            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
+
+        var connection = _context.Database.GetDbConnection();
+        await EnsureConnectionOpenAsync(connection, cancellationToken);
+
+        List<AuditQueryResult> results = [];
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = _provider.GetSelectBySourceNameSql(skip, take);
+        AddParameter(command, "SourceName", sourceName);
+        AddParameter(command, "Skip", skip);
+        AddParameter(command, "Take", take);
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            results.Add(MapToAuditQueryResult(reader));
+        }
+
+        var totalCount = await ExecuteCountAsync(
+            _provider.CountBySourceNameSql,
+            cmd => AddParameter(cmd, "SourceName", sourceName),
+            cancellationToken);
+
+        return new PagedResult<AuditQueryResult> { Items = results, TotalCount = totalCount };
+    }
+
+    /// <inheritdoc />
+    public async Task<PagedResult<AuditQueryResult>> GetPagedBySourceNameAndDateAsync(
+        string sourceName,
+        DateTime fromDate,
+        DateTime? toDate = null,
+        int skip = 0,
+        int take = 100,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(sourceName))
+            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
+
+        var connection = _context.Database.GetDbConnection();
+        await EnsureConnectionOpenAsync(connection, cancellationToken);
+
+        var effectiveToDate = toDate ?? DateTime.UtcNow;
+        List<AuditQueryResult> results = [];
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = _provider.GetSelectBySourceNameAndDateSql(skip, take);
+        AddParameter(command, "SourceName", sourceName);
+        AddParameter(command, "FromDate", fromDate);
+        AddParameter(command, "ToDate", effectiveToDate);
+        AddParameter(command, "Skip", skip);
+        AddParameter(command, "Take", take);
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            results.Add(MapToAuditQueryResult(reader));
+        }
+
+        var totalCount = await ExecuteCountAsync(
+            _provider.CountBySourceNameAndDateSql,
+            cmd =>
+            {
+                AddParameter(cmd, "SourceName", sourceName);
+                AddParameter(cmd, "FromDate", fromDate);
+                AddParameter(cmd, "ToDate", effectiveToDate);
+            },
+            cancellationToken);
+
+        return new PagedResult<AuditQueryResult> { Items = results, TotalCount = totalCount };
+    }
+
+    /// <inheritdoc />
+    public async Task<PagedResult<AuditQueryResult>> GetPagedBySourceNameAndActionAsync(
+        string sourceName,
+        AuditAction action,
+        int skip = 0,
+        int take = 100,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(sourceName))
+            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
+
+        var connection = _context.Database.GetDbConnection();
+        await EnsureConnectionOpenAsync(connection, cancellationToken);
+
+        List<AuditQueryResult> results = [];
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = _provider.GetSelectBySourceNameAndActionSql(skip, take);
+        AddParameter(command, "SourceName", sourceName);
+        AddParameter(command, "Action", action.ToString());
+        AddParameter(command, "Skip", skip);
+        AddParameter(command, "Take", take);
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            results.Add(MapToAuditQueryResult(reader));
+        }
+
+        var totalCount = await ExecuteCountAsync(
+            _provider.CountBySourceNameAndActionSql,
+            cmd =>
+            {
+                AddParameter(cmd, "SourceName", sourceName);
+                AddParameter(cmd, "Action", action.ToString());
+            },
+            cancellationToken);
+
+        return new PagedResult<AuditQueryResult> { Items = results, TotalCount = totalCount };
+    }
+
+    /// <inheritdoc />
+    public async Task<PagedResult<AuditQueryResult>> GetPagedBySourceNameActionAndDateAsync(
+        string sourceName,
+        AuditAction action,
+        DateTime fromDate,
+        DateTime? toDate = null,
+        int skip = 0,
+        int take = 100,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(sourceName))
+            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
+
+        var connection = _context.Database.GetDbConnection();
+        await EnsureConnectionOpenAsync(connection, cancellationToken);
+
+        var effectiveToDate = toDate ?? DateTime.UtcNow;
+        List<AuditQueryResult> results = [];
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = _provider.GetSelectBySourceNameActionAndDateSql(skip, take);
+        AddParameter(command, "SourceName", sourceName);
+        AddParameter(command, "Action", action.ToString());
+        AddParameter(command, "FromDate", fromDate);
+        AddParameter(command, "ToDate", effectiveToDate);
+        AddParameter(command, "Skip", skip);
+        AddParameter(command, "Take", take);
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            results.Add(MapToAuditQueryResult(reader));
+        }
+
+        var totalCount = await ExecuteCountAsync(
+            _provider.CountBySourceNameActionAndDateSql,
+            cmd =>
+            {
+                AddParameter(cmd, "SourceName", sourceName);
+                AddParameter(cmd, "Action", action.ToString());
+                AddParameter(cmd, "FromDate", fromDate);
+                AddParameter(cmd, "ToDate", effectiveToDate);
+            },
+            cancellationToken);
+
+        return new PagedResult<AuditQueryResult> { Items = results, TotalCount = totalCount };
+    }
+
+    /// <inheritdoc />
+    public async Task<PagedResult<AuditSummaryResult>> GetPagedSummaryBySourceNameAsync(
+        string sourceName,
+        int skip = 0,
+        int take = 100,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(sourceName))
+            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
+
+        var connection = _context.Database.GetDbConnection();
+        await EnsureConnectionOpenAsync(connection, cancellationToken);
+
+        List<AuditSummaryResult> results = [];
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = _provider.GetSelectSummaryBySourceNameSql(skip, take);
+        AddParameter(command, "SourceName", sourceName);
+        AddParameter(command, "Skip", skip);
+        AddParameter(command, "Take", take);
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            results.Add(MapToAuditSummaryResult(reader));
+        }
+
+        var totalCount = await ExecuteCountAsync(
+            _provider.CountSummaryBySourceNameSql,
+            cmd => AddParameter(cmd, "SourceName", sourceName),
+            cancellationToken);
+
+        return new PagedResult<AuditSummaryResult> { Items = results, TotalCount = totalCount };
+    }
+
+    /// <inheritdoc />
+    public async Task<PagedResult<AuditSummaryResult>> GetPagedSummaryBySourceNameAsync(
+        string sourceName,
+        string? sourceKey,
+        DateTime? fromDate,
+        DateTime? toDate,
+        int skip = 0,
+        int take = 100,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(sourceName))
+            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
+
+        var connection = _context.Database.GetDbConnection();
+        await EnsureConnectionOpenAsync(connection, cancellationToken);
+
+        var hasDateFilter = fromDate.HasValue;
+        var effectiveToDate = toDate ?? DateTime.UtcNow;
+
+        List<AuditSummaryResult> results = [];
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = _provider.GetSelectFilteredSummaryBySourceNameSql(skip, take, sourceKey, hasDateFilter);
+        AddParameter(command, "SourceName", sourceName);
+        AddParameter(command, "Skip", skip);
+        AddParameter(command, "Take", take);
+
+        if (sourceKey is not null)
+            AddParameter(command, "SourceKey", sourceKey);
+
+        if (hasDateFilter)
+        {
+            AddParameter(command, "FromDate", fromDate!.Value);
+            AddParameter(command, "ToDate", effectiveToDate);
+        }
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            results.Add(MapToAuditSummaryResult(reader));
+        }
+
+        var totalCount = await ExecuteCountAsync(
+            _provider.GetCountFilteredSummaryBySourceNameSql(sourceKey, hasDateFilter),
+            cmd =>
+            {
+                AddParameter(cmd, "SourceName", sourceName);
+                if (sourceKey is not null)
+                    AddParameter(cmd, "SourceKey", sourceKey);
+                if (hasDateFilter)
+                {
+                    AddParameter(cmd, "FromDate", fromDate!.Value);
+                    AddParameter(cmd, "ToDate", effectiveToDate);
+                }
+            },
+            cancellationToken);
+
+        return new PagedResult<AuditSummaryResult> { Items = results, TotalCount = totalCount };
+    }
+
+    /// <inheritdoc />
+    public async Task<AuditDetailResult?> GetParsedDetailBySourceNameAndKeyAsync(
+        string sourceName,
+        string sourceKey,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await GetBySourceNameAndKeyAsync(sourceName, sourceKey, cancellationToken);
+        if (raw is null)
+            return null;
+
+        var entries = _changeLogService.ParseAuditLog(raw.AuditLog);
+
+        return new AuditDetailResult
+        {
+            SourceName = raw.SourceName,
+            SourceKey = raw.SourceKey,
+            Entries = entries
+        };
+    }
+
     private static async Task EnsureConnectionOpenAsync(DbConnection connection, CancellationToken cancellationToken)
     {
         if (connection.State != ConnectionState.Open)
         {
             await connection.OpenAsync(cancellationToken);
         }
+    }
+
+    private async Task<int> ExecuteCountAsync(string sql, Action<DbCommand> addParams, CancellationToken cancellationToken)
+    {
+        var connection = _context.Database.GetDbConnection();
+        await EnsureConnectionOpenAsync(connection, cancellationToken);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        addParams(command);
+
+        var result = await command.ExecuteScalarAsync(cancellationToken);
+        return Convert.ToInt32(result);
     }
 
     private static void AddParameter(DbCommand command, string name, object value)

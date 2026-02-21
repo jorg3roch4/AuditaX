@@ -43,12 +43,17 @@ Of course, there's absolutely no obligation. If you prefer, simply starring the 
 - **Configuration Options**: appsettings.json or Fluent API
 - **Auto Table Creation**: Creates audit table on startup if needed
 - **Startup Validation**: Validates table structure and configuration
+- **Paged Queries with TotalCount**: `PagedResult<T>` for all multi-record queries
+- **Parsed Audit Detail**: Get strongly-typed entries without raw XML/JSON handling
 
 ---
 
-## 🎉 What's New in 1.0.4
+## 🎉 What's New in 1.1.0
 
-- **Fixed**: EF Core audit log now handles re-creation of previously deleted entities - No more UNIQUE constraint violation when an entity is created, deleted, and re-created with the same ID
+- **Paged query results with TotalCount**: New `PagedResult<T>` model with `Items` + `TotalCount` for building paginated UIs
+- **Paged versions for ALL multi-record queries**: `GetPagedBySourceNameAsync`, `GetPagedBySourceNameAndDateAsync`, `GetPagedBySourceNameAndActionAsync`, `GetPagedBySourceNameActionAndDateAsync`, `GetPagedSummaryBySourceNameAsync`
+- **Filtered summary**: `GetPagedSummaryBySourceNameAsync` overload with optional `sourceKey` and date range filters
+- **Parsed audit detail**: `GetParsedDetailBySourceNameAndKeyAsync` returns strongly-typed `AuditDetailResult` with `AuditLogEntry` objects -- no more raw XML/JSON parsing on the consumer side
 
 See [CHANGELOG.md](CHANGELOG.md) for full details.
 
@@ -370,36 +375,36 @@ AuditaX provides `IAuditQueryService` for querying audit history. Inject it into
 ```csharp
 public class ProductService(IAuditQueryService auditQueryService)
 {
-    public async Task<AuditQueryResult?> GetProductHistoryAsync(int productId)
+    // Parsed detail - no raw XML/JSON handling needed
+    public async Task<AuditDetailResult?> GetProductHistoryAsync(int productId)
     {
-        return await auditQueryService.GetBySourceNameAndKeyAsync("Product", productId.ToString());
+        return await auditQueryService.GetParsedDetailBySourceNameAndKeyAsync(
+            "Product", productId.ToString());
     }
 
-    public async Task<IEnumerable<AuditSummaryResult>> GetRecentChangesAsync()
+    // Paged results with TotalCount for pagination
+    public async Task<PagedResult<AuditSummaryResult>> GetRecentChangesAsync(int page, int pageSize)
     {
-        return await auditQueryService.GetSummaryBySourceNameAsync("Product", skip: 0, take: 10);
+        var skip = (page - 1) * pageSize;
+        return await auditQueryService.GetPagedSummaryBySourceNameAsync(
+            "Product", skip: skip, take: pageSize);
     }
 }
 ```
 
-**Summary Result (one record per entity with last action):**
-```json
-[
-  {
-    "sourceName": "Product",
-    "sourceKey": "1",
-    "lastAction": "Updated",
-    "lastTimestamp": "2025-12-15T14:30:00Z",
-    "lastUser": "sales@example.com"
-  },
-  {
-    "sourceName": "Product",
-    "sourceKey": "2",
-    "lastAction": "Created",
-    "lastTimestamp": "2025-12-15T10:00:00Z",
-    "lastUser": "admin@example.com"
-  }
-]
+**Parsed Detail Result (strongly-typed, no raw XML/JSON):**
+```csharp
+var detail = await auditQueryService.GetParsedDetailBySourceNameAndKeyAsync("Product", "42");
+// detail.Entries[0].Action  => AuditAction.Created
+// detail.Entries[1].Fields[0].Before => "149.99"
+// detail.Entries[1].Fields[0].After  => "129.99"
+```
+
+**Paged Summary Result (with TotalCount):**
+```csharp
+var result = await auditQueryService.GetPagedSummaryBySourceNameAsync("Product", skip: 0, take: 10);
+// result.TotalCount => 1523
+// result.Items      => first 10 summaries
 ```
 
 ### Available Query Methods
@@ -409,9 +414,15 @@ public class ProductService(IAuditQueryService auditQueryService)
 | `GetBySourceNameAsync` | Get all audit logs for an entity type (paginated) |
 | `GetBySourceNameAndKeyAsync` | Get audit log for a specific entity instance |
 | `GetBySourceNameAndDateAsync` | Get logs within a date range (paginated) |
-| `GetBySourceNameAndActionAsync` | Get logs by action type (Created, Updated, Deleted) |
+| `GetBySourceNameAndActionAsync` | Get logs by action type |
 | `GetBySourceNameActionAndDateAsync` | Get logs by action and date range |
 | `GetSummaryBySourceNameAsync` | Get last event summary for each entity (optimized) |
+| **`GetPagedBySourceNameAsync`** | **Paged logs with TotalCount** |
+| **`GetPagedBySourceNameAndDateAsync`** | **Paged logs by date with TotalCount** |
+| **`GetPagedBySourceNameAndActionAsync`** | **Paged logs by action with TotalCount** |
+| **`GetPagedBySourceNameActionAndDateAsync`** | **Paged logs by action+date with TotalCount** |
+| **`GetPagedSummaryBySourceNameAsync`** | **Paged summary with TotalCount (+ optional filters)** |
+| **`GetParsedDetailBySourceNameAndKeyAsync`** | **Parsed detail with typed Before/After/Value fields** |
 
 See [Querying Audit Logs](./docs/querying-audit-logs.md) for complete documentation with examples.
 

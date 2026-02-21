@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace AuditaX.EntityFramework.Tests.Extensions;
 
+[Collection("AuditaXModelCustomizerStaticState")]
 public class EntityFrameworkServiceExtensionsTests
 {
     #region SQL Server Tests

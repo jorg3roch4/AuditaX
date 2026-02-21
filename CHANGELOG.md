@@ -2,6 +2,42 @@
 
 All notable changes to AuditaX will be documented in this file.
 
+## [1.1.0] - 2026-02-20
+
+### Added
+- **Paged query results with TotalCount**: New `PagedResult<T>` model containing `Items` and `TotalCount` for pagination support
+  - Consumers can now build their own `PagedResponse<T>` wrappers using `skip`/`take` and the returned `TotalCount`
+- **Paged query methods on `IAuditQueryService`**:
+  - `GetPagedBySourceNameAsync` - Paged audit logs by entity type with total count
+  - `GetPagedBySourceNameAndDateAsync` - Paged audit logs filtered by date range with total count
+  - `GetPagedBySourceNameAndActionAsync` - Paged audit logs filtered by action type with total count (new - previously had no pagination)
+  - `GetPagedBySourceNameActionAndDateAsync` - Paged audit logs filtered by action and date range with total count (new - previously had no pagination)
+  - `GetPagedSummaryBySourceNameAsync` - Paged summary with total count
+  - `GetPagedSummaryBySourceNameAsync` (filtered overload) - Summary with optional `sourceKey` and date range filters
+- **Parsed audit detail**: New `GetParsedDetailBySourceNameAndKeyAsync` method returns `AuditDetailResult` with strongly-typed `AuditLogEntry` objects
+  - No more raw XML/JSON handling on the consumer side
+  - No `@` prefix issues when converting XML externally
+  - `Before`/`After`/`Value` fields are already parsed into typed `FieldChange` objects
+- **New models**:
+  - `PagedResult<T>` - Generic paged result with `Items` and `TotalCount`
+  - `AuditDetailResult` - Parsed audit detail with `SourceName`, `SourceKey`, and `List<AuditLogEntry>`
+- **New `IDatabaseProvider` members** for COUNT queries and paginated action/summary queries:
+  - `CountBySourceNameSql`, `CountBySourceNameAndDateSql`, `CountBySourceNameAndActionSql`, `CountBySourceNameActionAndDateSql`, `CountSummaryBySourceNameSql`
+  - `GetSelectBySourceNameAndActionSql(skip, take)`, `GetSelectBySourceNameActionAndDateSql(skip, take)`
+  - `GetSelectFilteredSummaryBySourceNameSql(skip, take, sourceKey?, hasDateFilter)`, `GetCountFilteredSummaryBySourceNameSql(sourceKey?, hasDateFilter)`
+- SQL Server and PostgreSQL implementations for all new SQL generation (XML and JSON formats)
+- Unit tests for new models, Dapper paged methods, and EF Core paged methods
+
+### Changed
+- `DapperAuditQueryService` and `EfAuditQueryService` now require `IChangeLogService` in the constructor (used by `GetParsedDetailBySourceNameAndKeyAsync`)
+- DI registrations in `DapperServiceExtensions` and `EntityFrameworkServiceExtensions` updated to inject `IChangeLogService`
+
+### Note
+- All existing methods remain unchanged - this is a fully additive, non-breaking API extension
+- The original unpaginated `GetBySourceNameAndActionAsync` and `GetBySourceNameActionAndDateAsync` methods still exist but now have safer paginated alternatives
+
+---
+
 ## [1.0.4] - 2026-02-09
 
 ### Fixed

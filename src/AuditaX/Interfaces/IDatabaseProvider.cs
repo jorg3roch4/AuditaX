@@ -157,5 +157,74 @@ public interface IDatabaseProvider
     /// <returns>SQL query string with pagination.</returns>
     string GetSelectSummaryBySourceNameSql(int skip, int take);
 
+    /// <summary>
+    /// Gets the SQL to count records by SourceName.
+    /// Uses parameters: @SourceName
+    /// </summary>
+    string CountBySourceNameSql { get; }
+
+    /// <summary>
+    /// Gets the SQL to count records by SourceName filtered by date range.
+    /// Uses parameters: @SourceName, @FromDate, @ToDate
+    /// </summary>
+    string CountBySourceNameAndDateSql { get; }
+
+    /// <summary>
+    /// Gets the SQL to count records by SourceName filtered by action.
+    /// Uses parameters: @SourceName, @Action
+    /// </summary>
+    string CountBySourceNameAndActionSql { get; }
+
+    /// <summary>
+    /// Gets the SQL to count records by SourceName filtered by action and date range.
+    /// Uses parameters: @SourceName, @Action, @FromDate, @ToDate
+    /// </summary>
+    string CountBySourceNameActionAndDateSql { get; }
+
+    /// <summary>
+    /// Gets the SQL to count summary records (distinct entities) by SourceName.
+    /// Uses parameters: @SourceName
+    /// </summary>
+    string CountSummaryBySourceNameSql { get; }
+
+    /// <summary>
+    /// Gets the SQL query to select audit logs by SourceName filtered by action with pagination.
+    /// Uses parameters: @SourceName, @Action, @Skip, @Take
+    /// </summary>
+    /// <param name="skip">Number of records to skip.</param>
+    /// <param name="take">Number of records to take.</param>
+    /// <returns>SQL query string with pagination.</returns>
+    string GetSelectBySourceNameAndActionSql(int skip, int take);
+
+    /// <summary>
+    /// Gets the SQL query to select audit logs by SourceName filtered by action and date range with pagination.
+    /// Uses parameters: @SourceName, @Action, @FromDate, @ToDate, @Skip, @Take
+    /// </summary>
+    /// <param name="skip">Number of records to skip.</param>
+    /// <param name="take">Number of records to take.</param>
+    /// <returns>SQL query string with pagination.</returns>
+    string GetSelectBySourceNameActionAndDateSql(int skip, int take);
+
+    /// <summary>
+    /// Gets the SQL query to select a filtered summary by SourceName with optional sourceKey and date range filters.
+    /// Returns: SourceName, SourceKey, LastAction, LastTimestamp, LastUser
+    /// Uses parameters: @SourceName, @Skip, @Take, and optionally @SourceKey, @FromDate, @ToDate
+    /// </summary>
+    /// <param name="skip">Number of records to skip.</param>
+    /// <param name="take">Number of records to take.</param>
+    /// <param name="sourceKey">Optional source key filter. When not null, filters by exact SourceKey.</param>
+    /// <param name="hasDateFilter">When true, adds date range filtering using @FromDate and @ToDate parameters.</param>
+    /// <returns>SQL query string with pagination and optional filters.</returns>
+    string GetSelectFilteredSummaryBySourceNameSql(int skip, int take, string? sourceKey, bool hasDateFilter);
+
+    /// <summary>
+    /// Gets the SQL to count filtered summary records by SourceName with optional sourceKey and date range.
+    /// Uses parameters: @SourceName, and optionally @SourceKey, @FromDate, @ToDate
+    /// </summary>
+    /// <param name="sourceKey">Optional source key filter.</param>
+    /// <param name="hasDateFilter">When true, adds date range filtering.</param>
+    /// <returns>SQL count query string.</returns>
+    string GetCountFilteredSummaryBySourceNameSql(string? sourceKey, bool hasDateFilter);
+
     #endregion
 }

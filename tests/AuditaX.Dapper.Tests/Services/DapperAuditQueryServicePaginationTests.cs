@@ -12,12 +12,15 @@ namespace AuditaX.Dapper.Tests.Services;
 public class DapperAuditQueryServicePaginationTests
 {
     private readonly Mock<IDbConnection> _mockConnection;
+    private readonly Mock<IChangeLogService> _mockChangeLogService;
     private readonly AuditaXOptions _options;
 
     public DapperAuditQueryServicePaginationTests()
     {
         _mockConnection = new Mock<IDbConnection>();
         _mockConnection.Setup(c => c.State).Returns(ConnectionState.Open);
+
+        _mockChangeLogService = new Mock<IChangeLogService>();
 
         _options = new AuditaXOptions
         {
@@ -34,7 +37,7 @@ public class DapperAuditQueryServicePaginationTests
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
-        var service = new DapperAuditQueryService(_mockConnection.Object, provider);
+        var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
 
         // Act & Assert - Should not throw with default pagination
         var action = async () => await service.GetBySourceNameAsync("Product");
@@ -49,7 +52,7 @@ public class DapperAuditQueryServicePaginationTests
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
-        var service = new DapperAuditQueryService(_mockConnection.Object, provider);
+        var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
 
         // Act & Assert - Method should accept explicit pagination parameters
         var action = async () => await service.GetBySourceNameAsync("Product", skip: 10, take: 20);
@@ -65,7 +68,7 @@ public class DapperAuditQueryServicePaginationTests
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
-        var service = new DapperAuditQueryService(_mockConnection.Object, provider);
+        var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
 
         // Act & Assert - Method should accept various pagination parameters
         var action = async () => await service.GetBySourceNameAsync("Product", skip: skip, take: take);
@@ -82,7 +85,7 @@ public class DapperAuditQueryServicePaginationTests
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
-        var service = new DapperAuditQueryService(_mockConnection.Object, provider);
+        var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
         var fromDate = DateTime.UtcNow.AddDays(-7);
 
         // Act & Assert
@@ -96,7 +99,7 @@ public class DapperAuditQueryServicePaginationTests
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
-        var service = new DapperAuditQueryService(_mockConnection.Object, provider);
+        var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
         var fromDate = DateTime.UtcNow.AddDays(-7);
 
         // Act & Assert
@@ -115,7 +118,7 @@ public class DapperAuditQueryServicePaginationTests
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
-        var service = new DapperAuditQueryService(_mockConnection.Object, provider);
+        var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
         var fromDate = DateTime.UtcNow.AddDays(-30);
         var toDate = DateTime.UtcNow.AddDays(-1);
 
@@ -139,7 +142,7 @@ public class DapperAuditQueryServicePaginationTests
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
-        var service = new DapperAuditQueryService(_mockConnection.Object, provider);
+        var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
 
         // Act & Assert
         var action = async () => await service.GetSummaryBySourceNameAsync("Product");
@@ -152,7 +155,7 @@ public class DapperAuditQueryServicePaginationTests
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
-        var service = new DapperAuditQueryService(_mockConnection.Object, provider);
+        var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
 
         // Act & Assert
         var action = async () => await service.GetSummaryBySourceNameAsync("Product", skip: 5, take: 15);
@@ -169,7 +172,7 @@ public class DapperAuditQueryServicePaginationTests
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
-        var service = new DapperAuditQueryService(_mockConnection.Object, provider);
+        var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
 
         // Act & Assert - Method should only have sourceName and sourceKey
         var action = async () => await service.GetBySourceNameAndKeyAsync("Product", "123");
@@ -182,7 +185,7 @@ public class DapperAuditQueryServicePaginationTests
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
-        var service = new DapperAuditQueryService(_mockConnection.Object, provider);
+        var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
 
         // Act & Assert
         var action = async () => await service.GetBySourceNameAndActionAsync("Product", AuditAction.Created);
@@ -195,7 +198,7 @@ public class DapperAuditQueryServicePaginationTests
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
-        var service = new DapperAuditQueryService(_mockConnection.Object, provider);
+        var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
         var fromDate = DateTime.UtcNow.AddDays(-7);
 
         // Act & Assert
@@ -216,7 +219,7 @@ public class DapperAuditQueryServicePaginationTests
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
-        var service = new DapperAuditQueryService(_mockConnection.Object, provider);
+        var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
 
         // Act & Assert
         var action = async () => await service.GetBySourceNameAsync("");
@@ -230,7 +233,7 @@ public class DapperAuditQueryServicePaginationTests
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
-        var service = new DapperAuditQueryService(_mockConnection.Object, provider);
+        var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
 
         // Act & Assert
         var action = async () => await service.GetBySourceNameAsync(null!);
@@ -244,7 +247,7 @@ public class DapperAuditQueryServicePaginationTests
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
-        var service = new DapperAuditQueryService(_mockConnection.Object, provider);
+        var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
 
         // Act & Assert
         var action = async () => await service.GetSummaryBySourceNameAsync("  ");
@@ -268,7 +271,7 @@ public class DapperAuditQueryServicePaginationTests
             LogFormat = LogFormat.Json
         };
         var provider = new PostgreSqlDatabaseProvider(pgOptions);
-        var service = new DapperAuditQueryService(_mockConnection.Object, provider);
+        var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
 
         // Act & Assert
         var action = async () => await service.GetBySourceNameAsync("Product", skip: 0, take: 50);
@@ -287,7 +290,7 @@ public class DapperAuditQueryServicePaginationTests
             LogFormat = LogFormat.Xml
         };
         var provider = new PostgreSqlDatabaseProvider(pgOptions);
-        var service = new DapperAuditQueryService(_mockConnection.Object, provider);
+        var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
 
         // Act & Assert
         var action = async () => await service.GetSummaryBySourceNameAsync("Product", skip: 10, take: 25);

@@ -14,9 +14,9 @@
 
         <!-- Package Identity -->
         <PackageId>AuditaX.EntityFramework</PackageId>
-        <Version>1.0.4</Version>
-        <AssemblyVersion>1.0.4</AssemblyVersion>
-        <FileVersion>1.0.4</FileVersion>
+        <Version>1.1.0</Version>
+        <AssemblyVersion>1.1.0</AssemblyVersion>
+        <FileVersion>1.1.0</FileVersion>
         <Product>AuditaX</Product>
 
         <!-- Package Metadata -->
@@ -25,7 +25,7 @@
         <Description>Entity Framework Core integration for AuditaX with automatic change tracking via SaveChanges interceptors.</Description>
         <Copyright>Copyright (c) 2025 jorg3roch4</Copyright>
         <PackageTags>audit;logging;entityframework;efcore;orm;entity-tracking;dotnet</PackageTags>
-        <PackageReleaseNotes>v1.0.4 - Fix: EF Core audit log now handles re-creation of previously deleted entities.</PackageReleaseNotes>
+        <PackageReleaseNotes>v1.1.0 - Added paged query results with TotalCount, parsed audit detail, and new IDatabaseProvider members for COUNT and paginated queries.</PackageReleaseNotes>
         <NeutralLanguage>en</NeutralLanguage>
         <MinClientVersion>6.0</MinClientVersion>
 
@@ -64,6 +64,11 @@
     <!-- Project References -->
     <ItemGroup>
         <ProjectReference Include="../AuditaX/AuditaX.csproj" />
+    </ItemGroup>
+
+    <!-- Internal Visibility -->
+    <ItemGroup>
+        <InternalsVisibleTo Include="AuditaX.EntityFramework.Tests" />
     </ItemGroup>
 
     <!-- Dependencies -->

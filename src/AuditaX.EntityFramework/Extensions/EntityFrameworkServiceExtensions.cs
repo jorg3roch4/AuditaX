@@ -113,7 +113,8 @@ public static class EntityFrameworkServiceExtensions
         {
             var auditContext = CreateAuditaXContext(sp);
             var provider = sp.GetRequiredService<IDatabaseProvider>();
-            return new EfAuditQueryService(auditContext, provider);
+            var changeLogService = sp.GetRequiredService<IChangeLogService>();
+            return new EfAuditQueryService(auditContext, provider, changeLogService);
         });
 
         // Register the interceptor
