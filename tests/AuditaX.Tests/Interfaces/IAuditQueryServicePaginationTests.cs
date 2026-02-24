@@ -1,6 +1,7 @@
 using AuditaX.Enums;
 using AuditaX.Interfaces;
 using AuditaX.Models;
+using AuditaX.Wrappers;
 using Moq;
 
 namespace AuditaX.Tests.Interfaces;
@@ -24,7 +25,7 @@ public class IAuditQueryServicePaginationTests
                 It.IsAny<int>(),
                 It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Enumerable.Empty<AuditQueryResult>());
+            .ReturnsAsync(new Response<IEnumerable<AuditQueryResult>>(Enumerable.Empty<AuditQueryResult>()));
 
         // Act - Call without skip parameter
         mockService.Object.GetBySourceNameAsync("Product");
@@ -48,7 +49,7 @@ public class IAuditQueryServicePaginationTests
                 It.IsAny<int>(),
                 It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Enumerable.Empty<AuditQueryResult>());
+            .ReturnsAsync(new Response<IEnumerable<AuditQueryResult>>(Enumerable.Empty<AuditQueryResult>()));
 
         // Act - Call without take parameter
         mockService.Object.GetBySourceNameAsync("Product");
@@ -74,13 +75,14 @@ public class IAuditQueryServicePaginationTests
         var mockService = new Mock<IAuditQueryService>();
         mockService
             .Setup(s => s.GetBySourceNameAsync("Product", 10, 20, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expectedResults);
+            .ReturnsAsync(new Response<IEnumerable<AuditQueryResult>>(expectedResults));
 
         // Act
-        var results = await mockService.Object.GetBySourceNameAsync("Product", skip: 10, take: 20);
+        var response = await mockService.Object.GetBySourceNameAsync("Product", skip: 10, take: 20);
 
         // Assert
-        results.Should().HaveCount(2);
+        response.Succeeded.Should().BeTrue();
+        response.Data.Should().HaveCount(2);
         mockService.Verify(s => s.GetBySourceNameAsync("Product", 10, 20, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -103,7 +105,7 @@ public class IAuditQueryServicePaginationTests
                 It.IsAny<int>(),
                 It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Enumerable.Empty<AuditQueryResult>());
+            .ReturnsAsync(new Response<IEnumerable<AuditQueryResult>>(Enumerable.Empty<AuditQueryResult>()));
 
         // Act
         mockService.Object.GetBySourceNameAndDateAsync("Product", fromDate);
@@ -133,7 +135,7 @@ public class IAuditQueryServicePaginationTests
                 It.IsAny<int>(),
                 It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Enumerable.Empty<AuditQueryResult>());
+            .ReturnsAsync(new Response<IEnumerable<AuditQueryResult>>(Enumerable.Empty<AuditQueryResult>()));
 
         // Act
         mockService.Object.GetBySourceNameAndDateAsync("Product", fromDate);
@@ -162,14 +164,15 @@ public class IAuditQueryServicePaginationTests
         var mockService = new Mock<IAuditQueryService>();
         mockService
             .Setup(s => s.GetBySourceNameAndDateAsync("Product", fromDate, toDate, 50, 25, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expectedResults);
+            .ReturnsAsync(new Response<IEnumerable<AuditQueryResult>>(expectedResults));
 
         // Act
-        var results = await mockService.Object.GetBySourceNameAndDateAsync(
+        var response = await mockService.Object.GetBySourceNameAndDateAsync(
             "Product", fromDate, toDate: toDate, skip: 50, take: 25);
 
         // Assert
-        results.Should().HaveCount(1);
+        response.Succeeded.Should().BeTrue();
+        response.Data.Should().HaveCount(1);
         mockService.Verify(s => s.GetBySourceNameAndDateAsync(
             "Product", fromDate, toDate, 50, 25, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -189,7 +192,7 @@ public class IAuditQueryServicePaginationTests
                 It.IsAny<int>(),
                 It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Enumerable.Empty<AuditSummaryResult>());
+            .ReturnsAsync(new Response<IEnumerable<AuditSummaryResult>>(Enumerable.Empty<AuditSummaryResult>()));
 
         // Act
         mockService.Object.GetSummaryBySourceNameAsync("Product");
@@ -213,7 +216,7 @@ public class IAuditQueryServicePaginationTests
                 It.IsAny<int>(),
                 It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Enumerable.Empty<AuditSummaryResult>());
+            .ReturnsAsync(new Response<IEnumerable<AuditSummaryResult>>(Enumerable.Empty<AuditSummaryResult>()));
 
         // Act
         mockService.Object.GetSummaryBySourceNameAsync("Product");
@@ -245,13 +248,14 @@ public class IAuditQueryServicePaginationTests
         var mockService = new Mock<IAuditQueryService>();
         mockService
             .Setup(s => s.GetSummaryBySourceNameAsync("Product", 5, 15, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expectedResults);
+            .ReturnsAsync(new Response<IEnumerable<AuditSummaryResult>>(expectedResults));
 
         // Act
-        var results = await mockService.Object.GetSummaryBySourceNameAsync("Product", skip: 5, take: 15);
+        var response = await mockService.Object.GetSummaryBySourceNameAsync("Product", skip: 5, take: 15);
 
         // Assert
-        results.Should().HaveCount(1);
+        response.Succeeded.Should().BeTrue();
+        response.Data.Should().HaveCount(1);
         mockService.Verify(s => s.GetSummaryBySourceNameAsync("Product", 5, 15, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -273,14 +277,15 @@ public class IAuditQueryServicePaginationTests
         var mockService = new Mock<IAuditQueryService>();
         mockService
             .Setup(s => s.GetBySourceNameAndKeyAsync("Product", "123", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expectedResult);
+            .ReturnsAsync(new Response<AuditQueryResult?>(expectedResult));
 
         // Act
-        var result = await mockService.Object.GetBySourceNameAndKeyAsync("Product", "123");
+        var response = await mockService.Object.GetBySourceNameAndKeyAsync("Product", "123");
 
         // Assert
-        result.Should().NotBeNull();
-        result!.SourceKey.Should().Be("123");
+        response.Succeeded.Should().BeTrue();
+        response.Data.Should().NotBeNull();
+        response.Data!.SourceKey.Should().Be("123");
     }
 
     [Fact]
@@ -295,13 +300,14 @@ public class IAuditQueryServicePaginationTests
         var mockService = new Mock<IAuditQueryService>();
         mockService
             .Setup(s => s.GetBySourceNameAndActionAsync("Product", AuditAction.Created, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expectedResults);
+            .ReturnsAsync(new Response<IEnumerable<AuditQueryResult>>(expectedResults));
 
         // Act
-        var results = await mockService.Object.GetBySourceNameAndActionAsync("Product", AuditAction.Created);
+        var response = await mockService.Object.GetBySourceNameAndActionAsync("Product", AuditAction.Created);
 
         // Assert
-        results.Should().HaveCount(1);
+        response.Succeeded.Should().BeTrue();
+        response.Data.Should().HaveCount(1);
     }
 
     [Fact]
@@ -317,13 +323,14 @@ public class IAuditQueryServicePaginationTests
         var mockService = new Mock<IAuditQueryService>();
         mockService
             .Setup(s => s.GetBySourceNameActionAndDateAsync("Product", AuditAction.Updated, fromDate, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expectedResults);
+            .ReturnsAsync(new Response<IEnumerable<AuditQueryResult>>(expectedResults));
 
         // Act
-        var results = await mockService.Object.GetBySourceNameActionAndDateAsync("Product", AuditAction.Updated, fromDate);
+        var response = await mockService.Object.GetBySourceNameActionAndDateAsync("Product", AuditAction.Updated, fromDate);
 
         // Assert
-        results.Should().HaveCount(1);
+        response.Succeeded.Should().BeTrue();
+        response.Data.Should().HaveCount(1);
     }
 
     #endregion
@@ -346,13 +353,14 @@ public class IAuditQueryServicePaginationTests
         var mockService = new Mock<IAuditQueryService>();
         mockService
             .Setup(s => s.GetBySourceNameAsync("Product", skip, take, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(paginatedResults);
+            .ReturnsAsync(new Response<IEnumerable<AuditQueryResult>>(paginatedResults));
 
         // Act
-        var results = await mockService.Object.GetBySourceNameAsync("Product", skip: skip, take: take);
+        var response = await mockService.Object.GetBySourceNameAsync("Product", skip: skip, take: take);
 
         // Assert
-        results.Should().HaveCount(expectedCount);
+        response.Succeeded.Should().BeTrue();
+        response.Data.Should().HaveCount(expectedCount);
     }
 
     [Fact]
@@ -365,20 +373,17 @@ public class IAuditQueryServicePaginationTests
 
         var mockService = new Mock<IAuditQueryService>();
 
-        // Setup for page 1 (skip=0, take=10)
         mockService
             .Setup(s => s.GetBySourceNameAsync("Product", 0, 10, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(allResults.Skip(0).Take(10).ToList());
+            .ReturnsAsync(new Response<IEnumerable<AuditQueryResult>>(allResults.Skip(0).Take(10).ToList()));
 
-        // Setup for page 2 (skip=10, take=10)
         mockService
             .Setup(s => s.GetBySourceNameAsync("Product", 10, 10, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(allResults.Skip(10).Take(10).ToList());
+            .ReturnsAsync(new Response<IEnumerable<AuditQueryResult>>(allResults.Skip(10).Take(10).ToList()));
 
-        // Setup for page 3 (skip=20, take=10)
         mockService
             .Setup(s => s.GetBySourceNameAsync("Product", 20, 10, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(allResults.Skip(20).Take(10).ToList());
+            .ReturnsAsync(new Response<IEnumerable<AuditQueryResult>>(allResults.Skip(20).Take(10).ToList()));
 
         // Act
         var page1 = await mockService.Object.GetBySourceNameAsync("Product", skip: 0, take: 10);
@@ -386,9 +391,9 @@ public class IAuditQueryServicePaginationTests
         var page3 = await mockService.Object.GetBySourceNameAsync("Product", skip: 20, take: 10);
 
         // Assert
-        page1.Should().HaveCount(10);
-        page2.Should().HaveCount(10);
-        page3.Should().HaveCount(5); // Only 5 remaining
+        page1.Data.Should().HaveCount(10);
+        page2.Data.Should().HaveCount(10);
+        page3.Data.Should().HaveCount(5); // Only 5 remaining
     }
 
     #endregion

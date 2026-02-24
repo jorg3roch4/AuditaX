@@ -194,28 +194,28 @@ try
 
     AnsiConsole.MarkupLine("\n[dim]7.1: GetBySourceNameAsync('Product')[/]");
     var bySourceName = await auditQueryService.GetBySourceNameAsync("Product", skip: 0, take: 10);
-    AnsiConsole.MarkupLine($"  Found [yellow]{bySourceName.Count()}[/] records for 'Product'");
+    AnsiConsole.MarkupLine($"  Found [yellow]{bySourceName.Data?.Count()}[/] records for 'Product'");
 
     AnsiConsole.MarkupLine($"\n[dim]7.2: GetBySourceNameAndKeyAsync('Product', '{product.Id}')[/]");
     var bySourceNameAndKey = await auditQueryService.GetBySourceNameAndKeyAsync("Product", product.Id.ToString());
-    if (bySourceNameAndKey != null)
+    if (bySourceNameAndKey.Data != null)
     {
-        AnsiConsole.MarkupLine($"  SourceName: [yellow]{bySourceNameAndKey.SourceName}[/]");
-        AnsiConsole.MarkupLine($"  SourceKey: [yellow]{bySourceNameAndKey.SourceKey}[/]");
-        AnsiConsole.MarkupLine($"  AuditLog length: [yellow]{bySourceNameAndKey.AuditLog.Length}[/] chars");
+        AnsiConsole.MarkupLine($"  SourceName: [yellow]{bySourceNameAndKey.Data.SourceName}[/]");
+        AnsiConsole.MarkupLine($"  SourceKey: [yellow]{bySourceNameAndKey.Data.SourceKey}[/]");
+        AnsiConsole.MarkupLine($"  AuditLog length: [yellow]{bySourceNameAndKey.Data.AuditLog.Length}[/] chars");
     }
 
     AnsiConsole.MarkupLine("\n[dim]7.3: GetBySourceNameAndActionAsync('Product', Created)[/]");
     var byAction = await auditQueryService.GetBySourceNameAndActionAsync("Product", AuditAction.Created);
-    AnsiConsole.MarkupLine($"  Found [yellow]{byAction.Count()}[/] records with 'Created' action");
+    AnsiConsole.MarkupLine($"  Found [yellow]{byAction.Data?.Count()}[/] records with 'Created' action");
 
     AnsiConsole.MarkupLine("\n[dim]7.4: GetBySourceNameAndActionAsync('Product', Added)[/]");
     var byAddedAction = await auditQueryService.GetBySourceNameAndActionAsync("Product", AuditAction.Added);
-    AnsiConsole.MarkupLine($"  Found [yellow]{byAddedAction.Count()}[/] records with 'Added' action (related entities)");
+    AnsiConsole.MarkupLine($"  Found [yellow]{byAddedAction.Data?.Count()}[/] records with 'Added' action (related entities)");
 
     AnsiConsole.MarkupLine("\n[dim]7.5: GetSummaryBySourceNameAsync('Product')[/]");
     var summary = await auditQueryService.GetSummaryBySourceNameAsync("Product", skip: 0, take: 100);
-    foreach (var item in summary)
+    foreach (var item in summary.Data ?? [])
     {
         AnsiConsole.MarkupLine($"  {item.SourceName}[[{item.SourceKey}]]: Last [yellow]{item.LastAction}[/] at {item.LastTimestamp:yyyy-MM-dd HH:mm:ss} by {item.LastUser}");
     }
@@ -336,13 +336,13 @@ try
     // Demo 13: Show raw AuditLog content
     AnsiConsole.MarkupLine("\n[bold cyan]--- Demo 13: Raw AuditLog Content (from database) ---[/]");
     var rawAuditLog = await auditQueryService.GetBySourceNameAndKeyAsync("User", user.UserId);
-    if (rawAuditLog is not null)
+    if (rawAuditLog.Data is not null)
     {
-        AnsiConsole.MarkupLine($"[dim]SourceName:[/] {Markup.Escape(rawAuditLog.SourceName)}");
-        AnsiConsole.MarkupLine($"[dim]SourceKey:[/] {Markup.Escape(rawAuditLog.SourceKey)}");
-        AnsiConsole.MarkupLine($"[dim]AuditLog ({rawAuditLog.AuditLog.Length} chars):[/]");
+        AnsiConsole.MarkupLine($"[dim]SourceName:[/] {Markup.Escape(rawAuditLog.Data.SourceName)}");
+        AnsiConsole.MarkupLine($"[dim]SourceKey:[/] {Markup.Escape(rawAuditLog.Data.SourceKey)}");
+        AnsiConsole.MarkupLine($"[dim]AuditLog ({rawAuditLog.Data.AuditLog.Length} chars):[/]");
 
-        var panel = new Panel(Markup.Escape(rawAuditLog.AuditLog))
+        var panel = new Panel(Markup.Escape(rawAuditLog.Data.AuditLog))
         {
             Border = BoxBorder.Rounded,
             Header = new PanelHeader($"[bold]{config.Format} Format[/]")

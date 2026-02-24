@@ -1,9 +1,9 @@
 using System.Data.Common;
+using AuditaX;
 using AuditaX.Enums;
-using AuditaX.Exceptions;
 using AuditaX.Interfaces;
 using AuditaX.Models;
-using Microsoft.EntityFrameworkCore.Infrastructure;
+using AuditaX.Wrappers;
 
 namespace AuditaX.EntityFramework.Services;
 
@@ -27,13 +27,15 @@ public sealed class EfAuditQueryService(
     private const int MaxSourceKeyLength = 64;
 
     /// <inheritdoc />
-    public async Task<IEnumerable<AuditQueryResult>> GetBySourceNameAsync(
+    public async Task<Response<IEnumerable<AuditQueryResult>>> GetBySourceNameAsync(
         string sourceName,
         int skip = 0,
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName, cancellationToken);
+        if (error is not null)
+            return new Response<IEnumerable<AuditQueryResult>>(error);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
@@ -52,16 +54,18 @@ public sealed class EfAuditQueryService(
             results.Add(MapToAuditQueryResult(reader));
         }
 
-        return results;
+        return new Response<IEnumerable<AuditQueryResult>>(results);
     }
 
     /// <inheritdoc />
-    public async Task<AuditQueryResult?> GetBySourceNameAndKeyAsync(
+    public async Task<Response<AuditQueryResult?>> GetBySourceNameAndKeyAsync(
         string sourceName,
         string sourceKey,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAndKeyAsync(sourceName, sourceKey, cancellationToken);
+        var error = await ValidateSourceNameAndKeyAsync(sourceName, sourceKey, cancellationToken);
+        if (error is not null)
+            return new Response<AuditQueryResult?>(error);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
@@ -74,14 +78,14 @@ public sealed class EfAuditQueryService(
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         if (await reader.ReadAsync(cancellationToken))
         {
-            return MapToAuditQueryResult(reader);
+            return new Response<AuditQueryResult?>(MapToAuditQueryResult(reader));
         }
 
-        return null;
+        return new Response<AuditQueryResult?>(data: null);
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<AuditQueryResult>> GetBySourceNameAndDateAsync(
+    public async Task<Response<IEnumerable<AuditQueryResult>>> GetBySourceNameAndDateAsync(
         string sourceName,
         DateTime fromDate,
         DateTime? toDate = null,
@@ -89,7 +93,9 @@ public sealed class EfAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName, cancellationToken);
+        if (error is not null)
+            return new Response<IEnumerable<AuditQueryResult>>(error);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
@@ -111,16 +117,18 @@ public sealed class EfAuditQueryService(
             results.Add(MapToAuditQueryResult(reader));
         }
 
-        return results;
+        return new Response<IEnumerable<AuditQueryResult>>(results);
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<AuditQueryResult>> GetBySourceNameAndActionAsync(
+    public async Task<Response<IEnumerable<AuditQueryResult>>> GetBySourceNameAndActionAsync(
         string sourceName,
         AuditAction action,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName, cancellationToken);
+        if (error is not null)
+            return new Response<IEnumerable<AuditQueryResult>>(error);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
@@ -138,18 +146,20 @@ public sealed class EfAuditQueryService(
             results.Add(MapToAuditQueryResult(reader));
         }
 
-        return results;
+        return new Response<IEnumerable<AuditQueryResult>>(results);
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<AuditQueryResult>> GetBySourceNameActionAndDateAsync(
+    public async Task<Response<IEnumerable<AuditQueryResult>>> GetBySourceNameActionAndDateAsync(
         string sourceName,
         AuditAction action,
         DateTime fromDate,
         DateTime? toDate = null,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName, cancellationToken);
+        if (error is not null)
+            return new Response<IEnumerable<AuditQueryResult>>(error);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
@@ -170,17 +180,19 @@ public sealed class EfAuditQueryService(
             results.Add(MapToAuditQueryResult(reader));
         }
 
-        return results;
+        return new Response<IEnumerable<AuditQueryResult>>(results);
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<AuditSummaryResult>> GetSummaryBySourceNameAsync(
+    public async Task<Response<IEnumerable<AuditSummaryResult>>> GetSummaryBySourceNameAsync(
         string sourceName,
         int skip = 0,
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName, cancellationToken);
+        if (error is not null)
+            return new Response<IEnumerable<AuditSummaryResult>>(error);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
@@ -199,17 +211,19 @@ public sealed class EfAuditQueryService(
             results.Add(MapToAuditSummaryResult(reader));
         }
 
-        return results;
+        return new Response<IEnumerable<AuditSummaryResult>>(results);
     }
 
     /// <inheritdoc />
-    public async Task<PagedResult<AuditQueryResult>> GetPagedBySourceNameAsync(
+    public async Task<PagedResponse<IEnumerable<AuditQueryResult>>> GetPagedBySourceNameAsync(
         string sourceName,
         int skip = 0,
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName, cancellationToken);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditQueryResult>>(error);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
@@ -233,11 +247,11 @@ public sealed class EfAuditQueryService(
             cmd => AddParameter(cmd, "SourceName", sourceName),
             cancellationToken);
 
-        return new PagedResult<AuditQueryResult> { Items = results, TotalCount = totalCount };
+        return new PagedResponse<IEnumerable<AuditQueryResult>>(results, ToPageNumber(skip, take), take, totalCount);
     }
 
     /// <inheritdoc />
-    public async Task<PagedResult<AuditQueryResult>> GetPagedBySourceNameAndDateAsync(
+    public async Task<PagedResponse<IEnumerable<AuditQueryResult>>> GetPagedBySourceNameAndDateAsync(
         string sourceName,
         DateTime fromDate,
         DateTime? toDate = null,
@@ -245,7 +259,9 @@ public sealed class EfAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName, cancellationToken);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditQueryResult>>(error);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
@@ -277,18 +293,20 @@ public sealed class EfAuditQueryService(
             },
             cancellationToken);
 
-        return new PagedResult<AuditQueryResult> { Items = results, TotalCount = totalCount };
+        return new PagedResponse<IEnumerable<AuditQueryResult>>(results, ToPageNumber(skip, take), take, totalCount);
     }
 
     /// <inheritdoc />
-    public async Task<PagedResult<AuditQueryResult>> GetPagedBySourceNameAndActionAsync(
+    public async Task<PagedResponse<IEnumerable<AuditQueryResult>>> GetPagedBySourceNameAndActionAsync(
         string sourceName,
         AuditAction action,
         int skip = 0,
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName, cancellationToken);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditQueryResult>>(error);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
@@ -317,11 +335,11 @@ public sealed class EfAuditQueryService(
             },
             cancellationToken);
 
-        return new PagedResult<AuditQueryResult> { Items = results, TotalCount = totalCount };
+        return new PagedResponse<IEnumerable<AuditQueryResult>>(results, ToPageNumber(skip, take), take, totalCount);
     }
 
     /// <inheritdoc />
-    public async Task<PagedResult<AuditQueryResult>> GetPagedBySourceNameActionAndDateAsync(
+    public async Task<PagedResponse<IEnumerable<AuditQueryResult>>> GetPagedBySourceNameActionAndDateAsync(
         string sourceName,
         AuditAction action,
         DateTime fromDate,
@@ -330,7 +348,9 @@ public sealed class EfAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName, cancellationToken);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditQueryResult>>(error);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
@@ -364,17 +384,19 @@ public sealed class EfAuditQueryService(
             },
             cancellationToken);
 
-        return new PagedResult<AuditQueryResult> { Items = results, TotalCount = totalCount };
+        return new PagedResponse<IEnumerable<AuditQueryResult>>(results, ToPageNumber(skip, take), take, totalCount);
     }
 
     /// <inheritdoc />
-    public async Task<PagedResult<AuditSummaryResult>> GetPagedSummaryBySourceNameAsync(
+    public async Task<PagedResponse<IEnumerable<AuditSummaryResult>>> GetPagedSummaryBySourceNameAsync(
         string sourceName,
         int skip = 0,
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName, cancellationToken);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditSummaryResult>>(error);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
@@ -398,11 +420,11 @@ public sealed class EfAuditQueryService(
             cmd => AddParameter(cmd, "SourceName", sourceName),
             cancellationToken);
 
-        return new PagedResult<AuditSummaryResult> { Items = results, TotalCount = totalCount };
+        return new PagedResponse<IEnumerable<AuditSummaryResult>>(results, ToPageNumber(skip, take), take, totalCount);
     }
 
     /// <inheritdoc />
-    public async Task<PagedResult<AuditSummaryResult>> GetPagedSummaryBySourceNameAsync(
+    public async Task<PagedResponse<IEnumerable<AuditSummaryResult>>> GetPagedSummaryBySourceNameAsync(
         string sourceName,
         string? sourceKey,
         DateTime? fromDate,
@@ -411,7 +433,9 @@ public sealed class EfAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName, cancellationToken);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditSummaryResult>>(error);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
@@ -457,69 +481,71 @@ public sealed class EfAuditQueryService(
             },
             cancellationToken);
 
-        return new PagedResult<AuditSummaryResult> { Items = results, TotalCount = totalCount };
+        return new PagedResponse<IEnumerable<AuditSummaryResult>>(results, ToPageNumber(skip, take), take, totalCount);
     }
 
     /// <inheritdoc />
-    public async Task<AuditDetailResult?> GetParsedDetailBySourceNameAndKeyAsync(
+    public async Task<Response<AuditDetailResult?>> GetParsedDetailBySourceNameAndKeyAsync(
         string sourceName,
         string sourceKey,
         CancellationToken cancellationToken = default)
     {
         var raw = await GetBySourceNameAndKeyAsync(sourceName, sourceKey, cancellationToken);
-        if (raw is null)
-            return null;
+        if (!raw.Succeeded)
+            return new Response<AuditDetailResult?>(raw.Message!);
 
-        var entries = _changeLogService.ParseAuditLog(raw.AuditLog);
+        if (raw.Data is null)
+            return new Response<AuditDetailResult?>(data: null);
 
-        return new AuditDetailResult
+        var entries = _changeLogService.ParseAuditLog(raw.Data.AuditLog);
+
+        var detail = new AuditDetailResult
         {
-            SourceName = raw.SourceName,
-            SourceKey = raw.SourceKey,
+            SourceName = raw.Data.SourceName,
+            SourceKey = raw.Data.SourceKey,
             Entries = entries
         };
+
+        return new Response<AuditDetailResult?>(detail);
     }
 
-    private async Task ValidateSourceNameAsync(string sourceName, CancellationToken cancellationToken)
+    private async Task<string?> ValidateSourceNameAsync(string sourceName, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName is required.", nameof(sourceName));
+            return AuditQueryMessages.SourceNameRequired;
 
         if (sourceName.Length > MaxSourceNameLength)
-            throw new ArgumentException($"SourceName cannot exceed {MaxSourceNameLength} characters.", nameof(sourceName));
+            return AuditQueryMessages.SourceNameTooLong(MaxSourceNameLength);
 
         var exists = await ExecuteCountAsync(
             _provider.SourceNameExistsSql,
             cmd => AddParameter(cmd, "SourceName", sourceName),
             cancellationToken);
 
-        if (exists == 0)
-            throw new AuditSourceNotFoundException(sourceName);
+        return exists == 0 ? AuditQueryMessages.SourceNotFound(sourceName) : null;
     }
 
-    private async Task ValidateSourceNameAndKeyAsync(string sourceName, string sourceKey, CancellationToken cancellationToken)
+    private async Task<string?> ValidateSourceNameAndKeyAsync(string sourceName, string sourceKey, CancellationToken cancellationToken)
     {
-        // Format checks first (no DB round-trip) to surface ArgumentException before AuditSourceNotFoundException
         if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName is required.", nameof(sourceName));
+            return AuditQueryMessages.SourceNameRequired;
 
         if (sourceName.Length > MaxSourceNameLength)
-            throw new ArgumentException($"SourceName cannot exceed {MaxSourceNameLength} characters.", nameof(sourceName));
+            return AuditQueryMessages.SourceNameTooLong(MaxSourceNameLength);
 
         if (string.IsNullOrWhiteSpace(sourceKey))
-            throw new ArgumentException("SourceKey is required.", nameof(sourceKey));
+            return AuditQueryMessages.SourceKeyRequired;
 
         if (sourceKey.Length > MaxSourceKeyLength)
-            throw new ArgumentException($"SourceKey cannot exceed {MaxSourceKeyLength} characters.", nameof(sourceKey));
+            return AuditQueryMessages.SourceKeyTooLong(MaxSourceKeyLength);
 
-        // DB existence checks (ordered: sourceName first, then sourceKey)
         var sourceNameExists = await ExecuteCountAsync(
             _provider.SourceNameExistsSql,
             cmd => AddParameter(cmd, "SourceName", sourceName),
             cancellationToken);
 
         if (sourceNameExists == 0)
-            throw new AuditSourceNotFoundException(sourceName);
+            return AuditQueryMessages.SourceNotFound(sourceName);
 
         var sourceKeyExists = await ExecuteCountAsync(
             _provider.SourceKeyExistsSql,
@@ -530,8 +556,7 @@ public sealed class EfAuditQueryService(
             },
             cancellationToken);
 
-        if (sourceKeyExists == 0)
-            throw new AuditSourceKeyNotFoundException(sourceName, sourceKey);
+        return sourceKeyExists == 0 ? AuditQueryMessages.SourceKeyNotFound(sourceName, sourceKey) : null;
     }
 
     private static async Task EnsureConnectionOpenAsync(DbConnection connection, CancellationToken cancellationToken)
@@ -592,4 +617,7 @@ public sealed class EfAuditQueryService(
                 : reader.GetString(reader.GetOrdinal("LastUser"))
         };
     }
+
+    private static int ToPageNumber(int skip, int take) =>
+        take > 0 ? (skip / take) + 1 : 1;
 }

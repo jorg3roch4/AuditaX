@@ -1,9 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using AuditaX.Enums;
 using AuditaX.Models;
+using AuditaX.Wrappers;
 
 namespace AuditaX.Interfaces;
 
@@ -19,8 +16,8 @@ public interface IAuditQueryService
     /// <param name="skip">Number of records to skip (default: 0).</param>
     /// <param name="take">Number of records to take (default: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Collection of audit query results.</returns>
-    Task<IEnumerable<AuditQueryResult>> GetBySourceNameAsync(
+    /// <returns>A response wrapping the collection of audit query results.</returns>
+    Task<Response<IEnumerable<AuditQueryResult>>> GetBySourceNameAsync(
         string sourceName,
         int skip = 0,
         int take = 100,
@@ -32,8 +29,8 @@ public interface IAuditQueryService
     /// <param name="sourceName">The name of the entity type.</param>
     /// <param name="sourceKey">The unique key of the entity instance.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The audit query result if found, otherwise null.</returns>
-    Task<AuditQueryResult?> GetBySourceNameAndKeyAsync(
+    /// <returns>A response wrapping the audit query result, or null data if not found.</returns>
+    Task<Response<AuditQueryResult?>> GetBySourceNameAndKeyAsync(
         string sourceName,
         string sourceKey,
         CancellationToken cancellationToken = default);
@@ -48,12 +45,12 @@ public interface IAuditQueryService
     /// <param name="skip">Number of records to skip (default: 0).</param>
     /// <param name="take">Number of records to take (default: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Collection of audit query results.</returns>
+    /// <returns>A response wrapping the collection of audit query results.</returns>
     /// <remarks>
     /// This query searches within XML/JSON content which may be slow on large tables.
     /// Consider adding appropriate indexes or using summary queries for better performance.
     /// </remarks>
-    Task<IEnumerable<AuditQueryResult>> GetBySourceNameAndDateAsync(
+    Task<Response<IEnumerable<AuditQueryResult>>> GetBySourceNameAndDateAsync(
         string sourceName,
         DateTime fromDate,
         DateTime? toDate = null,
@@ -68,11 +65,11 @@ public interface IAuditQueryService
     /// <param name="sourceName">The name of the entity type.</param>
     /// <param name="action">The action type to filter by.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Collection of audit query results.</returns>
+    /// <returns>A response wrapping the collection of audit query results.</returns>
     /// <remarks>
     /// WARNING: This query searches within XML/JSON content which may be slow on large tables.
     /// </remarks>
-    Task<IEnumerable<AuditQueryResult>> GetBySourceNameAndActionAsync(
+    Task<Response<IEnumerable<AuditQueryResult>>> GetBySourceNameAndActionAsync(
         string sourceName,
         AuditAction action,
         CancellationToken cancellationToken = default);
@@ -86,11 +83,11 @@ public interface IAuditQueryService
     /// <param name="fromDate">The start date (UTC).</param>
     /// <param name="toDate">The end date (UTC). If null, searches up to current time.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Collection of audit query results.</returns>
+    /// <returns>A response wrapping the collection of audit query results.</returns>
     /// <remarks>
     /// WARNING: This query searches within XML/JSON content which may be slow on large tables.
     /// </remarks>
-    Task<IEnumerable<AuditQueryResult>> GetBySourceNameActionAndDateAsync(
+    Task<Response<IEnumerable<AuditQueryResult>>> GetBySourceNameActionAndDateAsync(
         string sourceName,
         AuditAction action,
         DateTime fromDate,
@@ -105,12 +102,12 @@ public interface IAuditQueryService
     /// <param name="skip">Number of records to skip (default: 0).</param>
     /// <param name="take">Number of records to take (default: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Collection of audit summary results.</returns>
+    /// <returns>A response wrapping the collection of audit summary results.</returns>
     /// <remarks>
     /// This query is more efficient than retrieving full audit logs when you only need
     /// to know the current state (last action) of each entity.
     /// </remarks>
-    Task<IEnumerable<AuditSummaryResult>> GetSummaryBySourceNameAsync(
+    Task<Response<IEnumerable<AuditSummaryResult>>> GetSummaryBySourceNameAsync(
         string sourceName,
         int skip = 0,
         int take = 100,
@@ -123,8 +120,8 @@ public interface IAuditQueryService
     /// <param name="skip">Number of records to skip (default: 0).</param>
     /// <param name="take">Number of records to take (default: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A paged result containing items and total count.</returns>
-    Task<PagedResult<AuditQueryResult>> GetPagedBySourceNameAsync(
+    /// <returns>A paged response containing items and total count.</returns>
+    Task<PagedResponse<IEnumerable<AuditQueryResult>>> GetPagedBySourceNameAsync(
         string sourceName,
         int skip = 0,
         int take = 100,
@@ -139,8 +136,8 @@ public interface IAuditQueryService
     /// <param name="skip">Number of records to skip (default: 0).</param>
     /// <param name="take">Number of records to take (default: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A paged result containing items and total count.</returns>
-    Task<PagedResult<AuditQueryResult>> GetPagedBySourceNameAndDateAsync(
+    /// <returns>A paged response containing items and total count.</returns>
+    Task<PagedResponse<IEnumerable<AuditQueryResult>>> GetPagedBySourceNameAndDateAsync(
         string sourceName,
         DateTime fromDate,
         DateTime? toDate = null,
@@ -156,8 +153,8 @@ public interface IAuditQueryService
     /// <param name="skip">Number of records to skip (default: 0).</param>
     /// <param name="take">Number of records to take (default: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A paged result containing items and total count.</returns>
-    Task<PagedResult<AuditQueryResult>> GetPagedBySourceNameAndActionAsync(
+    /// <returns>A paged response containing items and total count.</returns>
+    Task<PagedResponse<IEnumerable<AuditQueryResult>>> GetPagedBySourceNameAndActionAsync(
         string sourceName,
         AuditAction action,
         int skip = 0,
@@ -174,8 +171,8 @@ public interface IAuditQueryService
     /// <param name="skip">Number of records to skip (default: 0).</param>
     /// <param name="take">Number of records to take (default: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A paged result containing items and total count.</returns>
-    Task<PagedResult<AuditQueryResult>> GetPagedBySourceNameActionAndDateAsync(
+    /// <returns>A paged response containing items and total count.</returns>
+    Task<PagedResponse<IEnumerable<AuditQueryResult>>> GetPagedBySourceNameActionAndDateAsync(
         string sourceName,
         AuditAction action,
         DateTime fromDate,
@@ -191,8 +188,8 @@ public interface IAuditQueryService
     /// <param name="skip">Number of records to skip (default: 0).</param>
     /// <param name="take">Number of records to take (default: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A paged result containing summary items and total count.</returns>
-    Task<PagedResult<AuditSummaryResult>> GetPagedSummaryBySourceNameAsync(
+    /// <returns>A paged response containing summary items and total count.</returns>
+    Task<PagedResponse<IEnumerable<AuditSummaryResult>>> GetPagedSummaryBySourceNameAsync(
         string sourceName,
         int skip = 0,
         int take = 100,
@@ -208,8 +205,8 @@ public interface IAuditQueryService
     /// <param name="skip">Number of records to skip (default: 0).</param>
     /// <param name="take">Number of records to take (default: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A paged result containing summary items and total count.</returns>
-    Task<PagedResult<AuditSummaryResult>> GetPagedSummaryBySourceNameAsync(
+    /// <returns>A paged response containing summary items and total count.</returns>
+    Task<PagedResponse<IEnumerable<AuditSummaryResult>>> GetPagedSummaryBySourceNameAsync(
         string sourceName,
         string? sourceKey,
         DateTime? fromDate,
@@ -225,8 +222,8 @@ public interface IAuditQueryService
     /// <param name="sourceName">The name of the entity type.</param>
     /// <param name="sourceKey">The unique key of the entity instance.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The parsed audit detail, or null if the entity was not found.</returns>
-    Task<AuditDetailResult?> GetParsedDetailBySourceNameAndKeyAsync(
+    /// <returns>A response wrapping the parsed audit detail, or null data if the entity was not found.</returns>
+    Task<Response<AuditDetailResult?>> GetParsedDetailBySourceNameAndKeyAsync(
         string sourceName,
         string sourceKey,
         CancellationToken cancellationToken = default);

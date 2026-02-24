@@ -259,63 +259,67 @@ public class EfAuditQueryServicePaginationTests
     #region Validation Tests
 
     [Fact]
-    public async Task GetBySourceNameAsync_WithEmptySourceName_ShouldThrowArgumentException()
+    public async Task GetBySourceNameAsync_WithEmptySourceName_ShouldReturnFailedResponse()
     {
         // Arrange
         using var context = CreateInMemoryContext("TestDb_Validation_Empty");
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
         var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
 
-        // Act & Assert
-        var action = async () => await service.GetBySourceNameAsync("");
+        // Act
+        var result = await service.GetBySourceNameAsync("");
 
-        await action.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*SourceName*");
+        // Assert
+        result.Succeeded.Should().BeFalse();
+        result.Message.Should().Contain("SourceName");
     }
 
     [Fact]
-    public async Task GetBySourceNameAsync_WithNullSourceName_ShouldThrowArgumentException()
+    public async Task GetBySourceNameAsync_WithNullSourceName_ShouldReturnFailedResponse()
     {
         // Arrange
         using var context = CreateInMemoryContext("TestDb_Validation_Null");
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
         var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
 
-        // Act & Assert
-        var action = async () => await service.GetBySourceNameAsync(null!);
+        // Act
+        var result = await service.GetBySourceNameAsync(null!);
 
-        await action.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*SourceName*");
+        // Assert
+        result.Succeeded.Should().BeFalse();
+        result.Message.Should().Contain("SourceName");
     }
 
     [Fact]
-    public async Task GetSummaryBySourceNameAsync_WithWhitespaceSourceName_ShouldThrowArgumentException()
+    public async Task GetSummaryBySourceNameAsync_WithWhitespaceSourceName_ShouldReturnFailedResponse()
     {
         // Arrange
         using var context = CreateInMemoryContext("TestDb_Validation_Whitespace");
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
         var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
 
-        // Act & Assert
-        var action = async () => await service.GetSummaryBySourceNameAsync("   ");
+        // Act
+        var result = await service.GetSummaryBySourceNameAsync("   ");
 
-        await action.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*SourceName*");
+        // Assert
+        result.Succeeded.Should().BeFalse();
+        result.Message.Should().Contain("SourceName");
     }
 
     [Fact]
-    public async Task GetBySourceNameAndDateAsync_WithEmptySourceName_ShouldThrowArgumentException()
+    public async Task GetBySourceNameAndDateAsync_WithEmptySourceName_ShouldReturnFailedResponse()
     {
         // Arrange
         using var context = CreateInMemoryContext("TestDb_Validation_DateEmpty");
         var provider = new SqlServerDatabaseProvider(_sqlServerOptions);
         var service = new EfAuditQueryService(context, provider, _mockChangeLogService.Object);
 
-        // Act & Assert
-        var action = async () => await service.GetBySourceNameAndDateAsync("", DateTime.UtcNow);
+        // Act
+        var result = await service.GetBySourceNameAndDateAsync("", DateTime.UtcNow);
 
-        await action.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*SourceName*");
+        // Assert
+        result.Succeeded.Should().BeFalse();
+        result.Message.Should().Contain("SourceName");
     }
 
     #endregion

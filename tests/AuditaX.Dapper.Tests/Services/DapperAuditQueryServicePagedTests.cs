@@ -73,31 +73,33 @@ public class DapperAuditQueryServicePagedTests
     #region GetPagedBySourceNameAsync Tests
 
     [Fact]
-    public async Task GetPagedBySourceNameAsync_WithEmptySourceName_ShouldThrowArgumentException()
+    public async Task GetPagedBySourceNameAsync_WithEmptySourceName_ShouldReturnFailedResponse()
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
         var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
 
-        // Act & Assert
-        var action = async () => await service.GetPagedBySourceNameAsync("");
+        // Act
+        var result = await service.GetPagedBySourceNameAsync("");
 
-        await action.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*SourceName*");
+        // Assert
+        result.Succeeded.Should().BeFalse();
+        result.Message.Should().Contain("SourceName");
     }
 
     [Fact]
-    public async Task GetPagedBySourceNameAsync_WithNullSourceName_ShouldThrowArgumentException()
+    public async Task GetPagedBySourceNameAsync_WithNullSourceName_ShouldReturnFailedResponse()
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
         var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
 
-        // Act & Assert
-        var action = async () => await service.GetPagedBySourceNameAsync(null!);
+        // Act
+        var result = await service.GetPagedBySourceNameAsync(null!);
 
-        await action.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*SourceName*");
+        // Assert
+        result.Succeeded.Should().BeFalse();
+        result.Message.Should().Contain("SourceName");
     }
 
     [Fact]
@@ -134,17 +136,18 @@ public class DapperAuditQueryServicePagedTests
     #region GetPagedBySourceNameAndDateAsync Tests
 
     [Fact]
-    public async Task GetPagedBySourceNameAndDateAsync_WithEmptySourceName_ShouldThrowArgumentException()
+    public async Task GetPagedBySourceNameAndDateAsync_WithEmptySourceName_ShouldReturnFailedResponse()
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
         var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
 
-        // Act & Assert
-        var action = async () => await service.GetPagedBySourceNameAndDateAsync("", DateTime.UtcNow);
+        // Act
+        var result = await service.GetPagedBySourceNameAndDateAsync("", DateTime.UtcNow);
 
-        await action.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*SourceName*");
+        // Assert
+        result.Succeeded.Should().BeFalse();
+        result.Message.Should().Contain("SourceName");
     }
 
     [Fact]
@@ -166,17 +169,18 @@ public class DapperAuditQueryServicePagedTests
     #region GetPagedBySourceNameAndActionAsync Tests
 
     [Fact]
-    public async Task GetPagedBySourceNameAndActionAsync_WithEmptySourceName_ShouldThrowArgumentException()
+    public async Task GetPagedBySourceNameAndActionAsync_WithEmptySourceName_ShouldReturnFailedResponse()
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
         var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
 
-        // Act & Assert
-        var action = async () => await service.GetPagedBySourceNameAndActionAsync("", AuditAction.Created);
+        // Act
+        var result = await service.GetPagedBySourceNameAndActionAsync("", AuditAction.Created);
 
-        await action.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*SourceName*");
+        // Assert
+        result.Succeeded.Should().BeFalse();
+        result.Message.Should().Contain("SourceName");
     }
 
     [Fact]
@@ -198,18 +202,18 @@ public class DapperAuditQueryServicePagedTests
     #region GetPagedBySourceNameActionAndDateAsync Tests
 
     [Fact]
-    public async Task GetPagedBySourceNameActionAndDateAsync_WithEmptySourceName_ShouldThrowArgumentException()
+    public async Task GetPagedBySourceNameActionAndDateAsync_WithEmptySourceName_ShouldReturnFailedResponse()
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
         var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
 
-        // Act & Assert
-        var action = async () => await service.GetPagedBySourceNameActionAndDateAsync(
-            "", AuditAction.Created, DateTime.UtcNow);
+        // Act
+        var result = await service.GetPagedBySourceNameActionAndDateAsync("", AuditAction.Created, DateTime.UtcNow);
 
-        await action.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*SourceName*");
+        // Assert
+        result.Succeeded.Should().BeFalse();
+        result.Message.Should().Contain("SourceName");
     }
 
     [Fact]
@@ -231,17 +235,18 @@ public class DapperAuditQueryServicePagedTests
     #region GetPagedSummaryBySourceNameAsync Tests
 
     [Fact]
-    public async Task GetPagedSummaryBySourceNameAsync_WithEmptySourceName_ShouldThrowArgumentException()
+    public async Task GetPagedSummaryBySourceNameAsync_WithWhitespaceSourceName_ShouldReturnFailedResponse()
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
         var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
 
-        // Act & Assert
-        var action = async () => await service.GetPagedSummaryBySourceNameAsync("  ");
+        // Act
+        var result = await service.GetPagedSummaryBySourceNameAsync("  ");
 
-        await action.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*SourceName*");
+        // Assert
+        result.Succeeded.Should().BeFalse();
+        result.Message.Should().Contain("SourceName");
     }
 
     [Fact]
@@ -262,18 +267,18 @@ public class DapperAuditQueryServicePagedTests
     #region GetPagedSummaryBySourceNameAsync (Filtered) Tests
 
     [Fact]
-    public async Task GetPagedSummaryBySourceNameAsync_Filtered_WithEmptySourceName_ShouldThrowArgumentException()
+    public async Task GetPagedSummaryBySourceNameAsync_Filtered_WithEmptySourceName_ShouldReturnFailedResponse()
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
         var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
 
-        // Act & Assert
-        var action = async () => await service.GetPagedSummaryBySourceNameAsync(
-            "", "key1", DateTime.UtcNow.AddDays(-7), DateTime.UtcNow);
+        // Act
+        var result = await service.GetPagedSummaryBySourceNameAsync("", "key1", DateTime.UtcNow.AddDays(-7), DateTime.UtcNow);
 
-        await action.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*SourceName*");
+        // Assert
+        result.Succeeded.Should().BeFalse();
+        result.Message.Should().Contain("SourceName");
     }
 
     [Fact]
@@ -309,31 +314,33 @@ public class DapperAuditQueryServicePagedTests
     #region GetParsedDetailBySourceNameAndKeyAsync Tests
 
     [Fact]
-    public async Task GetParsedDetailBySourceNameAndKeyAsync_WithEmptySourceName_ShouldThrowArgumentException()
+    public async Task GetParsedDetailBySourceNameAndKeyAsync_WithEmptySourceName_ShouldReturnFailedResponse()
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
         var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
 
-        // Act & Assert
-        var action = async () => await service.GetParsedDetailBySourceNameAndKeyAsync("", "123");
+        // Act
+        var result = await service.GetParsedDetailBySourceNameAndKeyAsync("", "123");
 
-        await action.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*SourceName*");
+        // Assert
+        result.Succeeded.Should().BeFalse();
+        result.Message.Should().Contain("SourceName");
     }
 
     [Fact]
-    public async Task GetParsedDetailBySourceNameAndKeyAsync_WithEmptySourceKey_ShouldThrowArgumentException()
+    public async Task GetParsedDetailBySourceNameAndKeyAsync_WithEmptySourceKey_ShouldReturnFailedResponse()
     {
         // Arrange
         var provider = new SqlServerDatabaseProvider(_options);
         var service = new DapperAuditQueryService(_mockConnection.Object, provider, _mockChangeLogService.Object);
 
-        // Act & Assert
-        var action = async () => await service.GetParsedDetailBySourceNameAndKeyAsync("Product", "");
+        // Act
+        var result = await service.GetParsedDetailBySourceNameAndKeyAsync("Product", "");
 
-        await action.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*SourceKey*");
+        // Assert
+        result.Succeeded.Should().BeFalse();
+        result.Message.Should().Contain("SourceKey");
     }
 
     #endregion

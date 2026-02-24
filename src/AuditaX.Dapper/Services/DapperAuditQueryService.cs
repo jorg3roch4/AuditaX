@@ -1,7 +1,8 @@
+using AuditaX;
 using AuditaX.Enums;
-using AuditaX.Exceptions;
 using AuditaX.Interfaces;
 using AuditaX.Models;
+using AuditaX.Wrappers;
 
 namespace AuditaX.Dapper.Services;
 
@@ -24,38 +25,42 @@ public sealed class DapperAuditQueryService(
     private const int MaxSourceKeyLength = 64;
 
     /// <inheritdoc />
-    public async Task<IEnumerable<AuditQueryResult>> GetBySourceNameAsync(
+    public async Task<Response<IEnumerable<AuditQueryResult>>> GetBySourceNameAsync(
         string sourceName,
         int skip = 0,
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName);
+        if (error is not null)
+            return new Response<IEnumerable<AuditQueryResult>>(error);
 
         var results = await _connection.QueryAsync<AuditQueryResult>(
             _provider.GetSelectBySourceNameSql(skip, take),
             new { SourceName = sourceName, Skip = skip, Take = take });
 
-        return results;
+        return new Response<IEnumerable<AuditQueryResult>>(results);
     }
 
     /// <inheritdoc />
-    public async Task<AuditQueryResult?> GetBySourceNameAndKeyAsync(
+    public async Task<Response<AuditQueryResult?>> GetBySourceNameAndKeyAsync(
         string sourceName,
         string sourceKey,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAndKeyAsync(sourceName, sourceKey, cancellationToken);
+        var error = await ValidateSourceNameAndKeyAsync(sourceName, sourceKey);
+        if (error is not null)
+            return new Response<AuditQueryResult?>(error);
 
         var result = await _connection.QuerySingleOrDefaultAsync<AuditQueryResult>(
             _provider.SelectByEntitySql.Replace("AuditLogXml", "AuditLog"),
             new { SourceName = sourceName, SourceKey = sourceKey });
 
-        return result;
+        return new Response<AuditQueryResult?>(result);
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<AuditQueryResult>> GetBySourceNameAndDateAsync(
+    public async Task<Response<IEnumerable<AuditQueryResult>>> GetBySourceNameAndDateAsync(
         string sourceName,
         DateTime fromDate,
         DateTime? toDate = null,
@@ -63,7 +68,9 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName);
+        if (error is not null)
+            return new Response<IEnumerable<AuditQueryResult>>(error);
 
         var effectiveToDate = toDate ?? DateTime.MaxValue;
 
@@ -78,16 +85,18 @@ public sealed class DapperAuditQueryService(
                 Take = take
             });
 
-        return results;
+        return new Response<IEnumerable<AuditQueryResult>>(results);
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<AuditQueryResult>> GetBySourceNameAndActionAsync(
+    public async Task<Response<IEnumerable<AuditQueryResult>>> GetBySourceNameAndActionAsync(
         string sourceName,
         AuditAction action,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName);
+        if (error is not null)
+            return new Response<IEnumerable<AuditQueryResult>>(error);
 
         var results = await _connection.QueryAsync<AuditQueryResult>(
             _provider.SelectBySourceNameAndActionSql,
@@ -97,18 +106,20 @@ public sealed class DapperAuditQueryService(
                 Action = action.ToString()
             });
 
-        return results;
+        return new Response<IEnumerable<AuditQueryResult>>(results);
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<AuditQueryResult>> GetBySourceNameActionAndDateAsync(
+    public async Task<Response<IEnumerable<AuditQueryResult>>> GetBySourceNameActionAndDateAsync(
         string sourceName,
         AuditAction action,
         DateTime fromDate,
         DateTime? toDate = null,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName);
+        if (error is not null)
+            return new Response<IEnumerable<AuditQueryResult>>(error);
 
         var effectiveToDate = toDate ?? DateTime.MaxValue;
 
@@ -122,33 +133,37 @@ public sealed class DapperAuditQueryService(
                 ToDate = effectiveToDate
             });
 
-        return results;
+        return new Response<IEnumerable<AuditQueryResult>>(results);
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<AuditSummaryResult>> GetSummaryBySourceNameAsync(
+    public async Task<Response<IEnumerable<AuditSummaryResult>>> GetSummaryBySourceNameAsync(
         string sourceName,
         int skip = 0,
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName);
+        if (error is not null)
+            return new Response<IEnumerable<AuditSummaryResult>>(error);
 
         var results = await _connection.QueryAsync<AuditSummaryResult>(
             _provider.GetSelectSummaryBySourceNameSql(skip, take),
             new { SourceName = sourceName, Skip = skip, Take = take });
 
-        return results;
+        return new Response<IEnumerable<AuditSummaryResult>>(results);
     }
 
     /// <inheritdoc />
-    public async Task<PagedResult<AuditQueryResult>> GetPagedBySourceNameAsync(
+    public async Task<PagedResponse<IEnumerable<AuditQueryResult>>> GetPagedBySourceNameAsync(
         string sourceName,
         int skip = 0,
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditQueryResult>>(error);
 
         var items = await _connection.QueryAsync<AuditQueryResult>(
             _provider.GetSelectBySourceNameSql(skip, take),
@@ -158,11 +173,11 @@ public sealed class DapperAuditQueryService(
             _provider.CountBySourceNameSql,
             new { SourceName = sourceName });
 
-        return new PagedResult<AuditQueryResult> { Items = items, TotalCount = totalCount };
+        return new PagedResponse<IEnumerable<AuditQueryResult>>(items, ToPageNumber(skip, take), take, totalCount);
     }
 
     /// <inheritdoc />
-    public async Task<PagedResult<AuditQueryResult>> GetPagedBySourceNameAndDateAsync(
+    public async Task<PagedResponse<IEnumerable<AuditQueryResult>>> GetPagedBySourceNameAndDateAsync(
         string sourceName,
         DateTime fromDate,
         DateTime? toDate = null,
@@ -170,7 +185,9 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditQueryResult>>(error);
 
         var effectiveToDate = toDate ?? DateTime.MaxValue;
 
@@ -182,18 +199,20 @@ public sealed class DapperAuditQueryService(
             _provider.CountBySourceNameAndDateSql,
             new { SourceName = sourceName, FromDate = fromDate, ToDate = effectiveToDate });
 
-        return new PagedResult<AuditQueryResult> { Items = items, TotalCount = totalCount };
+        return new PagedResponse<IEnumerable<AuditQueryResult>>(items, ToPageNumber(skip, take), take, totalCount);
     }
 
     /// <inheritdoc />
-    public async Task<PagedResult<AuditQueryResult>> GetPagedBySourceNameAndActionAsync(
+    public async Task<PagedResponse<IEnumerable<AuditQueryResult>>> GetPagedBySourceNameAndActionAsync(
         string sourceName,
         AuditAction action,
         int skip = 0,
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditQueryResult>>(error);
 
         var items = await _connection.QueryAsync<AuditQueryResult>(
             _provider.GetSelectBySourceNameAndActionSql(skip, take),
@@ -203,11 +222,11 @@ public sealed class DapperAuditQueryService(
             _provider.CountBySourceNameAndActionSql,
             new { SourceName = sourceName, Action = action.ToString() });
 
-        return new PagedResult<AuditQueryResult> { Items = items, TotalCount = totalCount };
+        return new PagedResponse<IEnumerable<AuditQueryResult>>(items, ToPageNumber(skip, take), take, totalCount);
     }
 
     /// <inheritdoc />
-    public async Task<PagedResult<AuditQueryResult>> GetPagedBySourceNameActionAndDateAsync(
+    public async Task<PagedResponse<IEnumerable<AuditQueryResult>>> GetPagedBySourceNameActionAndDateAsync(
         string sourceName,
         AuditAction action,
         DateTime fromDate,
@@ -216,7 +235,9 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditQueryResult>>(error);
 
         var effectiveToDate = toDate ?? DateTime.MaxValue;
 
@@ -242,17 +263,19 @@ public sealed class DapperAuditQueryService(
                 ToDate = effectiveToDate
             });
 
-        return new PagedResult<AuditQueryResult> { Items = items, TotalCount = totalCount };
+        return new PagedResponse<IEnumerable<AuditQueryResult>>(items, ToPageNumber(skip, take), take, totalCount);
     }
 
     /// <inheritdoc />
-    public async Task<PagedResult<AuditSummaryResult>> GetPagedSummaryBySourceNameAsync(
+    public async Task<PagedResponse<IEnumerable<AuditSummaryResult>>> GetPagedSummaryBySourceNameAsync(
         string sourceName,
         int skip = 0,
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditSummaryResult>>(error);
 
         var items = await _connection.QueryAsync<AuditSummaryResult>(
             _provider.GetSelectSummaryBySourceNameSql(skip, take),
@@ -262,11 +285,11 @@ public sealed class DapperAuditQueryService(
             _provider.CountSummaryBySourceNameSql,
             new { SourceName = sourceName });
 
-        return new PagedResult<AuditSummaryResult> { Items = items, TotalCount = totalCount };
+        return new PagedResponse<IEnumerable<AuditSummaryResult>>(items, ToPageNumber(skip, take), take, totalCount);
     }
 
     /// <inheritdoc />
-    public async Task<PagedResult<AuditSummaryResult>> GetPagedSummaryBySourceNameAsync(
+    public async Task<PagedResponse<IEnumerable<AuditSummaryResult>>> GetPagedSummaryBySourceNameAsync(
         string sourceName,
         string? sourceKey,
         DateTime? fromDate,
@@ -275,7 +298,9 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        await ValidateSourceNameAsync(sourceName, cancellationToken);
+        var error = await ValidateSourceNameAsync(sourceName);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditSummaryResult>>(error);
 
         var hasDateFilter = fromDate.HasValue;
         var effectiveToDate = toDate ?? DateTime.MaxValue;
@@ -302,36 +327,39 @@ public sealed class DapperAuditQueryService(
             _provider.GetCountFilteredSummaryBySourceNameSql(sourceKey, hasDateFilter),
             parameters);
 
-        return new PagedResult<AuditSummaryResult> { Items = items, TotalCount = totalCount };
+        return new PagedResponse<IEnumerable<AuditSummaryResult>>(items, ToPageNumber(skip, take), take, totalCount);
     }
 
     /// <inheritdoc />
-    public async Task<AuditDetailResult?> GetParsedDetailBySourceNameAndKeyAsync(
+    public async Task<Response<AuditDetailResult?>> GetParsedDetailBySourceNameAndKeyAsync(
         string sourceName,
         string sourceKey,
         CancellationToken cancellationToken = default)
     {
         var raw = await GetBySourceNameAndKeyAsync(sourceName, sourceKey, cancellationToken);
-        if (raw is null)
-            return null;
+        if (!raw.Succeeded)
+            return new Response<AuditDetailResult?>(raw.Message!);
 
-        var entries = _changeLogService.ParseAuditLog(raw.AuditLog);
+        if (raw.Data is null)
+            return new Response<AuditDetailResult?>(data: null);
 
-        return new AuditDetailResult
+        var entries = _changeLogService.ParseAuditLog(raw.Data.AuditLog);
+
+        return new Response<AuditDetailResult?>(new AuditDetailResult
         {
-            SourceName = raw.SourceName,
-            SourceKey = raw.SourceKey,
+            SourceName = raw.Data.SourceName,
+            SourceKey = raw.Data.SourceKey,
             Entries = entries
-        };
+        });
     }
 
-    private async Task ValidateSourceNameAsync(string sourceName, CancellationToken cancellationToken)
+    private async Task<string?> ValidateSourceNameAsync(string sourceName)
     {
         if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName is required.", nameof(sourceName));
+            return AuditQueryMessages.SourceNameRequired;
 
         if (sourceName.Length > MaxSourceNameLength)
-            throw new ArgumentException($"SourceName cannot exceed {MaxSourceNameLength} characters.", nameof(sourceName));
+            return AuditQueryMessages.SourceNameTooLong(MaxSourceNameLength);
 
         EnsureConnectionOpen();
 
@@ -339,26 +367,23 @@ public sealed class DapperAuditQueryService(
             _provider.SourceNameExistsSql,
             new { SourceName = sourceName });
 
-        if (exists == 0)
-            throw new AuditSourceNotFoundException(sourceName);
+        return exists == 0 ? AuditQueryMessages.SourceNotFound(sourceName) : null;
     }
 
-    private async Task ValidateSourceNameAndKeyAsync(string sourceName, string sourceKey, CancellationToken cancellationToken)
+    private async Task<string?> ValidateSourceNameAndKeyAsync(string sourceName, string sourceKey)
     {
-        // Format checks first (no DB round-trip) to surface ArgumentException before AuditSourceNotFoundException
         if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName is required.", nameof(sourceName));
+            return AuditQueryMessages.SourceNameRequired;
 
         if (sourceName.Length > MaxSourceNameLength)
-            throw new ArgumentException($"SourceName cannot exceed {MaxSourceNameLength} characters.", nameof(sourceName));
+            return AuditQueryMessages.SourceNameTooLong(MaxSourceNameLength);
 
         if (string.IsNullOrWhiteSpace(sourceKey))
-            throw new ArgumentException("SourceKey is required.", nameof(sourceKey));
+            return AuditQueryMessages.SourceKeyRequired;
 
         if (sourceKey.Length > MaxSourceKeyLength)
-            throw new ArgumentException($"SourceKey cannot exceed {MaxSourceKeyLength} characters.", nameof(sourceKey));
+            return AuditQueryMessages.SourceKeyTooLong(MaxSourceKeyLength);
 
-        // DB existence checks (ordered: sourceName first, then sourceKey)
         EnsureConnectionOpen();
 
         var sourceNameExists = await _connection.ExecuteScalarAsync<int>(
@@ -366,21 +391,21 @@ public sealed class DapperAuditQueryService(
             new { SourceName = sourceName });
 
         if (sourceNameExists == 0)
-            throw new AuditSourceNotFoundException(sourceName);
+            return AuditQueryMessages.SourceNotFound(sourceName);
 
         var sourceKeyExists = await _connection.ExecuteScalarAsync<int>(
             _provider.SourceKeyExistsSql,
             new { SourceName = sourceName, SourceKey = sourceKey });
 
-        if (sourceKeyExists == 0)
-            throw new AuditSourceKeyNotFoundException(sourceName, sourceKey);
+        return sourceKeyExists == 0 ? AuditQueryMessages.SourceKeyNotFound(sourceName, sourceKey) : null;
     }
 
     private void EnsureConnectionOpen()
     {
         if (_connection.State != ConnectionState.Open)
-        {
             _connection.Open();
-        }
     }
+
+    private static int ToPageNumber(int skip, int take) =>
+        take > 0 ? (skip / take) + 1 : 1;
 }
