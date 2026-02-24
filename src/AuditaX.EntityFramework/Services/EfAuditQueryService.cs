@@ -1,5 +1,6 @@
 using System.Data.Common;
 using AuditaX.Enums;
+using AuditaX.Exceptions;
 using AuditaX.Interfaces;
 using AuditaX.Models;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -22,6 +23,9 @@ public sealed class EfAuditQueryService(
     private readonly IDatabaseProvider _provider = provider ?? throw new ArgumentNullException(nameof(provider));
     private readonly IChangeLogService _changeLogService = changeLogService ?? throw new ArgumentNullException(nameof(changeLogService));
 
+    private const int MaxSourceNameLength = 64;
+    private const int MaxSourceKeyLength = 64;
+
     /// <inheritdoc />
     public async Task<IEnumerable<AuditQueryResult>> GetBySourceNameAsync(
         string sourceName,
@@ -29,8 +33,7 @@ public sealed class EfAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
@@ -58,10 +61,7 @@ public sealed class EfAuditQueryService(
         string sourceKey,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
-        if (string.IsNullOrWhiteSpace(sourceKey))
-            throw new ArgumentException("SourceKey cannot be null or empty.", nameof(sourceKey));
+        await ValidateSourceNameAndKeyAsync(sourceName, sourceKey, cancellationToken);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
@@ -89,13 +89,12 @@ public sealed class EfAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
 
-        var effectiveToDate = toDate ?? DateTime.UtcNow;
+        var effectiveToDate = toDate ?? DateTime.MaxValue;
         List<AuditQueryResult> results = [];
 
         await using var command = connection.CreateCommand();
@@ -121,8 +120,7 @@ public sealed class EfAuditQueryService(
         AuditAction action,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
@@ -151,13 +149,12 @@ public sealed class EfAuditQueryService(
         DateTime? toDate = null,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
 
-        var effectiveToDate = toDate ?? DateTime.UtcNow;
+        var effectiveToDate = toDate ?? DateTime.MaxValue;
         List<AuditQueryResult> results = [];
 
         await using var command = connection.CreateCommand();
@@ -183,8 +180,7 @@ public sealed class EfAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
@@ -213,8 +209,7 @@ public sealed class EfAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
@@ -250,13 +245,12 @@ public sealed class EfAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
 
-        var effectiveToDate = toDate ?? DateTime.UtcNow;
+        var effectiveToDate = toDate ?? DateTime.MaxValue;
         List<AuditQueryResult> results = [];
 
         await using var command = connection.CreateCommand();
@@ -294,8 +288,7 @@ public sealed class EfAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
@@ -337,13 +330,12 @@ public sealed class EfAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
 
-        var effectiveToDate = toDate ?? DateTime.UtcNow;
+        var effectiveToDate = toDate ?? DateTime.MaxValue;
         List<AuditQueryResult> results = [];
 
         await using var command = connection.CreateCommand();
@@ -382,8 +374,7 @@ public sealed class EfAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
@@ -420,14 +411,13 @@ public sealed class EfAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
         var connection = _context.Database.GetDbConnection();
         await EnsureConnectionOpenAsync(connection, cancellationToken);
 
         var hasDateFilter = fromDate.HasValue;
-        var effectiveToDate = toDate ?? DateTime.UtcNow;
+        var effectiveToDate = toDate ?? DateTime.MaxValue;
 
         List<AuditSummaryResult> results = [];
 
@@ -488,6 +478,60 @@ public sealed class EfAuditQueryService(
             SourceKey = raw.SourceKey,
             Entries = entries
         };
+    }
+
+    private async Task ValidateSourceNameAsync(string sourceName, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(sourceName))
+            throw new ArgumentException("SourceName is required.", nameof(sourceName));
+
+        if (sourceName.Length > MaxSourceNameLength)
+            throw new ArgumentException($"SourceName cannot exceed {MaxSourceNameLength} characters.", nameof(sourceName));
+
+        var exists = await ExecuteCountAsync(
+            _provider.SourceNameExistsSql,
+            cmd => AddParameter(cmd, "SourceName", sourceName),
+            cancellationToken);
+
+        if (exists == 0)
+            throw new AuditSourceNotFoundException(sourceName);
+    }
+
+    private async Task ValidateSourceNameAndKeyAsync(string sourceName, string sourceKey, CancellationToken cancellationToken)
+    {
+        // Format checks first (no DB round-trip) to surface ArgumentException before AuditSourceNotFoundException
+        if (string.IsNullOrWhiteSpace(sourceName))
+            throw new ArgumentException("SourceName is required.", nameof(sourceName));
+
+        if (sourceName.Length > MaxSourceNameLength)
+            throw new ArgumentException($"SourceName cannot exceed {MaxSourceNameLength} characters.", nameof(sourceName));
+
+        if (string.IsNullOrWhiteSpace(sourceKey))
+            throw new ArgumentException("SourceKey is required.", nameof(sourceKey));
+
+        if (sourceKey.Length > MaxSourceKeyLength)
+            throw new ArgumentException($"SourceKey cannot exceed {MaxSourceKeyLength} characters.", nameof(sourceKey));
+
+        // DB existence checks (ordered: sourceName first, then sourceKey)
+        var sourceNameExists = await ExecuteCountAsync(
+            _provider.SourceNameExistsSql,
+            cmd => AddParameter(cmd, "SourceName", sourceName),
+            cancellationToken);
+
+        if (sourceNameExists == 0)
+            throw new AuditSourceNotFoundException(sourceName);
+
+        var sourceKeyExists = await ExecuteCountAsync(
+            _provider.SourceKeyExistsSql,
+            cmd =>
+            {
+                AddParameter(cmd, "SourceName", sourceName);
+                AddParameter(cmd, "SourceKey", sourceKey);
+            },
+            cancellationToken);
+
+        if (sourceKeyExists == 0)
+            throw new AuditSourceKeyNotFoundException(sourceName, sourceKey);
     }
 
     private static async Task EnsureConnectionOpenAsync(DbConnection connection, CancellationToken cancellationToken)

@@ -21,7 +21,7 @@ public class AuditLog
     /// Gets or sets the name of the entity being audited.
     /// </summary>
     [Required]
-    [MaxLength(50)]
+    [MaxLength(64)]
     [Column("SourceName")]
     public string SourceName { get; set; } = string.Empty;
 
@@ -29,7 +29,7 @@ public class AuditLog
     /// Gets or sets the unique identifier of the entity being audited.
     /// </summary>
     [Required]
-    [MaxLength(900)]
+    [MaxLength(64)]
     [Column("SourceKey")]
     public string SourceKey { get; set; } = string.Empty;
 

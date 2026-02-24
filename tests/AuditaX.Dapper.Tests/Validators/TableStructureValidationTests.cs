@@ -130,7 +130,7 @@ public class TableStructureValidationTests
         {
             ColumnName = "SourceName",
             DataType = "nvarchar",
-            MaxLength = 50,
+            MaxLength = 64,
             IsNullable = false
         };
         var expected = provider.GetExpectedTableStructure().First(c => c.ColumnName == "SourceName");
@@ -152,7 +152,7 @@ public class TableStructureValidationTests
         {
             ColumnName = "SourceName",
             DataType = "nvarchar",
-            MaxLength = 20, // Too short! Minimum is 50
+            MaxLength = 20, // Too short! Minimum is 64
             IsNullable = false
         };
         var expected = provider.GetExpectedTableStructure().First(c => c.ColumnName == "SourceName");
@@ -196,7 +196,7 @@ public class TableStructureValidationTests
         {
             ColumnName = "SourceName",
             DataType = "nvarchar",
-            MaxLength = 50,
+            MaxLength = 64,
             IsNullable = true // Wrong! Should be NOT NULL
         };
         var expected = provider.GetExpectedTableStructure().First(c => c.ColumnName == "SourceName");

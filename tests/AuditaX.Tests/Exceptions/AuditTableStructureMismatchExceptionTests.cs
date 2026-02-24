@@ -183,7 +183,7 @@ public class AuditTableStructureMismatchExceptionTests
         // This test simulates what would happen with the old incorrect schema
         // Old schema: AuditLogId INT, SourceName NVARCHAR(128), SourceKey NVARCHAR(128),
         //             Action NVARCHAR(16), Changes NVARCHAR(MAX), User NVARCHAR(128), Timestamp DATETIME2
-        // Expected:   LogId UNIQUEIDENTIFIER, SourceName NVARCHAR(50), SourceKey NVARCHAR(900), AuditLog XML/NVARCHAR(MAX)
+        // Expected:   LogId UNIQUEIDENTIFIER, SourceName NVARCHAR(64), SourceKey NVARCHAR(64), AuditLog XML/NVARCHAR(MAX)
 
         var missingColumns = new[] { "LogId", "AuditLog" }; // These don't exist in old schema
         var incorrectColumns = Array.Empty<(string, string, string)>(); // SourceName/SourceKey might match if longer

@@ -65,8 +65,8 @@ public sealed class SqlServerDatabaseProvider(AuditaXOptions options) : IDatabas
 
             return $@"CREATE TABLE {FullTableName} (
     [{LogIdColumn}] UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
-    [{SourceNameColumn}] NVARCHAR(50) NOT NULL,
-    [{SourceKeyColumn}] NVARCHAR(900) NOT NULL,
+    [{SourceNameColumn}] NVARCHAR(64) NOT NULL,
+    [{SourceKeyColumn}] NVARCHAR(64) NOT NULL,
     [{AuditLogColumn}] {columnType} NOT NULL,
     CONSTRAINT [PK_{options.TableName}] PRIMARY KEY ([{LogIdColumn}]),
     CONSTRAINT [UQ_{options.TableName}_Source] UNIQUE ([{SourceNameColumn}], [{SourceKeyColumn}])
@@ -142,14 +142,14 @@ public sealed class SqlServerDatabaseProvider(AuditaXOptions options) : IDatabas
             {
                 ColumnName = SourceNameColumn,
                 AcceptableDataTypes = ["nvarchar", "varchar"],
-                MinLength = 50,
+                MinLength = 64,
                 RequireNotNull = true
             },
             new()
             {
                 ColumnName = SourceKeyColumn,
                 AcceptableDataTypes = ["nvarchar", "varchar"],
-                MinLength = 128, // Minimum acceptable, we expect 900
+                MinLength = 64, // Max GUID string representation with safety margin
                 RequireNotNull = true
             },
             new()
@@ -202,6 +202,14 @@ public sealed class SqlServerDatabaseProvider(AuditaXOptions options) : IDatabas
     }
 
     #region Query SQL Properties
+
+    /// <inheritdoc />
+    public string SourceNameExistsSql =>
+        $"SELECT CASE WHEN EXISTS (SELECT 1 FROM {FullTableName} WHERE [{SourceNameColumn}] = @SourceName) THEN 1 ELSE 0 END";
+
+    /// <inheritdoc />
+    public string SourceKeyExistsSql =>
+        $"SELECT CASE WHEN EXISTS (SELECT 1 FROM {FullTableName} WHERE [{SourceNameColumn}] = @SourceName AND [{SourceKeyColumn}] = @SourceKey) THEN 1 ELSE 0 END";
 
     /// <inheritdoc />
     public string CreateSourceNameIndexSql =>

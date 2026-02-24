@@ -113,6 +113,20 @@ public interface IDatabaseProvider
     #region Query SQL Properties
 
     /// <summary>
+    /// Gets the SQL query to check if any audit log exists for the given SourceName.
+    /// Returns 1 if at least one record exists, 0 otherwise.
+    /// Uses parameter: @SourceName
+    /// </summary>
+    string SourceNameExistsSql { get; }
+
+    /// <summary>
+    /// Gets the SQL query to check if an audit log exists for the given SourceName and SourceKey.
+    /// Returns 1 if a record exists, 0 otherwise.
+    /// Uses parameters: @SourceName, @SourceKey
+    /// </summary>
+    string SourceKeyExistsSql { get; }
+
+    /// <summary>
     /// Gets the SQL to create an index on SourceName for query optimization.
     /// </summary>
     string CreateSourceNameIndexSql { get; }

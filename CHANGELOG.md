@@ -2,6 +2,25 @@
 
 All notable changes to AuditaX will be documented in this file.
 
+## [1.1.1] - 2026-02-24
+
+### Fixed
+- **Input validation centralized** in `DapperAuditQueryService` and `EfAuditQueryService`: replaced 26 scattered `IsNullOrWhiteSpace` guards with two helper methods (`ValidateSourceNameAsync`, `ValidateSourceNameAndKeyAsync`)
+- **SourceName existence validation**: all query methods now verify that `sourceName` exists in the audit table before executing; throws `AuditSourceNotFoundException` if not found
+- **SourceKey existence validation**: `GetBySourceNameAndKeyAsync` and `GetParsedDetailBySourceNameAndKeyAsync` now verify that the `sourceName`/`sourceKey` pair exists; throws `AuditSourceKeyNotFoundException` if not found
+- **Length validation**: `sourceName` and `sourceKey` now throw `ArgumentException` when exceeding 64 characters
+- **Exception messages**: updated from `"cannot be null or empty"` to `"is required"` for consistency with standard API validation responses
+- **Consistent `totalCount` across pages**: replaced `toDate ?? DateTime.UtcNow` with `toDate ?? DateTime.MaxValue` in all date-filtered methods; prevents `totalCount` from changing between paginated requests when `toDate` is not specified
+
+### Added
+- `AuditSourceNotFoundException` — thrown when a `sourceName` has no audit records in the table
+- `AuditSourceKeyNotFoundException` — thrown when a `sourceName`/`sourceKey` pair has no audit record
+- `IDatabaseProvider.SourceNameExistsSql` — SQL to check existence of a `sourceName`
+- `IDatabaseProvider.SourceKeyExistsSql` — SQL to check existence of a `sourceName`/`sourceKey` pair
+- Implementations of the above in `SqlServerDatabaseProvider` and `PostgreSqlDatabaseProvider`
+
+---
+
 ## [1.1.0] - 2026-02-20
 
 ### Added

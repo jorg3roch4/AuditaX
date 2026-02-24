@@ -82,8 +82,8 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
 
             return $@"CREATE TABLE IF NOT EXISTS {FullTableName} (
     ""{LogIdColumn}"" UUID NOT NULL DEFAULT gen_random_uuid(),
-    ""{SourceNameColumn}"" VARCHAR(50) NOT NULL,
-    ""{SourceKeyColumn}"" VARCHAR(900) NOT NULL,
+    ""{SourceNameColumn}"" VARCHAR(64) NOT NULL,
+    ""{SourceKeyColumn}"" VARCHAR(64) NOT NULL,
     ""{AuditLogColumn}"" {columnType} NOT NULL,
     CONSTRAINT ""pk_{_tableName}"" PRIMARY KEY (""{LogIdColumn}""),
     CONSTRAINT ""uq_{_tableName}_source"" UNIQUE (""{SourceNameColumn}"", ""{SourceKeyColumn}"")
@@ -156,14 +156,14 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
             {
                 ColumnName = SourceNameColumn,
                 AcceptableDataTypes = ["character varying", "varchar", "text"],
-                MinLength = 50,
+                MinLength = 64,
                 RequireNotNull = true
             },
             new()
             {
                 ColumnName = SourceKeyColumn,
                 AcceptableDataTypes = ["character varying", "varchar", "text"],
-                MinLength = 128, // Minimum acceptable, we expect 900
+                MinLength = 64, // Max GUID string representation with safety margin
                 RequireNotNull = true
             },
             new()
@@ -209,6 +209,14 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
     }
 
     #region Query SQL Properties
+
+    /// <inheritdoc />
+    public string SourceNameExistsSql =>
+        $"SELECT CASE WHEN EXISTS (SELECT 1 FROM {FullTableName} WHERE \"{SourceNameColumn}\" = @SourceName) THEN 1 ELSE 0 END";
+
+    /// <inheritdoc />
+    public string SourceKeyExistsSql =>
+        $"SELECT CASE WHEN EXISTS (SELECT 1 FROM {FullTableName} WHERE \"{SourceNameColumn}\" = @SourceName AND \"{SourceKeyColumn}\" = @SourceKey) THEN 1 ELSE 0 END";
 
     /// <inheritdoc />
     public string CreateSourceNameIndexSql =>

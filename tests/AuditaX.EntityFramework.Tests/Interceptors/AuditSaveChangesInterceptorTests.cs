@@ -363,8 +363,8 @@ public class AuditSaveChangesInterceptorTests : IDisposable
             modelBuilder.Entity<AuditLog>(entity =>
             {
                 entity.HasKey(e => e.LogId);
-                entity.Property(e => e.SourceName).HasMaxLength(50).IsRequired();
-                entity.Property(e => e.SourceKey).HasMaxLength(900).IsRequired();
+                entity.Property(e => e.SourceName).HasMaxLength(64).IsRequired();
+                entity.Property(e => e.SourceKey).HasMaxLength(64).IsRequired();
                 entity.Property(e => e.AuditLogXml).IsRequired();
                 entity.HasIndex(e => new { e.SourceName, e.SourceKey }).IsUnique();
             });

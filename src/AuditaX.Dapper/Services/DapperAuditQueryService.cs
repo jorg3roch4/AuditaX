@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Threading;
-using System.Threading.Tasks;
-using Dapper;
 using AuditaX.Enums;
+using AuditaX.Exceptions;
 using AuditaX.Interfaces;
 using AuditaX.Models;
 
@@ -25,6 +20,9 @@ public sealed class DapperAuditQueryService(
     private readonly IDatabaseProvider _provider = provider ?? throw new ArgumentNullException(nameof(provider));
     private readonly IChangeLogService _changeLogService = changeLogService ?? throw new ArgumentNullException(nameof(changeLogService));
 
+    private const int MaxSourceNameLength = 64;
+    private const int MaxSourceKeyLength = 64;
+
     /// <inheritdoc />
     public async Task<IEnumerable<AuditQueryResult>> GetBySourceNameAsync(
         string sourceName,
@@ -32,10 +30,7 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
-
-        EnsureConnectionOpen();
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
         var results = await _connection.QueryAsync<AuditQueryResult>(
             _provider.GetSelectBySourceNameSql(skip, take),
@@ -50,12 +45,7 @@ public sealed class DapperAuditQueryService(
         string sourceKey,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
-        if (string.IsNullOrWhiteSpace(sourceKey))
-            throw new ArgumentException("SourceKey cannot be null or empty.", nameof(sourceKey));
-
-        EnsureConnectionOpen();
+        await ValidateSourceNameAndKeyAsync(sourceName, sourceKey, cancellationToken);
 
         var result = await _connection.QuerySingleOrDefaultAsync<AuditQueryResult>(
             _provider.SelectByEntitySql.Replace("AuditLogXml", "AuditLog"),
@@ -73,12 +63,9 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
-        EnsureConnectionOpen();
-
-        var effectiveToDate = toDate ?? DateTime.UtcNow;
+        var effectiveToDate = toDate ?? DateTime.MaxValue;
 
         var results = await _connection.QueryAsync<AuditQueryResult>(
             _provider.GetSelectBySourceNameAndDateSql(skip, take),
@@ -100,10 +87,7 @@ public sealed class DapperAuditQueryService(
         AuditAction action,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
-
-        EnsureConnectionOpen();
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
         var results = await _connection.QueryAsync<AuditQueryResult>(
             _provider.SelectBySourceNameAndActionSql,
@@ -124,12 +108,9 @@ public sealed class DapperAuditQueryService(
         DateTime? toDate = null,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
-        EnsureConnectionOpen();
-
-        var effectiveToDate = toDate ?? DateTime.UtcNow;
+        var effectiveToDate = toDate ?? DateTime.MaxValue;
 
         var results = await _connection.QueryAsync<AuditQueryResult>(
             _provider.SelectBySourceNameActionAndDateSql,
@@ -151,10 +132,7 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
-
-        EnsureConnectionOpen();
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
         var results = await _connection.QueryAsync<AuditSummaryResult>(
             _provider.GetSelectSummaryBySourceNameSql(skip, take),
@@ -170,10 +148,7 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
-
-        EnsureConnectionOpen();
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
         var items = await _connection.QueryAsync<AuditQueryResult>(
             _provider.GetSelectBySourceNameSql(skip, take),
@@ -195,12 +170,9 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
-        EnsureConnectionOpen();
-
-        var effectiveToDate = toDate ?? DateTime.UtcNow;
+        var effectiveToDate = toDate ?? DateTime.MaxValue;
 
         var items = await _connection.QueryAsync<AuditQueryResult>(
             _provider.GetSelectBySourceNameAndDateSql(skip, take),
@@ -221,10 +193,7 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
-
-        EnsureConnectionOpen();
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
         var items = await _connection.QueryAsync<AuditQueryResult>(
             _provider.GetSelectBySourceNameAndActionSql(skip, take),
@@ -247,12 +216,9 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
-        EnsureConnectionOpen();
-
-        var effectiveToDate = toDate ?? DateTime.UtcNow;
+        var effectiveToDate = toDate ?? DateTime.MaxValue;
 
         var items = await _connection.QueryAsync<AuditQueryResult>(
             _provider.GetSelectBySourceNameActionAndDateSql(skip, take),
@@ -286,10 +252,7 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
-
-        EnsureConnectionOpen();
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
         var items = await _connection.QueryAsync<AuditSummaryResult>(
             _provider.GetSelectSummaryBySourceNameSql(skip, take),
@@ -312,13 +275,10 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            throw new ArgumentException("SourceName cannot be null or empty.", nameof(sourceName));
-
-        EnsureConnectionOpen();
+        await ValidateSourceNameAsync(sourceName, cancellationToken);
 
         var hasDateFilter = fromDate.HasValue;
-        var effectiveToDate = toDate ?? DateTime.UtcNow;
+        var effectiveToDate = toDate ?? DateTime.MaxValue;
 
         var parameters = new DynamicParameters();
         parameters.Add("SourceName", sourceName);
@@ -363,6 +323,57 @@ public sealed class DapperAuditQueryService(
             SourceKey = raw.SourceKey,
             Entries = entries
         };
+    }
+
+    private async Task ValidateSourceNameAsync(string sourceName, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(sourceName))
+            throw new ArgumentException("SourceName is required.", nameof(sourceName));
+
+        if (sourceName.Length > MaxSourceNameLength)
+            throw new ArgumentException($"SourceName cannot exceed {MaxSourceNameLength} characters.", nameof(sourceName));
+
+        EnsureConnectionOpen();
+
+        var exists = await _connection.ExecuteScalarAsync<int>(
+            _provider.SourceNameExistsSql,
+            new { SourceName = sourceName });
+
+        if (exists == 0)
+            throw new AuditSourceNotFoundException(sourceName);
+    }
+
+    private async Task ValidateSourceNameAndKeyAsync(string sourceName, string sourceKey, CancellationToken cancellationToken)
+    {
+        // Format checks first (no DB round-trip) to surface ArgumentException before AuditSourceNotFoundException
+        if (string.IsNullOrWhiteSpace(sourceName))
+            throw new ArgumentException("SourceName is required.", nameof(sourceName));
+
+        if (sourceName.Length > MaxSourceNameLength)
+            throw new ArgumentException($"SourceName cannot exceed {MaxSourceNameLength} characters.", nameof(sourceName));
+
+        if (string.IsNullOrWhiteSpace(sourceKey))
+            throw new ArgumentException("SourceKey is required.", nameof(sourceKey));
+
+        if (sourceKey.Length > MaxSourceKeyLength)
+            throw new ArgumentException($"SourceKey cannot exceed {MaxSourceKeyLength} characters.", nameof(sourceKey));
+
+        // DB existence checks (ordered: sourceName first, then sourceKey)
+        EnsureConnectionOpen();
+
+        var sourceNameExists = await _connection.ExecuteScalarAsync<int>(
+            _provider.SourceNameExistsSql,
+            new { SourceName = sourceName });
+
+        if (sourceNameExists == 0)
+            throw new AuditSourceNotFoundException(sourceName);
+
+        var sourceKeyExists = await _connection.ExecuteScalarAsync<int>(
+            _provider.SourceKeyExistsSql,
+            new { SourceName = sourceName, SourceKey = sourceKey });
+
+        if (sourceKeyExists == 0)
+            throw new AuditSourceKeyNotFoundException(sourceName, sourceKey);
     }
 
     private void EnsureConnectionOpen()

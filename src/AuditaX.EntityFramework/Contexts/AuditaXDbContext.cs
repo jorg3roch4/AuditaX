@@ -59,12 +59,12 @@ internal class AuditaXDbContext : DbContext
 
             entity.Property(e => e.SourceName)
                 .HasColumnName(sourceNameColumn)
-                .HasMaxLength(50)
+                .HasMaxLength(64)
                 .IsRequired();
 
             entity.Property(e => e.SourceKey)
                 .HasColumnName(sourceKeyColumn)
-                .HasMaxLength(900)
+                .HasMaxLength(64)
                 .IsRequired();
 
             entity.Property(e => e.AuditLogXml)

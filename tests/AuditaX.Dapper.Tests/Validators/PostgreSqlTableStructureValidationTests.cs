@@ -130,7 +130,7 @@ public class PostgreSqlTableStructureValidationTests
         {
             ColumnName = "source_name",
             DataType = "character varying",
-            MaxLength = 50,
+            MaxLength = 64,
             IsNullable = false
         };
         var expected = provider.GetExpectedTableStructure().First(c => c.ColumnName == "source_name");
@@ -174,7 +174,7 @@ public class PostgreSqlTableStructureValidationTests
         {
             ColumnName = "source_name",
             DataType = "character varying",
-            MaxLength = 20, // Too short! Minimum is 50
+            MaxLength = 20, // Too short! Minimum is 64
             IsNullable = false
         };
         var expected = provider.GetExpectedTableStructure().First(c => c.ColumnName == "source_name");
@@ -262,7 +262,7 @@ public class PostgreSqlTableStructureValidationTests
         {
             ColumnName = "source_name",
             DataType = "character varying",
-            MaxLength = 50,
+            MaxLength = 64,
             IsNullable = true // Wrong! Should be NOT NULL
         };
         var expected = provider.GetExpectedTableStructure().First(c => c.ColumnName == "source_name");
