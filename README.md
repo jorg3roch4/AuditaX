@@ -48,12 +48,9 @@ Of course, there's absolutely no obligation. If you prefer, simply starring the 
 
 ---
 
-## 🎉 What's New in 1.1.0
+## 🎉 What's New in 1.2.1
 
-- **Paged query results with TotalCount**: New `PagedResult<T>` model with `Items` + `TotalCount` for building paginated UIs
-- **Paged versions for ALL multi-record queries**: `GetPagedBySourceNameAsync`, `GetPagedBySourceNameAndDateAsync`, `GetPagedBySourceNameAndActionAsync`, `GetPagedBySourceNameActionAndDateAsync`, `GetPagedSummaryBySourceNameAsync`
-- **Filtered summary**: `GetPagedSummaryBySourceNameAsync` overload with optional `sourceKey` and date range filters
-- **Parsed audit detail**: `GetParsedDetailBySourceNameAndKeyAsync` returns strongly-typed `AuditDetailResult` with `AuditLogEntry` objects -- no more raw XML/JSON parsing on the consumer side
+- **Fixed production SQL scripts**: All 8 `99_*` scripts (SQL Server and PostgreSQL) now match the current table schema — `LogId` como UNIQUEIDENTIFIER/UUID, `SourceName`/`SourceKey` a 64 chars, columnas `CreatedAt`/`CreatedBy` eliminadas, `UNIQUE` constraint e índice actualizado
 
 See [CHANGELOG.md](CHANGELOG.md) for full details.
 

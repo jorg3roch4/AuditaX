@@ -9,28 +9,24 @@
 USE [AuditaX];
 GO
 
-IF EXISTS (SELECT * FROM sys.tables WHERE name = 'AuditLogEFJ')
+IF EXISTS (SELECT * FROM sys.tables WHERE name = 'AuditLogEFJ' AND schema_id = SCHEMA_ID('dbo'))
     DROP TABLE [dbo].[AuditLogEFJ];
 GO
 
 CREATE TABLE [dbo].[AuditLogEFJ]
 (
-    [Id]         BIGINT          IDENTITY(1,1) NOT NULL,
-    [SourceName] NVARCHAR(200)   NOT NULL,
-    [SourceKey]  NVARCHAR(200)   NOT NULL,
-    [AuditLog]   NVARCHAR(MAX)   NOT NULL,  -- JSON format
-    [CreatedAt]  DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
-    [CreatedBy]  NVARCHAR(200)   NULL,
-    CONSTRAINT [PK_AuditLogEFJ] PRIMARY KEY CLUSTERED ([Id] ASC)
+    [LogId]      UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+    [SourceName] NVARCHAR(64)    NOT NULL,
+    [SourceKey]  NVARCHAR(64)    NOT NULL,
+    [AuditLog]   NVARCHAR(MAX)   NOT NULL,
+    CONSTRAINT [PK_AuditLogEFJ] PRIMARY KEY ([LogId]),
+    CONSTRAINT [UQ_AuditLogEFJ_Source] UNIQUE ([SourceName], [SourceKey])
 );
 GO
 
-CREATE NONCLUSTERED INDEX [IX_AuditLogEFJ_SourceName_SourceKey]
-    ON [dbo].[AuditLogEFJ] ([SourceName], [SourceKey]);
-GO
-
-CREATE NONCLUSTERED INDEX [IX_AuditLogEFJ_CreatedAt]
-    ON [dbo].[AuditLogEFJ] ([CreatedAt] DESC);
+CREATE NONCLUSTERED INDEX [IX_AuditLogEFJ_SourceName]
+    ON [dbo].[AuditLogEFJ] ([SourceName])
+    INCLUDE ([SourceKey], [AuditLog]);
 GO
 
 PRINT 'Table [dbo].[AuditLogEFJ] created successfully.';

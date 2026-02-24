@@ -13,16 +13,15 @@ DROP TABLE IF EXISTS public.audit_log_dx;
 
 CREATE TABLE public.audit_log_dx
 (
-    id          BIGSERIAL       NOT NULL,
-    source_name VARCHAR(200)    NOT NULL,
-    source_key  VARCHAR(200)    NOT NULL,
+    log_id      UUID            NOT NULL DEFAULT gen_random_uuid(),
+    source_name VARCHAR(64)     NOT NULL,
+    source_key  VARCHAR(64)     NOT NULL,
     audit_log   XML             NOT NULL,
-    created_at  TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
-    created_by  VARCHAR(200)    NULL,
-    CONSTRAINT pk_audit_log_dx PRIMARY KEY (id)
+    CONSTRAINT pk_audit_log_dx PRIMARY KEY (log_id),
+    CONSTRAINT uq_audit_log_dx_source UNIQUE (source_name, source_key)
 );
 
-CREATE INDEX ix_audit_log_dx_source ON public.audit_log_dx (source_name, source_key);
-CREATE INDEX ix_audit_log_dx_created_at ON public.audit_log_dx (created_at DESC);
+CREATE INDEX ix_audit_log_dx_source_name ON public.audit_log_dx (source_name)
+    INCLUDE (source_key, audit_log);
 
 COMMENT ON TABLE public.audit_log_dx IS 'AuditaX audit log table for Dapper + XML format';

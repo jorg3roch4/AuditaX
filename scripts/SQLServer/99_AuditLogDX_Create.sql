@@ -9,28 +9,25 @@
 USE [AuditaX];
 GO
 
-IF EXISTS (SELECT * FROM sys.tables WHERE name = 'AuditLogDX')
+IF EXISTS (SELECT * FROM sys.tables WHERE name = 'AuditLogDX' AND schema_id = SCHEMA_ID('dbo'))
     DROP TABLE [dbo].[AuditLogDX];
 GO
 
 CREATE TABLE [dbo].[AuditLogDX]
 (
-    [Id]         BIGINT          IDENTITY(1,1) NOT NULL,
-    [SourceName] NVARCHAR(200)   NOT NULL,
-    [SourceKey]  NVARCHAR(200)   NOT NULL,
-    [AuditLog]   XML             NOT NULL,  -- XML format
-    [CreatedAt]  DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
-    [CreatedBy]  NVARCHAR(200)   NULL,
-    CONSTRAINT [PK_AuditLogDX] PRIMARY KEY CLUSTERED ([Id] ASC)
+    [LogId]      UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
+    [SourceName] NVARCHAR(64)    NOT NULL,
+    [SourceKey]  NVARCHAR(64)    NOT NULL,
+    [AuditLog]   XML             NOT NULL,
+    CONSTRAINT [PK_AuditLogDX] PRIMARY KEY ([LogId]),
+    CONSTRAINT [UQ_AuditLogDX_Source] UNIQUE ([SourceName], [SourceKey])
 );
 GO
 
-CREATE NONCLUSTERED INDEX [IX_AuditLogDX_SourceName_SourceKey]
-    ON [dbo].[AuditLogDX] ([SourceName], [SourceKey]);
-GO
-
-CREATE NONCLUSTERED INDEX [IX_AuditLogDX_CreatedAt]
-    ON [dbo].[AuditLogDX] ([CreatedAt] DESC);
+-- Note: XML columns cannot be used in INCLUDE clause; index covers SourceName and SourceKey only
+CREATE NONCLUSTERED INDEX [IX_AuditLogDX_SourceName]
+    ON [dbo].[AuditLogDX] ([SourceName])
+    INCLUDE ([SourceKey]);
 GO
 
 PRINT 'Table [dbo].[AuditLogDX] created successfully.';
