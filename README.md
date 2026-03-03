@@ -283,8 +283,8 @@ await dbContext.SaveChangesAsync(); // Update audit log created automatically
 | Column | JSON Format | XML Format |
 |--------|-------------|------------|
 | `LogId` | UNIQUEIDENTIFIER | UNIQUEIDENTIFIER |
-| `SourceName` | NVARCHAR(50) | NVARCHAR(50) |
-| `SourceKey` | NVARCHAR(900) | NVARCHAR(900) |
+| `SourceName` | NVARCHAR(64) | NVARCHAR(64) |
+| `SourceKey` | NVARCHAR(64) | NVARCHAR(64) |
 | `AuditLog` | NVARCHAR(MAX) | XML |
 
 ### PostgreSQL
@@ -292,8 +292,8 @@ await dbContext.SaveChangesAsync(); // Update audit log created automatically
 | Column | JSON Format | XML Format |
 |--------|-------------|------------|
 | `log_id` | UUID | UUID |
-| `source_name` | VARCHAR(50) | VARCHAR(50) |
-| `source_key` | VARCHAR(900) | VARCHAR(900) |
+| `source_name` | VARCHAR(64) | VARCHAR(64) |
+| `source_key` | VARCHAR(64) | VARCHAR(64) |
 | `audit_log` | JSONB | XML |
 
 ---

@@ -62,8 +62,8 @@ services.AddAuditaX(configuration)
 -- For JSON format (uses native JSONB type)
 CREATE TABLE IF NOT EXISTS public.audit_log (
     log_id UUID NOT NULL DEFAULT gen_random_uuid(),
-    source_name VARCHAR(50) NOT NULL,
-    source_key VARCHAR(900) NOT NULL,
+    source_name VARCHAR(64) NOT NULL,
+    source_key VARCHAR(64) NOT NULL,
     audit_log JSONB NOT NULL,
     CONSTRAINT pk_audit_log PRIMARY KEY (log_id),
     CONSTRAINT uq_audit_log_source UNIQUE (source_name, source_key)
@@ -72,8 +72,8 @@ CREATE TABLE IF NOT EXISTS public.audit_log (
 -- For XML format (uses native XML type)
 CREATE TABLE IF NOT EXISTS public.audit_log (
     log_id UUID NOT NULL DEFAULT gen_random_uuid(),
-    source_name VARCHAR(50) NOT NULL,
-    source_key VARCHAR(900) NOT NULL,
+    source_name VARCHAR(64) NOT NULL,
+    source_key VARCHAR(64) NOT NULL,
     audit_log XML NOT NULL,
     CONSTRAINT pk_audit_log PRIMARY KEY (log_id),
     CONSTRAINT uq_audit_log_source UNIQUE (source_name, source_key)

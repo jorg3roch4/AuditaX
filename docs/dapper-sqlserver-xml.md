@@ -170,8 +170,8 @@ public class ProductRepository(DapperContext context, IAuditService auditService
 ```sql
 CREATE TABLE [dbo].[AuditLog] (
     [LogId]      UNIQUEIDENTIFIER NOT NULL DEFAULT NEWSEQUENTIALID(),
-    [SourceName] NVARCHAR(50)     NOT NULL,
-    [SourceKey]  NVARCHAR(900)    NOT NULL,
+    [SourceName] NVARCHAR(64)     NOT NULL,
+    [SourceKey]  NVARCHAR(64)     NOT NULL,
     [AuditLog]   XML              NOT NULL,
     CONSTRAINT [PK_AuditLog] PRIMARY KEY CLUSTERED ([LogId]),
     CONSTRAINT [UQ_AuditLog_Source] UNIQUE ([SourceName], [SourceKey])
