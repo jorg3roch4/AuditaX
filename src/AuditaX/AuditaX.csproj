@@ -14,9 +14,9 @@
 
         <!-- Package Identity -->
         <PackageId>AuditaX</PackageId>
-        <Version>1.2.2</Version>
-        <AssemblyVersion>1.2.2</AssemblyVersion>
-        <FileVersion>1.2.2</FileVersion>
+        <Version>1.2.3</Version>
+        <AssemblyVersion>1.2.3</AssemblyVersion>
+        <FileVersion>1.2.3</FileVersion>
         <Product>AuditaX</Product>
 
         <!-- Package Metadata -->
@@ -25,7 +25,7 @@
         <Description>Core library for entity auditing in .NET 10+ with fluent configuration, multiple serialization formats (JSON/XML), and extensible architecture for ORMs and databases.</Description>
         <Copyright>Copyright (c) 2025 jorg3roch4</Copyright>
         <PackageTags>audit;logging;entity-tracking;change-history;dotnet;efcore;dapper;sqlserver;postgresql</PackageTags>
-        <PackageReleaseNotes>v1.2.2 - Fixed SourceName/SourceKey column sizes to NVARCHAR(64)/VARCHAR(64) in auto-create table logic; corrected all documentation references from the incorrect values (50/900).</PackageReleaseNotes>
+        <PackageReleaseNotes>v1.2.3 - Complete input validation for all IAuditQueryService query parameters: skip/take bounds, UTC date enforcement, date range coherence, optional sourceKey whitespace/length, and AuditAction enum validity.</PackageReleaseNotes>
         <NeutralLanguage>en</NeutralLanguage>
         <MinClientVersion>6.0</MinClientVersion>
 

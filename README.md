@@ -43,7 +43,7 @@ Of course, there's absolutely no obligation. If you prefer, simply starring the 
 - **Configuration Options**: appsettings.json or Fluent API
 - **Auto Table Creation**: Creates audit table on startup if needed
 - **Startup Validation**: Validates table structure and configuration
-- **Paged Queries with TotalCount**: `PagedResult<T>` for all multi-record queries
+- **Paged Queries with TotalCount**: `PagedResponse<T>` with `PageNumber`, `PageSize`, `TotalCount`, and `Data`
 - **Parsed Audit Detail**: Get strongly-typed entries without raw XML/JSON handling
 
 ---

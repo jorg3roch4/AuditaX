@@ -2,6 +2,47 @@
 
 All notable changes to AuditaX will be documented in this file.
 
+## [1.2.3] - 2026-03-07
+
+### Added
+- **`AuditQueryValidator` static class** (`src/AuditaX/Validation/AuditQueryValidator.cs`): centralizes all input validation for `IAuditQueryService` parameters
+  - `ValidateSourceName` / `ValidateSourceKey` — null/whitespace + max length 64
+  - `ValidateOptionalSourceKey` — when non-null: whitespace check + max length 64
+  - `ValidatePagination` — `skip` must be ≥ 0; `take` must be between 1 and 1000
+  - `ValidateDateRange` — both dates must be `DateTimeKind.Utc`; `fromDate` ≤ `toDate`
+  - `ValidateAction` — `Enum.IsDefined` guard against invalid enum casts
+- **6 new messages** in `AuditQueryMessages`: `SkipNegative`, `TakeOutOfRange`, `DateKindInvalid`, `DateRangeInverted`, `SourceKeyEmpty`, `InvalidAction`
+
+### Changed
+- All `IAuditQueryService` methods now validate their specific parameters before hitting the database
+- Static validation always runs before any DB existence check — no unnecessary round-trips on bad input
+- `ValidateSourceNameAsync` and `ValidateSourceNameAndKeyAsync` (internal) now delegate static checks to `AuditQueryValidator`
+- `MaxSourceNameLength` / `MaxSourceKeyLength` constants moved from both service classes to `AuditQueryValidator`
+
+---
+
+## [1.2.2] - 2026-02-24
+
+### Fixed
+- **Auto-create table column sizes**: `SourceName` and `SourceKey` were being created as 50 and 900 characters respectively instead of 64; corrected to `NVARCHAR(64)` (SQL Server) and `VARCHAR(64)` (PostgreSQL) in all `CreateTableSql` implementations
+
+---
+
+## [1.2.0] - 2026-02-24
+
+### Added
+- **Response wrappers**: all `IAuditQueryService` methods now return `Response<T>` or `PagedResponse<T>` instead of raw types
+  - `Response<T>`: carries `Succeeded`, `Message`, `Errors`, and `Data`
+  - `PagedResponse<T>`: extends `Response<T>` with `PageNumber`, `PageSize`, and `TotalCount`
+- **`AuditQueryMessages`** static class: centralizes all validation error messages with consistent single-quoted field name format
+
+### Changed
+- **No exceptions in query validation**: `ValidateSourceNameAsync` and `ValidateSourceNameAndKeyAsync` now return `Task<string?>` instead of throwing; all public query methods return a failed `Response<T>` / `PagedResponse<T>` to the caller
+- `AuditSourceNotFoundException` and `AuditSourceKeyNotFoundException` are no longer thrown by query services
+- `PagedResult<T>` model removed; replaced by `PagedResponse<T>`
+
+---
+
 ## [1.2.1] - 2026-02-24
 
 ### Fixed

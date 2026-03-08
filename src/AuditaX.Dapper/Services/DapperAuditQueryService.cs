@@ -2,6 +2,7 @@ using AuditaX;
 using AuditaX.Enums;
 using AuditaX.Interfaces;
 using AuditaX.Models;
+using AuditaX.Validation;
 using AuditaX.Wrappers;
 
 namespace AuditaX.Dapper.Services;
@@ -21,9 +22,6 @@ public sealed class DapperAuditQueryService(
     private readonly IDatabaseProvider _provider = provider ?? throw new ArgumentNullException(nameof(provider));
     private readonly IChangeLogService _changeLogService = changeLogService ?? throw new ArgumentNullException(nameof(changeLogService));
 
-    private const int MaxSourceNameLength = 64;
-    private const int MaxSourceKeyLength = 64;
-
     /// <inheritdoc />
     public async Task<Response<IEnumerable<AuditQueryResult>>> GetBySourceNameAsync(
         string sourceName,
@@ -31,7 +29,11 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        var error = await ValidateSourceNameAsync(sourceName);
+        var error = AuditQueryValidator.ValidatePagination(skip, take);
+        if (error is not null)
+            return new Response<IEnumerable<AuditQueryResult>>(error);
+
+        error = await ValidateSourceNameAsync(sourceName);
         if (error is not null)
             return new Response<IEnumerable<AuditQueryResult>>(error);
 
@@ -68,7 +70,15 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        var error = await ValidateSourceNameAsync(sourceName);
+        var error = AuditQueryValidator.ValidatePagination(skip, take);
+        if (error is not null)
+            return new Response<IEnumerable<AuditQueryResult>>(error);
+
+        error = AuditQueryValidator.ValidateDateRange(fromDate, toDate);
+        if (error is not null)
+            return new Response<IEnumerable<AuditQueryResult>>(error);
+
+        error = await ValidateSourceNameAsync(sourceName);
         if (error is not null)
             return new Response<IEnumerable<AuditQueryResult>>(error);
 
@@ -94,7 +104,11 @@ public sealed class DapperAuditQueryService(
         AuditAction action,
         CancellationToken cancellationToken = default)
     {
-        var error = await ValidateSourceNameAsync(sourceName);
+        var error = AuditQueryValidator.ValidateAction(action);
+        if (error is not null)
+            return new Response<IEnumerable<AuditQueryResult>>(error);
+
+        error = await ValidateSourceNameAsync(sourceName);
         if (error is not null)
             return new Response<IEnumerable<AuditQueryResult>>(error);
 
@@ -117,7 +131,15 @@ public sealed class DapperAuditQueryService(
         DateTime? toDate = null,
         CancellationToken cancellationToken = default)
     {
-        var error = await ValidateSourceNameAsync(sourceName);
+        var error = AuditQueryValidator.ValidateAction(action);
+        if (error is not null)
+            return new Response<IEnumerable<AuditQueryResult>>(error);
+
+        error = AuditQueryValidator.ValidateDateRange(fromDate, toDate);
+        if (error is not null)
+            return new Response<IEnumerable<AuditQueryResult>>(error);
+
+        error = await ValidateSourceNameAsync(sourceName);
         if (error is not null)
             return new Response<IEnumerable<AuditQueryResult>>(error);
 
@@ -143,7 +165,11 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        var error = await ValidateSourceNameAsync(sourceName);
+        var error = AuditQueryValidator.ValidatePagination(skip, take);
+        if (error is not null)
+            return new Response<IEnumerable<AuditSummaryResult>>(error);
+
+        error = await ValidateSourceNameAsync(sourceName);
         if (error is not null)
             return new Response<IEnumerable<AuditSummaryResult>>(error);
 
@@ -161,7 +187,11 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        var error = await ValidateSourceNameAsync(sourceName);
+        var error = AuditQueryValidator.ValidatePagination(skip, take);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditQueryResult>>(error);
+
+        error = await ValidateSourceNameAsync(sourceName);
         if (error is not null)
             return new PagedResponse<IEnumerable<AuditQueryResult>>(error);
 
@@ -185,7 +215,15 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        var error = await ValidateSourceNameAsync(sourceName);
+        var error = AuditQueryValidator.ValidatePagination(skip, take);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditQueryResult>>(error);
+
+        error = AuditQueryValidator.ValidateDateRange(fromDate, toDate);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditQueryResult>>(error);
+
+        error = await ValidateSourceNameAsync(sourceName);
         if (error is not null)
             return new PagedResponse<IEnumerable<AuditQueryResult>>(error);
 
@@ -210,7 +248,15 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        var error = await ValidateSourceNameAsync(sourceName);
+        var error = AuditQueryValidator.ValidatePagination(skip, take);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditQueryResult>>(error);
+
+        error = AuditQueryValidator.ValidateAction(action);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditQueryResult>>(error);
+
+        error = await ValidateSourceNameAsync(sourceName);
         if (error is not null)
             return new PagedResponse<IEnumerable<AuditQueryResult>>(error);
 
@@ -235,7 +281,19 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        var error = await ValidateSourceNameAsync(sourceName);
+        var error = AuditQueryValidator.ValidatePagination(skip, take);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditQueryResult>>(error);
+
+        error = AuditQueryValidator.ValidateAction(action);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditQueryResult>>(error);
+
+        error = AuditQueryValidator.ValidateDateRange(fromDate, toDate);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditQueryResult>>(error);
+
+        error = await ValidateSourceNameAsync(sourceName);
         if (error is not null)
             return new PagedResponse<IEnumerable<AuditQueryResult>>(error);
 
@@ -273,7 +331,11 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        var error = await ValidateSourceNameAsync(sourceName);
+        var error = AuditQueryValidator.ValidatePagination(skip, take);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditSummaryResult>>(error);
+
+        error = await ValidateSourceNameAsync(sourceName);
         if (error is not null)
             return new PagedResponse<IEnumerable<AuditSummaryResult>>(error);
 
@@ -298,7 +360,22 @@ public sealed class DapperAuditQueryService(
         int take = 100,
         CancellationToken cancellationToken = default)
     {
-        var error = await ValidateSourceNameAsync(sourceName);
+        var error = AuditQueryValidator.ValidatePagination(skip, take);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditSummaryResult>>(error);
+
+        error = AuditQueryValidator.ValidateOptionalSourceKey(sourceKey);
+        if (error is not null)
+            return new PagedResponse<IEnumerable<AuditSummaryResult>>(error);
+
+        if (fromDate.HasValue)
+        {
+            error = AuditQueryValidator.ValidateDateRange(fromDate.Value, toDate);
+            if (error is not null)
+                return new PagedResponse<IEnumerable<AuditSummaryResult>>(error);
+        }
+
+        error = await ValidateSourceNameAsync(sourceName);
         if (error is not null)
             return new PagedResponse<IEnumerable<AuditSummaryResult>>(error);
 
@@ -355,11 +432,9 @@ public sealed class DapperAuditQueryService(
 
     private async Task<string?> ValidateSourceNameAsync(string sourceName)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            return AuditQueryMessages.SourceNameRequired;
-
-        if (sourceName.Length > MaxSourceNameLength)
-            return AuditQueryMessages.SourceNameTooLong(MaxSourceNameLength);
+        var error = AuditQueryValidator.ValidateSourceName(sourceName);
+        if (error is not null)
+            return error;
 
         EnsureConnectionOpen();
 
@@ -372,17 +447,13 @@ public sealed class DapperAuditQueryService(
 
     private async Task<string?> ValidateSourceNameAndKeyAsync(string sourceName, string sourceKey)
     {
-        if (string.IsNullOrWhiteSpace(sourceName))
-            return AuditQueryMessages.SourceNameRequired;
+        var error = AuditQueryValidator.ValidateSourceName(sourceName);
+        if (error is not null)
+            return error;
 
-        if (sourceName.Length > MaxSourceNameLength)
-            return AuditQueryMessages.SourceNameTooLong(MaxSourceNameLength);
-
-        if (string.IsNullOrWhiteSpace(sourceKey))
-            return AuditQueryMessages.SourceKeyRequired;
-
-        if (sourceKey.Length > MaxSourceKeyLength)
-            return AuditQueryMessages.SourceKeyTooLong(MaxSourceKeyLength);
+        error = AuditQueryValidator.ValidateSourceKey(sourceKey);
+        if (error is not null)
+            return error;
 
         EnsureConnectionOpen();
 
