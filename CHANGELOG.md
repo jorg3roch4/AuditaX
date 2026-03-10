@@ -2,6 +2,79 @@
 
 All notable changes to AuditaX will be documented in this file.
 
+## [2.0.0] - 2026-03-09
+
+### Breaking Changes
+
+AuditaX 2.0.0 removes all query logic from the library. The library now focuses exclusively on audit **registration** — writing audit log entries. Querying is the consumer's responsibility, giving full control over how audit data is retrieved, filtered, and exposed.
+
+**Removed from all packages:**
+
+- `IAuditQueryService` interface and all its implementations (`DapperAuditQueryService`, `EfAuditQueryService`)
+- `Response<T>` and `PagedResponse<T>` response wrappers (these were only used by query methods)
+- `AuditQueryMessages` static class (query-specific error messages)
+- `AuditQueryValidator` static class (query-specific input validation)
+- `AuditQueryResult`, `AuditSummaryResult`, `AuditDetailResult`, `AuditLogEntry` models
+- `IAuditService.GetAuditHistoryAsync` method
+- `IChangeLogService.ParseAuditLog` method
+- All query-related SQL from `IDatabaseProvider` (`#region Query SQL Properties`)
+- All query SQL implementations from `SqlServerDatabaseProvider` and `PostgreSqlDatabaseProvider`
+- DI registration of `IAuditQueryService` from `DapperServiceExtensions` and `EntityFrameworkServiceExtensions`
+
+### Migration Guide
+
+Querying is now done directly against your database using whatever approach fits your stack (Dapper, EF Core, raw ADO.NET, etc.). The audit table schema is unchanged — `SourceName`, `SourceKey`, `AuditLog` columns are the same.
+
+```csharp
+// Before 2.0.0 — used IAuditQueryService
+var result = await _queryService.GetBySourceNameAndKeyAsync("Product", id);
+return StatusCode(result.StatusCode, result.Succeeded ? result.Data : result.Message);
+
+// After 2.0.0 — query directly with Dapper or EF Core
+var auditLog = await connection.QueryFirstOrDefaultAsync<AuditRow>(
+    "SELECT SourceKey, AuditLog FROM AuditLogs WHERE SourceName = @SourceName AND SourceKey = @SourceKey",
+    new { SourceName = "Product", SourceKey = id });
+
+if (auditLog is null) return NotFound();
+return Ok(auditLog.AuditLog); // raw XML or JSON — parse as needed
+```
+
+---
+
+## [1.2.4] - 2026-03-08
+
+### Added
+- **`StatusCode` property on `Response<T>` and `PagedResponse<T>`**: every response now carries an HTTP status code that API controllers can use directly — no more guessing from `Succeeded` or parsing messages
+  - Success constructors set `StatusCode = 200`
+  - Error constructors (`message`, `message + errors`) set `StatusCode = 400`
+  - `Response<T>.NotFound(message)` — creates a 404 response for single-entity lookups by key
+  - `Response<T>.ServerError(message)` — creates a 500 response for unexpected errors
+  - `Response<T>.PropagateError<TSource>(source)` — copies `StatusCode` and `Message` from an inner failed response
+  - `PagedResponse<T>.NotFound(message)` — 404 paged response
+  - `PagedResponse<T>.ServerError(message)` — 500 paged response
+
+### Changed
+- **Collection query methods** (`GetBySourceNameAsync`, `GetBySourceNameAndDateAsync`, `GetBySourceNameAndActionAsync`, etc.): removed the DB existence check for `sourceName`. If the source name is valid format but has no records, the method returns `StatusCode = 200` with an empty collection. Previously it returned a `400 SourceNotFound` error
+- **`GetBySourceNameAndKeyAsync`** and **`GetParsedDetailBySourceNameAndKeyAsync`**: when `sourceName` or `sourceKey` does not exist in the database, the response now has `StatusCode = 404` instead of `400`. Format validation errors (null, empty, too long) remain `400`
+- **`GetParsedDetailBySourceNameAndKeyAsync`**: uses `PropagateError` to forward the exact `StatusCode` (400 or 404) from the inner `GetBySourceNameAndKeyAsync` call
+
+### Upgrade guide
+
+```csharp
+// Before 1.2.4 — consumers had to inspect Message to decide the HTTP status
+if (!result.Succeeded) return BadRequest(result.Message);   // was always 400
+return Ok(result.Data);
+
+// After 1.2.4 — use StatusCode directly
+return StatusCode(result.StatusCode, result.Succeeded ? result.Data : result.Message);
+
+// Single-entity: 200 found, 404 not found, 400 bad params
+var result = await _queryService.GetBySourceNameAndKeyAsync("Product", id);
+return StatusCode(result.StatusCode, result.Succeeded ? result.Data : result.Message);
+```
+
+---
+
 ## [1.2.3] - 2026-03-07
 
 ### Added

@@ -195,39 +195,6 @@ public sealed class AuditService(
             sourceKey);
     }
 
-    /// <inheritdoc />
-    public async Task<List<AuditLogEntry>?> GetAuditHistoryAsync(
-        string sourceName,
-        string sourceKey,
-        CancellationToken cancellationToken = default)
-    {
-        _logger?.LogDebug(
-            "Retrieving audit history for {SourceName}:{SourceKey}",
-            sourceName,
-            sourceKey);
-
-        var auditLog = await repository.GetByEntityAsync(sourceName, sourceKey, cancellationToken);
-
-        if (auditLog is null)
-        {
-            _logger?.LogDebug(
-                "No audit history found for {SourceName}:{SourceKey}",
-                sourceName,
-                sourceKey);
-            return null;
-        }
-
-        var entries = changeLogService.ParseAuditLog(auditLog.AuditLogXml);
-
-        _logger?.LogDebug(
-            "Retrieved {EntryCount} audit entries for {SourceName}:{SourceKey}",
-            entries.Count,
-            sourceName,
-            sourceKey);
-
-        return entries;
-    }
-
     private async Task<AuditLog> GetOrCreateAuditLogAsync(
         string sourceName,
         string sourceKey,

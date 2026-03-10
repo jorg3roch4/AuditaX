@@ -102,51 +102,6 @@ public class XmlChangeLogServiceTests
     }
 
     [Fact]
-    public void ParseAuditLog_ShouldParseValidXml()
-    {
-        // Arrange
-        var user = "test@example.com";
-        List<FieldChange> changes =
-        [
-            new() { Name = "Price", Before = "100", After = "150" }
-        ];
-
-        var xml = _service.CreateEntry(null, user);
-        xml = _service.UpdateEntry(xml, changes, user);
-
-        // Act
-        var entries = _service.ParseAuditLog(xml);
-
-        // Assert
-        entries.Should().HaveCount(2);
-        entries[0].Action.Should().Be(AuditAction.Created);
-        entries[0].User.Should().Be(user);
-        entries[1].Action.Should().Be(AuditAction.Updated);
-        entries[1].Fields.Should().HaveCount(1);
-        entries[1].Fields[0].Name.Should().Be("Price");
-    }
-
-    [Fact]
-    public void ParseAuditLog_WithNullInput_ShouldReturnEmptyList()
-    {
-        // Act
-        var result = _service.ParseAuditLog(null);
-
-        // Assert
-        result.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void ParseAuditLog_WithInvalidXml_ShouldReturnEmptyList()
-    {
-        // Act
-        var result = _service.ParseAuditLog("not valid xml");
-
-        // Assert
-        result.Should().BeEmpty();
-    }
-
-    [Fact]
     public void HasChanged_WithDifferentValues_ShouldReturnTrue()
     {
         // Act & Assert

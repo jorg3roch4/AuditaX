@@ -51,61 +51,6 @@ public sealed class JsonChangeLogService : IChangeLogService
     }
 
     /// <inheritdoc />
-    public List<AuditLogEntry> ParseAuditLog(string? auditLogJson)
-    {
-        if (string.IsNullOrWhiteSpace(auditLogJson))
-        {
-            return [];
-        }
-
-        List<AuditLogEntry> entries = [];
-
-        try
-        {
-            var container = JsonSerializer.Deserialize<AuditLogContainer>(auditLogJson, SerializerOptions);
-            if (container?.AuditLog is not null)
-            {
-                foreach (var jsonEntry in container.AuditLog)
-                {
-                    var entry = new AuditLogEntry
-                    {
-                        User = jsonEntry.User ?? string.Empty,
-                        Timestamp = jsonEntry.Timestamp,
-                        Related = jsonEntry.Related
-                    };
-
-                    if (Enum.TryParse<AuditAction>(jsonEntry.Action, out var action))
-                    {
-                        entry.Action = action;
-                    }
-
-                    if (jsonEntry.Fields is not null)
-                    {
-                        foreach (var jsonField in jsonEntry.Fields)
-                        {
-                            entry.Fields.Add(new FieldChange
-                            {
-                                Name = jsonField.Name ?? string.Empty,
-                                Before = jsonField.Before,
-                                After = jsonField.After,
-                                Value = jsonField.Value
-                            });
-                        }
-                    }
-
-                    entries.Add(entry);
-                }
-            }
-        }
-        catch
-        {
-            // Return empty list on parse errors (fail-safe)
-        }
-
-        return entries;
-    }
-
-    /// <inheritdoc />
     public bool HasChanged(object? originalValue, object? currentValue)
     {
         var originalStr = ConvertToString(originalValue);

@@ -43,16 +43,14 @@ Of course, there's absolutely no obligation. If you prefer, simply starring the 
 - **Configuration Options**: appsettings.json or Fluent API
 - **Auto Table Creation**: Creates audit table on startup if needed
 - **Startup Validation**: Validates table structure and configuration
-- **Paged Queries with TotalCount**: `PagedResponse<T>` with `PageNumber`, `PageSize`, `TotalCount`, and `Data`
-- **Parsed Audit Detail**: Get strongly-typed entries without raw XML/JSON handling
 
 ---
 
-## 🎉 What's New in 1.2.1
+## 🎉 What's New in 2.0.0
 
-- **Fixed production SQL scripts**: All 8 `99_*` scripts (SQL Server and PostgreSQL) now match the current table schema — `LogId` como UNIQUEIDENTIFIER/UUID, `SourceName`/`SourceKey` a 64 chars, columnas `CreatedAt`/`CreatedBy` eliminadas, `UNIQUE` constraint e índice actualizado
+**Breaking change:** `IAuditQueryService`, `Response<T>`, `PagedResponse<T>`, `AuditQueryMessages`, `AuditQueryValidator`, and all query models have been removed. AuditaX now focuses exclusively on audit registration. Querying the `AuditLog` table is the consumer's responsibility.
 
-See [CHANGELOG.md](CHANGELOG.md) for full details.
+See [CHANGELOG.md](CHANGELOG.md) for the full migration guide.
 
 ---
 
@@ -365,65 +363,6 @@ await dbContext.SaveChangesAsync(); // Update audit log created automatically
 
 ---
 
-## 🔍 Querying Audit Logs
-
-AuditaX provides `IAuditQueryService` for querying audit history. Inject it into your services:
-
-```csharp
-public class ProductService(IAuditQueryService auditQueryService)
-{
-    // Parsed detail - no raw XML/JSON handling needed
-    public async Task<AuditDetailResult?> GetProductHistoryAsync(int productId)
-    {
-        return await auditQueryService.GetParsedDetailBySourceNameAndKeyAsync(
-            "Product", productId.ToString());
-    }
-
-    // Paged results with TotalCount for pagination
-    public async Task<PagedResult<AuditSummaryResult>> GetRecentChangesAsync(int page, int pageSize)
-    {
-        var skip = (page - 1) * pageSize;
-        return await auditQueryService.GetPagedSummaryBySourceNameAsync(
-            "Product", skip: skip, take: pageSize);
-    }
-}
-```
-
-**Parsed Detail Result (strongly-typed, no raw XML/JSON):**
-```csharp
-var detail = await auditQueryService.GetParsedDetailBySourceNameAndKeyAsync("Product", "42");
-// detail.Entries[0].Action  => AuditAction.Created
-// detail.Entries[1].Fields[0].Before => "149.99"
-// detail.Entries[1].Fields[0].After  => "129.99"
-```
-
-**Paged Summary Result (with TotalCount):**
-```csharp
-var result = await auditQueryService.GetPagedSummaryBySourceNameAsync("Product", skip: 0, take: 10);
-// result.TotalCount => 1523
-// result.Items      => first 10 summaries
-```
-
-### Available Query Methods
-
-| Method | Description |
-|--------|-------------|
-| `GetBySourceNameAsync` | Get all audit logs for an entity type (paginated) |
-| `GetBySourceNameAndKeyAsync` | Get audit log for a specific entity instance |
-| `GetBySourceNameAndDateAsync` | Get logs within a date range (paginated) |
-| `GetBySourceNameAndActionAsync` | Get logs by action type |
-| `GetBySourceNameActionAndDateAsync` | Get logs by action and date range |
-| `GetSummaryBySourceNameAsync` | Get last event summary for each entity (optimized) |
-| **`GetPagedBySourceNameAsync`** | **Paged logs with TotalCount** |
-| **`GetPagedBySourceNameAndDateAsync`** | **Paged logs by date with TotalCount** |
-| **`GetPagedBySourceNameAndActionAsync`** | **Paged logs by action with TotalCount** |
-| **`GetPagedBySourceNameActionAndDateAsync`** | **Paged logs by action+date with TotalCount** |
-| **`GetPagedSummaryBySourceNameAsync`** | **Paged summary with TotalCount (+ optional filters)** |
-| **`GetParsedDetailBySourceNameAndKeyAsync`** | **Parsed detail with typed Before/After/Value fields** |
-
-See [Querying Audit Logs](./docs/querying-audit-logs.md) for complete documentation with examples.
-
----
 
 ## 📚 Documentation
 
@@ -432,8 +371,6 @@ See the [docs](./docs) folder for detailed documentation:
 **Guides:**
 - [Dapper Audit Guide](./docs/dapper-audit-guide.md) - Complete guide to manual auditing with Dapper
 - [Related Entities and Lookups](./docs/related-entities-and-lookups.md) - Track child entities and resolve FK values
-- [Querying Audit Logs](./docs/querying-audit-logs.md) - Complete guide to IAuditQueryService
-
 **Configuration by Stack:**
 - [Dapper + SQL Server + JSON](./docs/dapper-sqlserver-json.md)
 - [Dapper + SQL Server + XML](./docs/dapper-sqlserver-xml.md)
@@ -483,7 +420,7 @@ AuditaX follows a clear versioning strategy aligned with .NET's release cadence:
 
 | AuditaX | .NET | C# | Status |
 |---------|------|-----|--------|
-| **1.x** | **.NET 10** | **C# 14** | **Current** |
+| **2.x** | **.NET 10** | **C# 14** | **Current** |
 
 ### Future Support Policy
 
@@ -491,7 +428,7 @@ AuditaX will always support the **current LTS version** plus the **next standard
 
 | AuditaX | .NET | C# | Notes |
 |---------|------|-----|-------|
-| 1.x | .NET 10 | C# 14 | LTS only |
+| 2.x | .NET 10 | C# 14 | LTS only |
 | 2.x | .NET 10 + .NET 11 | C# 14 / C# 15 | LTS + Standard |
 | 3.x | .NET 12 | C# 16 | New LTS (drops .NET 10/11) |
 | 4.x | .NET 12 + .NET 13 | C# 16 / C# 17 | LTS + Standard |

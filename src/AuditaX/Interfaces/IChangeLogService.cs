@@ -51,13 +51,6 @@ public interface IChangeLogService
         string user);
 
     /// <summary>
-    /// Parses an audit log XML string into a list of entries.
-    /// </summary>
-    /// <param name="auditLogXml">The audit log XML to parse.</param>
-    /// <returns>A list of parsed audit log entries.</returns>
-    List<AuditLogEntry> ParseAuditLog(string? auditLogXml);
-
-    /// <summary>
     /// Determines if two values are different.
     /// </summary>
     /// <param name="originalValue">The original value.</param>

@@ -36,46 +36,6 @@ public class ChangeLogServiceTests
     }
 
     [Fact]
-    public void AutoDetect_ShouldParseXml()
-    {
-        // Arrange
-        var xmlOptions = new AuditaXOptions { LogFormat = LogFormat.Xml };
-        var xmlService = new ChangeLogService(xmlOptions);
-        var xml = xmlService.CreateEntry(null, "test@example.com");
-
-        // Use a different service configured for JSON to test auto-detection
-        var jsonOptions = new AuditaXOptions { LogFormat = LogFormat.Json };
-        var jsonService = new ChangeLogService(jsonOptions);
-
-        // Act
-        var entries = jsonService.ParseAuditLog(xml);
-
-        // Assert
-        entries.Should().HaveCount(1);
-        entries[0].Action.Should().Be(AuditAction.Created);
-    }
-
-    [Fact]
-    public void AutoDetect_ShouldParseJson()
-    {
-        // Arrange
-        var jsonOptions = new AuditaXOptions { LogFormat = LogFormat.Json };
-        var jsonService = new ChangeLogService(jsonOptions);
-        var json = jsonService.CreateEntry(null, "test@example.com");
-
-        // Use a different service configured for XML to test auto-detection
-        var xmlOptions = new AuditaXOptions { LogFormat = LogFormat.Xml };
-        var xmlService = new ChangeLogService(xmlOptions);
-
-        // Act
-        var entries = xmlService.ParseAuditLog(json);
-
-        // Assert
-        entries.Should().HaveCount(1);
-        entries[0].Action.Should().Be(AuditAction.Created);
-    }
-
-    [Fact]
     public void PreserveFormat_WhenAppendingToXml_ShouldStayXml()
     {
         // Arrange - Create initial XML entry
@@ -149,65 +109,4 @@ public class ChangeLogServiceTests
         ChangeLogService.DetectFormatType("   ").Should().Be(LogFormat.Xml);
     }
 
-    [Fact]
-    public void FullWorkflow_WithXml()
-    {
-        // Arrange
-        var options = new AuditaXOptions { LogFormat = LogFormat.Xml };
-        var service = new ChangeLogService(options);
-        var user = "test@example.com";
-
-        // Act - Full workflow
-        var log = service.CreateEntry(null, user);
-        log = service.UpdateEntry(log,
-        [
-            new() { Name = "Price", Before = "100", After = "150" }
-        ], user);
-        log = service.RelatedEntry(log, AuditAction.Added, "Tag",
-        [
-            new() { Name = "Name", Value = "Sale" }
-        ], user);
-        log = service.DeleteEntry(log, user);
-
-        var entries = service.ParseAuditLog(log);
-
-        // Assert
-        entries.Should().HaveCount(4);
-        entries[0].Action.Should().Be(AuditAction.Created);
-        entries[1].Action.Should().Be(AuditAction.Updated);
-        entries[2].Action.Should().Be(AuditAction.Added);
-        entries[2].Related.Should().Be("Tag");
-        entries[3].Action.Should().Be(AuditAction.Deleted);
-    }
-
-    [Fact]
-    public void FullWorkflow_WithJson()
-    {
-        // Arrange
-        var options = new AuditaXOptions { LogFormat = LogFormat.Json };
-        var service = new ChangeLogService(options);
-        var user = "test@example.com";
-
-        // Act - Full workflow
-        var log = service.CreateEntry(null, user);
-        log = service.UpdateEntry(log,
-        [
-            new() { Name = "Price", Before = "100", After = "150" }
-        ], user);
-        log = service.RelatedEntry(log, AuditAction.Added, "Tag",
-        [
-            new() { Name = "Name", Value = "Sale" }
-        ], user);
-        log = service.DeleteEntry(log, user);
-
-        var entries = service.ParseAuditLog(log);
-
-        // Assert
-        entries.Should().HaveCount(4);
-        entries[0].Action.Should().Be(AuditAction.Created);
-        entries[1].Action.Should().Be(AuditAction.Updated);
-        entries[2].Action.Should().Be(AuditAction.Added);
-        entries[2].Related.Should().Be("Tag");
-        entries[3].Action.Should().Be(AuditAction.Deleted);
-    }
 }

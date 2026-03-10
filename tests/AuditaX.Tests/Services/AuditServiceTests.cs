@@ -206,45 +206,6 @@ public class AuditServiceTests
 
     #endregion
 
-    #region GetAuditHistoryAsync
-
-    [Fact]
-    public async Task GetAuditHistoryAsync_Found_ShouldParseAndReturn()
-    {
-        var existingLog = new AuditLog { SourceName = "Product", SourceKey = "1", AuditLogXml = "<xml />" };
-        var entries = new List<AuditLogEntry>
-        {
-            new() { Action = AuditAction.Created, User = "admin" }
-        };
-
-        _repositoryMock
-            .Setup(r => r.GetByEntityAsync("Product", "1", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existingLog);
-        _changeLogServiceMock
-            .Setup(c => c.ParseAuditLog("<xml />"))
-            .Returns(entries);
-
-        var result = await _service.GetAuditHistoryAsync("Product", "1");
-
-        result.Should().NotBeNull();
-        result.Should().HaveCount(1);
-        result![0].Action.Should().Be(AuditAction.Created);
-    }
-
-    [Fact]
-    public async Task GetAuditHistoryAsync_NotFound_ShouldReturnNull()
-    {
-        _repositoryMock
-            .Setup(r => r.GetByEntityAsync("Product", "999", It.IsAny<CancellationToken>()))
-            .ReturnsAsync((AuditLog?)null);
-
-        var result = await _service.GetAuditHistoryAsync("Product", "999");
-
-        result.Should().BeNull();
-    }
-
-    #endregion
-
     #region User Provider Interaction
 
     [Fact]

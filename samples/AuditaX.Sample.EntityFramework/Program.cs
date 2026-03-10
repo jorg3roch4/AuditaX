@@ -73,8 +73,6 @@ try
 
     var context = services.GetRequiredService<AppDbContext>();
     var auditService = services.GetRequiredService<IAuditService>();
-    var auditQueryService = services.GetRequiredService<IAuditQueryService>();
-
     AnsiConsole.MarkupLine("[green]Database connected successfully.[/]");
     AnsiConsole.MarkupLine("[dim]Using automatic change tracking via EF Core interceptor.[/]\n");
 
@@ -140,85 +138,6 @@ try
 
     AnsiConsole.MarkupLine($"Soft deleted Product ID: [yellow]{product.Id}[/]");
     AnsiConsole.MarkupLine("[dim]Change logged automatically by interceptor.[/]\n");
-
-    // Demo 6: Get Audit History
-    AnsiConsole.MarkupLine("[bold cyan]--- Demo 6: Get Complete Audit History ---[/]");
-    var entries = await auditService.GetAuditHistoryAsync("Product", product.Id.ToString());
-
-    if (entries is not null && entries.Count > 0)
-    {
-        var table = new Table()
-            .Border(TableBorder.Rounded)
-            .AddColumn("[bold]Timestamp[/]")
-            .AddColumn("[bold]Action[/]")
-            .AddColumn("[bold]User[/]")
-            .AddColumn("[bold]Details[/]");
-
-        foreach (var entry in entries)
-        {
-            string details;
-            if (entry.Related is not null)
-            {
-                var fieldDetails = entry.Fields
-                    .Select(f => f.Value is not null
-                        ? $"{f.Name}: {f.Value}"
-                        : $"{f.Name}: {f.Before} -> {f.After}")
-                    .ToList();
-                details = fieldDetails.Count > 0
-                    ? $"{entry.Related} ({string.Join(", ", fieldDetails)})"
-                    : $"Related: {entry.Related}";
-            }
-            else
-            {
-                details = string.Join(", ", entry.Fields
-                    .Where(f => f.Before != null || f.After != null)
-                    .Select(f => $"{f.Name}: {f.Before ?? "null"} -> {f.After ?? "null"}"));
-            }
-
-            table.AddRow(
-                entry.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"),
-                entry.Action.ToString(),
-                entry.User,
-                string.IsNullOrEmpty(details) ? "-" : details);
-        }
-
-        AnsiConsole.Write(table);
-    }
-    else
-    {
-        AnsiConsole.MarkupLine("[yellow]No audit history found.[/]");
-    }
-
-    // Demo 7: Query Audit Logs
-    AnsiConsole.MarkupLine("\n[bold cyan]--- Demo 7: Query Audit Logs using IAuditQueryService ---[/]");
-
-    AnsiConsole.MarkupLine("\n[dim]7.1: GetBySourceNameAsync('Product')[/]");
-    var bySourceName = await auditQueryService.GetBySourceNameAsync("Product", skip: 0, take: 10);
-    AnsiConsole.MarkupLine($"  Found [yellow]{bySourceName.Data?.Count()}[/] records for 'Product'");
-
-    AnsiConsole.MarkupLine($"\n[dim]7.2: GetBySourceNameAndKeyAsync('Product', '{product.Id}')[/]");
-    var bySourceNameAndKey = await auditQueryService.GetBySourceNameAndKeyAsync("Product", product.Id.ToString());
-    if (bySourceNameAndKey.Data != null)
-    {
-        AnsiConsole.MarkupLine($"  SourceName: [yellow]{bySourceNameAndKey.Data.SourceName}[/]");
-        AnsiConsole.MarkupLine($"  SourceKey: [yellow]{bySourceNameAndKey.Data.SourceKey}[/]");
-        AnsiConsole.MarkupLine($"  AuditLog length: [yellow]{bySourceNameAndKey.Data.AuditLog.Length}[/] chars");
-    }
-
-    AnsiConsole.MarkupLine("\n[dim]7.3: GetBySourceNameAndActionAsync('Product', Created)[/]");
-    var byAction = await auditQueryService.GetBySourceNameAndActionAsync("Product", AuditAction.Created);
-    AnsiConsole.MarkupLine($"  Found [yellow]{byAction.Data?.Count()}[/] records with 'Created' action");
-
-    AnsiConsole.MarkupLine("\n[dim]7.4: GetBySourceNameAndActionAsync('Product', Added)[/]");
-    var byAddedAction = await auditQueryService.GetBySourceNameAndActionAsync("Product", AuditAction.Added);
-    AnsiConsole.MarkupLine($"  Found [yellow]{byAddedAction.Data?.Count()}[/] records with 'Added' action (related entities)");
-
-    AnsiConsole.MarkupLine("\n[dim]7.5: GetSummaryBySourceNameAsync('Product')[/]");
-    var summary = await auditQueryService.GetSummaryBySourceNameAsync("Product", skip: 0, take: 100);
-    foreach (var item in summary.Data ?? [])
-    {
-        AnsiConsole.MarkupLine($"  {item.SourceName}[[{item.SourceKey}]]: Last [yellow]{item.LastAction}[/] at {item.LastTimestamp:yyyy-MM-dd HH:mm:ss} by {item.LastUser}");
-    }
 
     // ============================================================================
     // Demo 8-11: User/Role/UserRole with Lookup (Identity-like scenario)
@@ -286,71 +205,7 @@ try
     AnsiConsole.MarkupLine($"Removed role [yellow]User[/] from {user.UserName}");
     AnsiConsole.MarkupLine("[dim]Lookup resolved RoleName for removal too![/]\n");
 
-    // Demo 12: Get User Audit History (shows Lookup values)
-    AnsiConsole.MarkupLine("[bold cyan]--- Demo 12: Get User Audit History (with Lookup values) ---[/]");
-    var userEntries = await auditService.GetAuditHistoryAsync("User", user.UserId);
-
-    if (userEntries is not null && userEntries.Count > 0)
-    {
-        var userTable = new Table()
-            .Border(TableBorder.Rounded)
-            .AddColumn("[bold]Timestamp[/]")
-            .AddColumn("[bold]Action[/]")
-            .AddColumn("[bold]User[/]")
-            .AddColumn("[bold]Details[/]");
-
-        foreach (var entry in userEntries)
-        {
-            string details;
-            if (entry.Related is not null)
-            {
-                var fieldDetails = entry.Fields
-                    .Select(f => f.Value is not null
-                        ? $"{f.Name}: [yellow]{f.Value}[/]"
-                        : $"{f.Name}: {f.Before} -> {f.After}")
-                    .ToList();
-                details = fieldDetails.Count > 0
-                    ? $"{entry.Related} ({string.Join(", ", fieldDetails)})"
-                    : $"Related: {entry.Related}";
-            }
-            else
-            {
-                details = string.Join(", ", entry.Fields
-                    .Where(f => f.Before != null || f.After != null)
-                    .Select(f => $"{f.Name}: {f.Before ?? "null"} -> {f.After ?? "null"}"));
-            }
-
-            userTable.AddRow(
-                entry.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"),
-                entry.Action.ToString(),
-                entry.User,
-                string.IsNullOrEmpty(details) ? "-" : details);
-        }
-
-        AnsiConsole.Write(userTable);
-
-        AnsiConsole.MarkupLine("\n[green]Notice how the audit log shows 'RoleName: Administrator' instead of 'RoleId: guid...'[/]");
-        AnsiConsole.MarkupLine("[green]This is the Lookup feature in action![/]");
-    }
-
-    // Demo 13: Show raw AuditLog content
-    AnsiConsole.MarkupLine("\n[bold cyan]--- Demo 13: Raw AuditLog Content (from database) ---[/]");
-    var rawAuditLog = await auditQueryService.GetBySourceNameAndKeyAsync("User", user.UserId);
-    if (rawAuditLog.Data is not null)
-    {
-        AnsiConsole.MarkupLine($"[dim]SourceName:[/] {Markup.Escape(rawAuditLog.Data.SourceName)}");
-        AnsiConsole.MarkupLine($"[dim]SourceKey:[/] {Markup.Escape(rawAuditLog.Data.SourceKey)}");
-        AnsiConsole.MarkupLine($"[dim]AuditLog ({rawAuditLog.Data.AuditLog.Length} chars):[/]");
-
-        var panel = new Panel(Markup.Escape(rawAuditLog.Data.AuditLog))
-        {
-            Border = BoxBorder.Rounded,
-            Header = new PanelHeader($"[bold]{config.Format} Format[/]")
-        };
-        AnsiConsole.Write(panel);
-    }
-
-    // Demo 14: Pre-existing records (simulate entity without AuditLog)
+    // Demo 13: Pre-existing records (simulate entity without AuditLog)
     AnsiConsole.MarkupLine("\n[bold cyan]--- Demo 14: Pre-existing Records (no AuditLog) ---[/]");
     AnsiConsole.MarkupLine("[dim]Simulating a pre-existing User that was created before AuditaX was enabled[/]");
 
@@ -371,35 +226,7 @@ try
 
     AnsiConsole.MarkupLine($"Added role [yellow]Guest[/] to pre-existing user");
 
-    // Verify that AuditLog was created
-    var newUserEntries = await auditService.GetAuditHistoryAsync("User", user.UserId);
-    if (newUserEntries is not null && newUserEntries.Count > 0)
-    {
-        AnsiConsole.MarkupLine($"[green]AuditLog created with {newUserEntries.Count} entry(ies)![/]");
-
-        var preExistingTable = new Table()
-            .Border(TableBorder.Rounded)
-            .AddColumn("[bold]Action[/]")
-            .AddColumn("[bold]Related[/]")
-            .AddColumn("[bold]Details[/]");
-
-        foreach (var entry in newUserEntries)
-        {
-            var details = string.Join(", ", entry.Fields.Select(f =>
-                f.Value is not null ? $"{f.Name}: {f.Value}" : $"{f.Name}: {f.Before} -> {f.After}"));
-            preExistingTable.AddRow(
-                entry.Action.ToString(),
-                entry.Related ?? "-",
-                details);
-        }
-
-        AnsiConsole.Write(preExistingTable);
-        AnsiConsole.MarkupLine("\n[green]Pre-existing records now get audited on first action![/]");
-    }
-    else
-    {
-        AnsiConsole.MarkupLine("[red]ERROR: AuditLog was NOT created for pre-existing record![/]");
-    }
+    AnsiConsole.MarkupLine("[green]Pre-existing records now get audited on first action![/]");
 
     AnsiConsole.WriteLine();
     AnsiConsole.Write(new Rule("[green]Demo completed successfully![/]").RuleStyle("green"));

@@ -58,19 +58,6 @@ public sealed class ChangeLogService(AuditaXOptions options) : IChangeLogService
     }
 
     /// <inheritdoc />
-    public List<AuditLogEntry> ParseAuditLog(string? auditLog)
-    {
-        if (string.IsNullOrWhiteSpace(auditLog))
-        {
-            return [];
-        }
-
-        // Auto-detect format and parse with appropriate service
-        var service = DetectFormat(auditLog);
-        return service.ParseAuditLog(auditLog);
-    }
-
-    /// <inheritdoc />
     public bool HasChanged(object? originalValue, object? currentValue)
     {
         return _writeService.HasChanged(originalValue, currentValue);

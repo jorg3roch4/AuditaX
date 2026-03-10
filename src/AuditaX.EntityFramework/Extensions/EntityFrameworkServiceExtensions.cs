@@ -6,7 +6,6 @@ using AuditaX.EntityFramework.Contexts;
 using AuditaX.EntityFramework.Customizers;
 using AuditaX.EntityFramework.Interceptors;
 using AuditaX.EntityFramework.Repositories;
-using AuditaX.EntityFramework.Services;
 using AuditaX.EntityFramework.Validators;
 using AuditaX.Configuration;
 using AuditaX.Extensions;
@@ -106,15 +105,6 @@ public static class EntityFrameworkServiceExtensions
             var context = contextFactory(sp);
             var provider = sp.GetRequiredService<IDatabaseProvider>();
             return new EfAuditStartupValidator(context, provider, auditaXOptions);
-        });
-
-        // Register EF-based query service using AuditaXDbContext
-        builder.Services.AddScoped<IAuditQueryService>(sp =>
-        {
-            var auditContext = CreateAuditaXContext(sp);
-            var provider = sp.GetRequiredService<IDatabaseProvider>();
-            var changeLogService = sp.GetRequiredService<IChangeLogService>();
-            return new EfAuditQueryService(auditContext, provider, changeLogService);
         });
 
         // Register the interceptor

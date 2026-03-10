@@ -13,12 +13,10 @@ namespace AuditaX.Samples.Common.Demo;
 public class DemoRunner
 {
     private readonly IAuditService _auditService;
-    private readonly IAuditQueryService _auditQueryService;
 
-    public DemoRunner(IAuditService auditService, IAuditQueryService auditQueryService)
+    public DemoRunner(IAuditService auditService)
     {
         _auditService = auditService;
-        _auditQueryService = auditQueryService;
     }
 
     /// <summary>
@@ -116,86 +114,6 @@ public class DemoRunner
 
         AnsiConsole.MarkupLine($"Soft deleted Product ID: [yellow]{product.Id}[/]");
         AnsiConsole.MarkupLine("[dim]Delete logged to centralized AuditLog table.[/]\n");
-
-        // Demo 6: Get Audit History
-        AnsiConsole.MarkupLine("[bold cyan]--- Demo 6: Get Complete Audit History ---[/]");
-        var entries = await _auditService.GetAuditHistoryAsync("Product", product.Id.ToString());
-
-        if (entries is not null && entries.Count > 0)
-        {
-            var table = new Table()
-                .Border(TableBorder.Rounded)
-                .AddColumn("[bold]Timestamp[/]")
-                .AddColumn("[bold]Action[/]")
-                .AddColumn("[bold]User[/]")
-                .AddColumn("[bold]Details[/]");
-
-            foreach (var entry in entries)
-            {
-                string details;
-                if (entry.Related is not null)
-                {
-                    // For related entities, show the field values
-                    var fieldDetails = entry.Fields
-                        .Select(f => f.Value is not null
-                            ? $"{f.Name}: {f.Value}"
-                            : $"{f.Name}: {f.Before} -> {f.After}")
-                        .ToList();
-                    details = fieldDetails.Count > 0
-                        ? $"{entry.Related} ({string.Join(", ", fieldDetails)})"
-                        : $"Related: {entry.Related}";
-                }
-                else
-                {
-                    details = string.Join(", ", entry.Fields
-                        .Where(f => f.Before != null || f.After != null)
-                        .Select(f => $"{f.Name}: {f.Before ?? "null"} -> {f.After ?? "null"}"));
-                }
-
-                table.AddRow(
-                    entry.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"),
-                    entry.Action.ToString(),
-                    entry.User,
-                    string.IsNullOrEmpty(details) ? "-" : details);
-            }
-
-            AnsiConsole.Write(table);
-        }
-        else
-        {
-            AnsiConsole.MarkupLine("[yellow]No audit history found.[/]");
-        }
-
-        // Demo 7: Query Audit Logs
-        AnsiConsole.MarkupLine("\n[bold cyan]--- Demo 7: Query Audit Logs using IAuditQueryService ---[/]");
-
-        AnsiConsole.MarkupLine("\n[dim]7.1: GetBySourceNameAsync('Product')[/]");
-        var bySourceName = await _auditQueryService.GetBySourceNameAsync("Product", skip: 0, take: 10);
-        AnsiConsole.MarkupLine($"  Found [yellow]{bySourceName.Data?.Count()}[/] records for 'Product'");
-
-        AnsiConsole.MarkupLine($"\n[dim]7.2: GetBySourceNameAndKeyAsync('Product', '{product.Id}')[/]");
-        var bySourceNameAndKey = await _auditQueryService.GetBySourceNameAndKeyAsync("Product", product.Id.ToString());
-        if (bySourceNameAndKey.Data != null)
-        {
-            AnsiConsole.MarkupLine($"  SourceName: [yellow]{bySourceNameAndKey.Data.SourceName}[/]");
-            AnsiConsole.MarkupLine($"  SourceKey: [yellow]{bySourceNameAndKey.Data.SourceKey}[/]");
-            AnsiConsole.MarkupLine($"  AuditLog length: [yellow]{bySourceNameAndKey.Data.AuditLog.Length}[/] chars");
-        }
-
-        AnsiConsole.MarkupLine("\n[dim]7.3: GetBySourceNameAndActionAsync('Product', Created)[/]");
-        var byAction = await _auditQueryService.GetBySourceNameAndActionAsync("Product", AuditAction.Created);
-        AnsiConsole.MarkupLine($"  Found [yellow]{byAction.Data?.Count()}[/] records with 'Created' action");
-
-        AnsiConsole.MarkupLine("\n[dim]7.4: GetBySourceNameAndActionAsync('Product', Added)[/]");
-        var byAddedAction = await _auditQueryService.GetBySourceNameAndActionAsync("Product", AuditAction.Added);
-        AnsiConsole.MarkupLine($"  Found [yellow]{byAddedAction.Data?.Count()}[/] records with 'Added' action (related entities)");
-
-        AnsiConsole.MarkupLine("\n[dim]7.5: GetSummaryBySourceNameAsync('Product')[/]");
-        var summary = await _auditQueryService.GetSummaryBySourceNameAsync("Product", skip: 0, take: 100);
-        foreach (var item in summary.Data ?? [])
-        {
-            AnsiConsole.MarkupLine($"  {item.SourceName}[[{item.SourceKey}]]: Last [yellow]{item.LastAction}[/] at {item.LastTimestamp:yyyy-MM-dd HH:mm:ss} by {item.LastUser}");
-        }
 
         AnsiConsole.WriteLine();
         AnsiConsole.Write(new Rule("[green]Demo completed successfully![/]").RuleStyle("green"));

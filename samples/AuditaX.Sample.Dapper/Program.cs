@@ -65,14 +65,12 @@ try
 
     var dapperContext = services.GetRequiredService<SampleDapperContext>();
     var auditService = services.GetRequiredService<IAuditService>();
-    var auditQueryService = services.GetRequiredService<IAuditQueryService>();
-
     // Create data operations (tables are created by DatabaseSetup tool)
     using var connection = dapperContext.CreateConnection();
     var dataOps = new DapperDataOperations(connection, config.Database);
 
     // Run the demo
-    var demoRunner = new DemoRunner(auditService, auditQueryService);
+    var demoRunner = new DemoRunner(auditService);
     await demoRunner.RunAsync(dataOps);
 
     // Additional Demo: IAuditUnitOfWork for Related Entities
@@ -294,50 +292,6 @@ static async Task RunAuditUnitOfWorkDemo(
     AnsiConsole.MarkupLine($"Deleted Product ID: [yellow]{product.Id}[/]");
     AnsiConsole.MarkupLine("[dim]Used: auditUnitOfWork.LogDeleteAsync(product)[/]\n");
 
-    // Show audit history
-    AnsiConsole.MarkupLine("[bold cyan]--- Audit History for Product ---[/]");
-    var entries = await auditService.GetAuditHistoryAsync("Product", product.Id.ToString());
-
-    if (entries is not null && entries.Count > 0)
-    {
-        var table = new Table()
-            .Border(TableBorder.Rounded)
-            .AddColumn("[bold]Timestamp[/]")
-            .AddColumn("[bold]Action[/]")
-            .AddColumn("[bold]User[/]")
-            .AddColumn("[bold]Details[/]");
-
-        foreach (var entry in entries)
-        {
-            string details;
-            if (entry.Related is not null)
-            {
-                var fieldDetails = entry.Fields
-                    .Select(f => f.Value is not null
-                        ? $"{f.Name}: {f.Value}"
-                        : $"{f.Name}: {f.Before} -> {f.After}")
-                    .ToList();
-                details = fieldDetails.Count > 0
-                    ? $"{entry.Related} ({string.Join(", ", fieldDetails)})"
-                    : $"Related: {entry.Related}";
-            }
-            else
-            {
-                details = string.Join(", ", entry.Fields
-                    .Where(f => f.Before != null || f.After != null)
-                    .Select(f => $"{f.Name}: {f.Before ?? "null"} -> {f.After ?? "null"}"));
-            }
-
-            table.AddRow(
-                entry.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"),
-                entry.Action.ToString(),
-                entry.User,
-                string.IsNullOrEmpty(details) ? "-" : details);
-        }
-
-        AnsiConsole.Write(table);
-    }
-
     AnsiConsole.WriteLine();
     AnsiConsole.Write(new Spectre.Console.Rule("[green]IAuditUnitOfWork Demo completed![/]").RuleStyle("green"));
 }
@@ -415,53 +369,6 @@ static async Task RunUserRoleDemo(
 
     AnsiConsole.MarkupLine($"Removed role [yellow]User[/] from {user.UserName}");
     AnsiConsole.MarkupLine("[dim]Used: auditUnitOfWork.LogRelatedRemovedAsync(user, userRole, role)[/]\n");
-
-    // Demo 12: Get User Audit History
-    AnsiConsole.MarkupLine("[bold cyan]--- Demo 12: Get User Audit History ---[/]");
-    var userEntries = await auditService.GetAuditHistoryAsync("User", user.UserId);
-
-    if (userEntries is not null && userEntries.Count > 0)
-    {
-        var userTable = new Table()
-            .Border(TableBorder.Rounded)
-            .AddColumn("[bold]Timestamp[/]")
-            .AddColumn("[bold]Action[/]")
-            .AddColumn("[bold]User[/]")
-            .AddColumn("[bold]Details[/]");
-
-        foreach (var entry in userEntries)
-        {
-            string details;
-            if (entry.Related is not null)
-            {
-                var fieldDetails = entry.Fields
-                    .Select(f => f.Value is not null
-                        ? $"{f.Name}: {f.Value[..Math.Min(12, f.Value.Length)]}..."
-                        : $"{f.Name}: {f.Before} -> {f.After}")
-                    .ToList();
-                details = fieldDetails.Count > 0
-                    ? $"{entry.Related} ({string.Join(", ", fieldDetails)})"
-                    : $"Related: {entry.Related}";
-            }
-            else
-            {
-                details = string.Join(", ", entry.Fields
-                    .Where(f => f.Before != null || f.After != null)
-                    .Select(f => $"{f.Name}: {f.Before ?? "null"} -> {f.After ?? "null"}"));
-            }
-
-            userTable.AddRow(
-                entry.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"),
-                entry.Action.ToString(),
-                entry.User,
-                string.IsNullOrEmpty(details) ? "-" : details);
-        }
-
-        AnsiConsole.Write(userTable);
-
-        AnsiConsole.MarkupLine("\n[green]Notice: With Lookups, the audit log shows 'RoleName: Administrator'[/]");
-        AnsiConsole.MarkupLine("[green]instead of 'RoleId: guid...' - same as EF Core![/]");
-    }
 
     AnsiConsole.WriteLine();
     AnsiConsole.Write(new Spectre.Console.Rule("[green]User/Role Demo completed![/]").RuleStyle("green"));

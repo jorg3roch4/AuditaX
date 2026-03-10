@@ -94,15 +94,6 @@ public static class DapperServiceExtensions
             return new DapperAuditStartupValidator(connection, databaseProvider, builder.Options);
         });
 
-        // Register Dapper-based query service
-        builder.Services.AddScoped<IAuditQueryService>(sp =>
-        {
-            var connection = connectionFactory(sp);
-            var databaseProvider = sp.GetRequiredService<IDatabaseProvider>();
-            var changeLogService = sp.GetRequiredService<IChangeLogService>();
-            return new DapperAuditQueryService(connection, databaseProvider, changeLogService);
-        });
-
         // Register IAuditUnitOfWork for use in repositories
         builder.Services.AddScoped<IAuditUnitOfWork, DapperAuditUnitOfWork>();
 

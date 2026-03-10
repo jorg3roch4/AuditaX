@@ -120,15 +120,4 @@ public interface IAuditService
         string user,
         CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Retrieves the complete audit history for an entity.
-    /// </summary>
-    /// <param name="sourceName">The name of the entity.</param>
-    /// <param name="sourceKey">The unique identifier of the entity.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A list of audit log entries, or null if no history exists.</returns>
-    Task<List<AuditLogEntry>?> GetAuditHistoryAsync(
-        string sourceName,
-        string sourceKey,
-        CancellationToken cancellationToken = default);
 }

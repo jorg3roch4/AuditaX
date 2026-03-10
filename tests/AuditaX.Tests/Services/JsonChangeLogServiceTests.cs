@@ -102,51 +102,6 @@ public class JsonChangeLogServiceTests
     }
 
     [Fact]
-    public void ParseAuditLog_ShouldParseValidJson()
-    {
-        // Arrange
-        var user = "test@example.com";
-        List<FieldChange> changes =
-        [
-            new() { Name = "Price", Before = "100", After = "150" }
-        ];
-
-        var json = _service.CreateEntry(null, user);
-        json = _service.UpdateEntry(json, changes, user);
-
-        // Act
-        var entries = _service.ParseAuditLog(json);
-
-        // Assert
-        entries.Should().HaveCount(2);
-        entries[0].Action.Should().Be(AuditAction.Created);
-        entries[0].User.Should().Be(user);
-        entries[1].Action.Should().Be(AuditAction.Updated);
-        entries[1].Fields.Should().HaveCount(1);
-        entries[1].Fields[0].Name.Should().Be("Price");
-    }
-
-    [Fact]
-    public void ParseAuditLog_WithNullInput_ShouldReturnEmptyList()
-    {
-        // Act
-        var result = _service.ParseAuditLog(null);
-
-        // Assert
-        result.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void ParseAuditLog_WithInvalidJson_ShouldReturnEmptyList()
-    {
-        // Act
-        var result = _service.ParseAuditLog("not valid json");
-
-        // Assert
-        result.Should().BeEmpty();
-    }
-
-    [Fact]
     public void HasChanged_WithDifferentValues_ShouldReturnTrue()
     {
         // Act & Assert
