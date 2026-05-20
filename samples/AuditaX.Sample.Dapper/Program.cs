@@ -182,8 +182,16 @@ static void ConfigureAuditaX(IServiceCollection services, IConfiguration configu
 
             // User configuration with Related Entity and Lookup (Identity-like scenario)
             // With Lookups, the audit log shows "RoleName: Administrator" instead of "RoleId: guid..."
+            //
+            // WithIdentifier(u => u.UserName) decouples the audit display key (UserName)
+            // from the FK match key (UserId). AuditLog.SourceKey will be "alice" instead of a Guid.
+            //
+            // NOTE (Dapper-only constraint): identifier resolution is in-memory only — there is no
+            // DbContext.Find available in the Dapper path. Consumers MUST hydrate the identifier
+            // property on the entity instance BEFORE calling unit-of-work methods.
             options.ConfigureEntity<User>("User")
                 .WithKey(u => u.UserId)
+                .WithIdentifier(u => u.UserName)
                 .Properties("UserName", "Email", "PhoneNumber", "IsActive")
                 .WithRelatedEntity<UserRole>("UserRoles")
                     .WithParentKey(ur => ur.UserId)

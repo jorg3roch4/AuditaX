@@ -82,6 +82,7 @@ public sealed class DapperAuditRepository(
                 _pendingAuditLog.LogId,
                 _pendingAuditLog.SourceName,
                 _pendingAuditLog.SourceKey,
+                _pendingAuditLog.SourceReference,
                 _pendingAuditLog.AuditLogXml
             },
             cancellationToken: cancellationToken);

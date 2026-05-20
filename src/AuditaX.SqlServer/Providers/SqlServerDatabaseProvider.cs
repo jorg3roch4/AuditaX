@@ -27,23 +27,27 @@ public sealed class SqlServerDatabaseProvider(AuditaXOptions options) : IDatabas
     public string SourceKeyColumn => "SourceKey";
 
     /// <inheritdoc />
+    public string SourceReferenceColumn => "SourceReference";
+
+    /// <inheritdoc />
     public string AuditLogColumn => "AuditLog";
 
     /// <inheritdoc />
     public string SelectByEntitySql =>
-        $@"SELECT [{LogIdColumn}], [{SourceNameColumn}], [{SourceKeyColumn}], [{AuditLogColumn}] AS AuditLogXml
+        $@"SELECT [{LogIdColumn}], [{SourceNameColumn}], [{SourceKeyColumn}], [{SourceReferenceColumn}], [{AuditLogColumn}] AS AuditLogXml
            FROM {FullTableName}
            WHERE [{SourceNameColumn}] = @SourceName AND [{SourceKeyColumn}] = @SourceKey";
 
     /// <inheritdoc />
     public string InsertSql =>
-        $@"INSERT INTO {FullTableName} ([{LogIdColumn}], [{SourceNameColumn}], [{SourceKeyColumn}], [{AuditLogColumn}])
-           VALUES (@LogId, @SourceName, @SourceKey, @AuditLogXml)";
+        $@"INSERT INTO {FullTableName} ([{LogIdColumn}], [{SourceNameColumn}], [{SourceKeyColumn}], [{SourceReferenceColumn}], [{AuditLogColumn}])
+           VALUES (@LogId, @SourceName, @SourceKey, @SourceReference, @AuditLogXml)";
 
     /// <inheritdoc />
     public string UpdateSql =>
         $@"UPDATE {FullTableName}
-           SET [{AuditLogColumn}] = @AuditLogXml
+           SET [{AuditLogColumn}] = @AuditLogXml,
+               [{SourceReferenceColumn}] = @SourceReference
            WHERE [{SourceNameColumn}] = @SourceName AND [{SourceKeyColumn}] = @SourceKey";
 
     /// <inheritdoc />
@@ -66,6 +70,7 @@ public sealed class SqlServerDatabaseProvider(AuditaXOptions options) : IDatabas
     [{LogIdColumn}] UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
     [{SourceNameColumn}] NVARCHAR(64) NOT NULL,
     [{SourceKeyColumn}] NVARCHAR(64) NOT NULL,
+    [{SourceReferenceColumn}] NVARCHAR(256) NULL,
     [{AuditLogColumn}] {columnType} NOT NULL,
     CONSTRAINT [PK_{options.TableName}] PRIMARY KEY ([{LogIdColumn}]),
     CONSTRAINT [UQ_{options.TableName}_Source] UNIQUE ([{SourceNameColumn}], [{SourceKeyColumn}])
@@ -150,6 +155,13 @@ public sealed class SqlServerDatabaseProvider(AuditaXOptions options) : IDatabas
                 AcceptableDataTypes = ["nvarchar", "varchar"],
                 MinLength = 64, // Max GUID string representation with safety margin
                 RequireNotNull = true
+            },
+            new()
+            {
+                ColumnName = SourceReferenceColumn,
+                AcceptableDataTypes = ["nvarchar", "varchar"],
+                MinLength = 256,
+                RequireNotNull = false
             },
             new()
             {

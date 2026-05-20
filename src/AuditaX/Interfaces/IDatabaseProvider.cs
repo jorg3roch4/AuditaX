@@ -31,6 +31,11 @@ public interface IDatabaseProvider
     string SourceKeyColumn { get; }
 
     /// <summary>
+    /// Gets the name of the SourceReference column.
+    /// </summary>
+    string SourceReferenceColumn { get; }
+
+    /// <summary>
     /// Gets the name of the AuditLog column.
     /// </summary>
     string AuditLogColumn { get; }

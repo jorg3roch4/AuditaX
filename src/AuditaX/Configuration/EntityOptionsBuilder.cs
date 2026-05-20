@@ -36,6 +36,37 @@ public sealed class EntityOptionsBuilder<TEntity>
     }
 
     /// <summary>
+    /// Specifies the property to use as the entity display identifier (audit log SourceKey).
+    /// Use this when the entity's key (FK match value) is different from the value you want
+    /// shown in audit logs — for example, <c>Id</c> as the FK match but <c>UserName</c> as the display.
+    /// </summary>
+    /// <typeparam name="TKey">The type of the identifier property.</typeparam>
+    /// <param name="identifierSelector">Expression to select the identifier property.</param>
+    /// <returns>This builder for chaining.</returns>
+    public EntityOptionsBuilder<TEntity> WithIdentifier<TKey>(Expression<Func<TEntity, TKey>> identifierSelector)
+    {
+        var compiled = identifierSelector.Compile();
+        _options.IdentifierSelector = entity => compiled((TEntity)entity)?.ToString() ?? string.Empty;
+        return this;
+    }
+
+    /// <summary>
+    /// Specifies the property (or expression) that produces a human-readable reference for the
+    /// audited record. The resulting value is written to <c>AuditLog.SourceReference</c> alongside
+    /// the stable <c>SourceKey</c>. Use this to show a descriptive name (e.g. catalog Name,
+    /// person FullName) without losing the identifier anchor.
+    /// </summary>
+    /// <typeparam name="TKey">The type of the reference property.</typeparam>
+    /// <param name="referenceSelector">Expression that selects the reference value.</param>
+    /// <returns>This builder for chaining.</returns>
+    public EntityOptionsBuilder<TEntity> WithReference<TKey>(Expression<Func<TEntity, TKey>> referenceSelector)
+    {
+        var compiled = referenceSelector.Compile();
+        _options.ReferenceSelector = entity => compiled((TEntity)entity)?.ToString() ?? string.Empty;
+        return this;
+    }
+
+    /// <summary>
     /// Specifies the properties to audit for this entity.
     /// </summary>
     /// <param name="properties">The property names to audit.</param>

@@ -308,9 +308,12 @@ static void ConfigureAuditaX(IServiceCollection services, IConfiguration configu
                     .WithParentKey(t => t.ProductId)
                     .Properties("Tag");
 
-            // User configuration with Lookup (NEW - Identity-like scenario)
+            // User configuration with Identifier + Lookup (NEW - Identity-like scenario)
+            // WithIdentifier(u => u.UserName) decouples the audit display key (UserName)
+            // from the FK match key (UserId). AuditLog.SourceKey will be "alice" instead of a Guid.
             options.ConfigureEntity<User>("User")
                 .WithKey(u => u.UserId)
+                .WithIdentifier(u => u.UserName)
                 .Properties("UserName", "Email", "PhoneNumber", "IsActive")
                 .WithRelatedEntity<UserRole>("UserRoles")
                     .WithParentKey(ur => ur.UserId)

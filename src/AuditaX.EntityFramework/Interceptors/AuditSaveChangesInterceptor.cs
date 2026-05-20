@@ -1,4 +1,9 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -113,10 +118,11 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
 
         foreach (var pending in _pendingAddedEntries)
         {
-            var sourceKey = pending.EntityOptions.GetKey(pending.Entity);
+            var sourceKey = pending.EntityOptions.GetIdentifier(pending.Entity);
+            var sourceReference = pending.EntityOptions.GetReference(pending.Entity);
             var displayName = pending.EntityOptions.DisplayName ?? pending.Entity.GetType().Name;
 
-            CreateAuditEntry(auditLogs, displayName, sourceKey, AuditAction.Created, pending.User);
+            CreateAuditEntry(auditLogs, displayName, sourceKey, sourceReference, AuditAction.Created, pending.User);
         }
 
         _pendingAddedEntries.Clear();
@@ -170,19 +176,21 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
                 break;
 
             case EntityState.Modified:
-                var sourceKey = entityOptions.GetKey(entry.Entity);
+                var sourceKey = entityOptions.GetIdentifier(entry.Entity);
+                var sourceReference = entityOptions.GetReference(entry.Entity);
                 var displayName = entityOptions.DisplayName ?? entry.Entity.GetType().Name;
                 var changes = GetFieldChanges(entry, entityOptions);
                 if (changes.Count > 0)
                 {
-                    UpdateAuditEntry(context, auditLogs, displayName, sourceKey, changes, user);
+                    UpdateAuditEntry(context, auditLogs, displayName, sourceKey, sourceReference, changes, user);
                 }
                 break;
 
             case EntityState.Deleted:
-                var deleteSourceKey = entityOptions.GetKey(entry.Entity);
+                var deleteSourceKey = entityOptions.GetIdentifier(entry.Entity);
+                var deleteSourceReference = entityOptions.GetReference(entry.Entity);
                 var deleteDisplayName = entityOptions.DisplayName ?? entry.Entity.GetType().Name;
-                UpdateAuditEntryWithAction(context, auditLogs, deleteDisplayName, deleteSourceKey, AuditAction.Deleted, user);
+                UpdateAuditEntryWithAction(context, auditLogs, deleteDisplayName, deleteSourceKey, deleteSourceReference, AuditAction.Deleted, user);
                 break;
         }
     }
@@ -194,11 +202,12 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
         string user,
         DbSet<Entities.AuditLog> auditLogs)
     {
-        var parentKey = relatedOptions.GetParentKey(entry.Entity);
         var parentOptions = relatedOptions.ParentEntityOptions;
 
         if (parentOptions is null)
             return;
+
+        var (parentKey, parentReference) = ResolveParentIdentifier(context, entry.Entity, relatedOptions);
 
         var parentDisplayName = parentOptions.DisplayName ?? "Unknown";
         var relatedName = relatedOptions.RelatedName ?? "Related";
@@ -214,6 +223,7 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
                         auditLogs,
                         parentDisplayName,
                         parentKey,
+                        parentReference,
                         AuditAction.Added,
                         relatedName,
                         addedFields,
@@ -230,6 +240,7 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
                         auditLogs,
                         parentDisplayName,
                         parentKey,
+                        parentReference,
                         AuditAction.Updated,
                         relatedName,
                         modifiedFields,
@@ -246,6 +257,7 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
                         auditLogs,
                         parentDisplayName,
                         parentKey,
+                        parentReference,
                         AuditAction.Removed,
                         relatedName,
                         removedFields,
@@ -388,6 +400,90 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
         }
     }
 
+    /// <summary>
+    /// Resolves the SourceKey and SourceReference for a related-entity audit row by looking up
+    /// the parent's configured Identifier and Reference. Falls back to the raw FK value (and a
+    /// <c>null</c> reference) when:
+    ///  - the parent has no IdentifierSelector configured (back-compat zero-cost path),
+    ///  - the FK value is empty,
+    ///  - the parent cannot be located in the ChangeTracker NOR via context.Find.
+    /// Never throws — auditing must never crash the host save.
+    /// </summary>
+    private (string Identifier, string? Reference) ResolveParentIdentifier(
+        DbContext context,
+        object childEntity,
+        RelatedEntityOptions relatedOptions)
+    {
+        var fkValue = relatedOptions.GetParentKey(childEntity);
+        var parentOptions = relatedOptions.ParentEntityOptions;
+
+        if (parentOptions is null)
+            return (fkValue, null);
+
+        // Back-compat fast path: no Identifier configured on the parent → keep FK semantics.
+        if (parentOptions.IdentifierSelector is null)
+            return (fkValue, null);
+
+        if (string.IsNullOrEmpty(fkValue))
+            return (fkValue, null);
+
+        if (parentOptions.EntityType is null)
+            return (fkValue, null);
+
+        // 1. Local ChangeTracker scan (mirrors FindLookupEntity idiom — no DB hit).
+        var parentType = parentOptions.EntityType;
+        object? parentEntity = null;
+        foreach (var trackedEntry in context.ChangeTracker.Entries())
+        {
+            if (trackedEntry.Entity.GetType() != parentType)
+                continue;
+
+            if (parentOptions.GetKey(trackedEntry.Entity) == fkValue)
+            {
+                parentEntity = trackedEntry.Entity;
+                break;
+            }
+        }
+
+        // 2. DB fallback via Find — try/catch swallows composite-PK NotSupportedException.
+        if (parentEntity is null)
+        {
+            try
+            {
+                // GetParentKey returned a string; the parent PK property may be int/long/Guid/etc.
+                // Convert the string back to the parent's PK CLR type so context.Find works.
+                var keyProperty = parentType.GetProperty(parentOptions.Key);
+                object findKey = fkValue;
+                if (keyProperty is not null && keyProperty.PropertyType != typeof(string))
+                {
+                    var targetType = Nullable.GetUnderlyingType(keyProperty.PropertyType) ?? keyProperty.PropertyType;
+                    if (targetType == typeof(Guid))
+                    {
+                        if (Guid.TryParse(fkValue, out var g))
+                            findKey = g;
+                    }
+                    else
+                    {
+                        findKey = Convert.ChangeType(fkValue, targetType, CultureInfo.InvariantCulture);
+                    }
+                }
+
+                parentEntity = context.Find(parentType, findKey);
+            }
+            catch
+            {
+                // Composite PK or invalid type — graceful fallback to FK string below.
+                parentEntity = null;
+            }
+        }
+
+        // 3. Final fallback — never crash auditing.
+        if (parentEntity is null)
+            return (fkValue, null);
+
+        return (parentOptions.GetIdentifier(parentEntity), parentOptions.GetReference(parentEntity));
+    }
+
     private List<FieldChange> GetFieldChanges(EntityEntry entry, EntityOptions entityOptions)
     {
         List<FieldChange> changes = [];
@@ -458,6 +554,7 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
         DbSet<Entities.AuditLog> auditLogs,
         string sourceName,
         string sourceKey,
+        string? sourceReference,
         AuditAction action,
         string user)
     {
@@ -474,6 +571,7 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
         if (existingLog is not null)
         {
             existingLog.AuditLogXml = _changeLogService.CreateEntry(existingLog.AuditLogXml, user);
+            existingLog.SourceReference = sourceReference;
         }
         else
         {
@@ -482,6 +580,7 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
             {
                 SourceName = sourceName,
                 SourceKey = sourceKey,
+                SourceReference = sourceReference,
                 AuditLogXml = auditLogXml
             });
         }
@@ -492,6 +591,7 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
         DbSet<Entities.AuditLog> auditLogs,
         string sourceName,
         string sourceKey,
+        string? sourceReference,
         List<FieldChange> changes,
         string user)
     {
@@ -510,6 +610,7 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
                 existingLog.AuditLogXml,
                 changes,
                 user);
+            existingLog.SourceReference = sourceReference;
         }
         else
         {
@@ -518,6 +619,7 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
             {
                 SourceName = sourceName,
                 SourceKey = sourceKey,
+                SourceReference = sourceReference,
                 AuditLogXml = auditLogXml
             });
         }
@@ -528,6 +630,7 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
         DbSet<Entities.AuditLog> auditLogs,
         string sourceName,
         string sourceKey,
+        string? sourceReference,
         AuditAction action,
         string user)
     {
@@ -545,6 +648,7 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
             existingLog.AuditLogXml = _changeLogService.DeleteEntry(
                 existingLog.AuditLogXml,
                 user);
+            existingLog.SourceReference = sourceReference;
         }
         else
         {
@@ -554,6 +658,7 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
             {
                 SourceName = sourceName,
                 SourceKey = sourceKey,
+                SourceReference = sourceReference,
                 AuditLogXml = auditLogXml
             });
         }
@@ -564,6 +669,7 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
         DbSet<Entities.AuditLog> auditLogs,
         string sourceName,
         string sourceKey,
+        string? sourceReference,
         AuditAction action,
         string relatedName,
         List<FieldChange> fields,
@@ -586,6 +692,7 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
                 relatedName,
                 fields,
                 user);
+            existingLog.SourceReference = sourceReference;
         }
         else
         {
@@ -600,6 +707,7 @@ public sealed class AuditSaveChangesInterceptor : SaveChangesInterceptor
             {
                 SourceName = sourceName,
                 SourceKey = sourceKey,
+                SourceReference = sourceReference,
                 AuditLogXml = auditLogXml
             });
         }

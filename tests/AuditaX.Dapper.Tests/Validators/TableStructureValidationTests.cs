@@ -11,7 +11,7 @@ public class TableStructureValidationTests
     #region SqlServer GetExpectedTableStructure Tests
 
     [Fact]
-    public void SqlServer_GetExpectedTableStructure_Json_ShouldReturn4Columns()
+    public void SqlServer_GetExpectedTableStructure_Json_ShouldReturn5Columns()
     {
         // Arrange
         var options = new AuditaXOptions
@@ -26,8 +26,12 @@ public class TableStructureValidationTests
         var structure = provider.GetExpectedTableStructure();
 
         // Assert
-        structure.Should().HaveCount(4);
-        structure.Select(c => c.ColumnName).Should().Contain(new[] { "LogId", "SourceName", "SourceKey", "AuditLog" });
+        structure.Should().HaveCount(5);
+        structure.Select(c => c.ColumnName).Should().Contain(new[] { "LogId", "SourceName", "SourceKey", "SourceReference", "AuditLog" });
+
+        var sourceReference = structure.First(c => c.ColumnName == "SourceReference");
+        sourceReference.MinLength.Should().Be(256);
+        sourceReference.RequireNotNull.Should().BeFalse();
     }
 
     [Fact]

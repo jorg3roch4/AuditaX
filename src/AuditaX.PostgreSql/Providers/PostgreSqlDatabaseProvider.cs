@@ -30,6 +30,9 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
     public string SourceKeyColumn => "source_key";
 
     /// <inheritdoc />
+    public string SourceReferenceColumn => "source_reference";
+
+    /// <inheritdoc />
     public string AuditLogColumn => "audit_log";
 
     /// <inheritdoc />
@@ -37,6 +40,7 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
         $@"SELECT ""{LogIdColumn}"" AS ""LogId"",
                   ""{SourceNameColumn}"" AS ""SourceName"",
                   ""{SourceKeyColumn}"" AS ""SourceKey"",
+                  ""{SourceReferenceColumn}"" AS ""SourceReference"",
                   ""{AuditLogColumn}""::text AS ""AuditLogXml""
            FROM {FullTableName}
            WHERE ""{SourceNameColumn}"" = @SourceName AND ""{SourceKeyColumn}"" = @SourceKey";
@@ -47,8 +51,8 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
         get
         {
             var castSuffix = options.LogFormat == LogFormat.Json ? "::jsonb" : "::xml";
-            return $@"INSERT INTO {FullTableName} (""{LogIdColumn}"", ""{SourceNameColumn}"", ""{SourceKeyColumn}"", ""{AuditLogColumn}"")
-           VALUES (@LogId, @SourceName, @SourceKey, @AuditLogXml{castSuffix})";
+            return $@"INSERT INTO {FullTableName} (""{LogIdColumn}"", ""{SourceNameColumn}"", ""{SourceKeyColumn}"", ""{SourceReferenceColumn}"", ""{AuditLogColumn}"")
+           VALUES (@LogId, @SourceName, @SourceKey, @SourceReference, @AuditLogXml{castSuffix})";
         }
     }
 
@@ -59,7 +63,8 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
         {
             var castSuffix = options.LogFormat == LogFormat.Json ? "::jsonb" : "::xml";
             return $@"UPDATE {FullTableName}
-           SET ""{AuditLogColumn}"" = @AuditLogXml{castSuffix}
+           SET ""{AuditLogColumn}"" = @AuditLogXml{castSuffix},
+               ""{SourceReferenceColumn}"" = @SourceReference
            WHERE ""{SourceNameColumn}"" = @SourceName AND ""{SourceKeyColumn}"" = @SourceKey";
         }
     }
@@ -84,6 +89,7 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
     ""{LogIdColumn}"" UUID NOT NULL DEFAULT gen_random_uuid(),
     ""{SourceNameColumn}"" VARCHAR(64) NOT NULL,
     ""{SourceKeyColumn}"" VARCHAR(64) NOT NULL,
+    ""{SourceReferenceColumn}"" VARCHAR(256) NULL,
     ""{AuditLogColumn}"" {columnType} NOT NULL,
     CONSTRAINT ""pk_{_tableName}"" PRIMARY KEY (""{LogIdColumn}""),
     CONSTRAINT ""uq_{_tableName}_source"" UNIQUE (""{SourceNameColumn}"", ""{SourceKeyColumn}"")
@@ -165,6 +171,13 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
                 AcceptableDataTypes = ["character varying", "varchar", "text"],
                 MinLength = 64, // Max GUID string representation with safety margin
                 RequireNotNull = true
+            },
+            new()
+            {
+                ColumnName = SourceReferenceColumn,
+                AcceptableDataTypes = ["character varying", "varchar", "text"],
+                MinLength = 256,
+                RequireNotNull = false
             },
             new()
             {

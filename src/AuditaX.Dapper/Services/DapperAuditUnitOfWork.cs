@@ -154,7 +154,7 @@ public class DapperAuditUnitOfWork(
                 $"Entity type '{entityType.Name}' is not configured for auditing. " +
                 $"Configure it using AuditaX options in appsettings.json or fluent API.");
 
-        var sourceKey = config.GetKey(entity);
+        var sourceKey = config.GetIdentifier(entity);
 
         return (config.DisplayName ?? entityType.Name, sourceKey);
     }

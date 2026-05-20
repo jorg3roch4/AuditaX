@@ -34,6 +34,16 @@ public class AuditLog
     public string SourceKey { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets a human-readable reference for the audited record (e.g. display name).
+    /// Optional — populated from <see cref="AuditaX.Configuration.EntityOptions.ReferenceSelector"/>
+    /// when configured via <c>WithReference</c>. Independent from <see cref="SourceKey"/>,
+    /// which remains the stable persisted identifier.
+    /// </summary>
+    [MaxLength(256)]
+    [Column("SourceReference")]
+    public string? SourceReference { get; set; }
+
+    /// <summary>
     /// Gets or sets the XML content containing the audit history.
     /// </summary>
     [Required]

@@ -2,6 +2,52 @@
 
 All notable changes to AuditaX will be documented in this file.
 
+## [2.2.0] - 2026-05-20
+
+### Added
+
+- **`SourceReference` column on `AuditLog`** (`NVARCHAR(256) NULL` in SQL Server,
+  `VARCHAR(256) NULL` in PostgreSQL) — a human-readable descriptor of the audited
+  record (e.g. a catalog `Name`, a person's full name) that is persisted alongside
+  the stable `SourceKey`. Independent of `SourceKey`; nullable when not configured.
+- **Fluent API**: `EntityOptionsBuilder<T>.WithReference(Expression<Func<T, TKey>>)`
+  to declare the property/expression that produces the reference value.
+- **JSON-bindable**: `EntityOptions.Reference` (string property name) for
+  appsettings-based configuration. Resolved at runtime via reflection.
+- **EF Core interceptor** evaluates `EntityOptions.GetReference(entity)` for the
+  Created/Modified/Deleted entity (and for the parent on related-entity audits)
+  and writes the value on every insert/update.
+- **Dapper repository** passes `@SourceReference` to the provider's `InsertSql`
+  and `UpdateSql`.
+- **Provider SQL** (`SqlServerDatabaseProvider`, `PostgreSqlDatabaseProvider`):
+  `SelectByEntitySql`, `InsertSql`, `UpdateSql`, and `CreateTableSql` updated to
+  include `SourceReference`. `GetExpectedTableStructure()` returns the new column
+  as nullable with `MinLength = 256`.
+
+### Backward Compatibility
+
+- `SourceKey` semantics are unchanged. `WithIdentifier(...)` keeps controlling
+  the value persisted in `SourceKey` exactly as in 2.1.0.
+- Consumers that do not call `WithReference(...)` store `NULL` in `SourceReference`.
+- Existing rows are not back-filled — only new INSERTs and UPDATEs after the
+  upgrade populate the column.
+
+### Migration
+
+Add the new column to existing `AuditLog` tables before deploying 2.2.0:
+
+```sql
+-- SQL Server
+ALTER TABLE [dbo].[AuditLog] ADD [SourceReference] NVARCHAR(256) NULL;
+
+-- PostgreSQL
+ALTER TABLE "public"."audit_log" ADD COLUMN "source_reference" VARCHAR(256) NULL;
+```
+
+Consumers that recreate the schema on every deploy (e.g. via fresh migration
+scripts) only need to add the column to their `CREATE TABLE` statement —
+AuditaX's own `CreateTableSql` is already updated.
+
 ## [2.0.0] - 2026-03-09
 
 ### Breaking Changes

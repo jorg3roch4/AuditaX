@@ -113,6 +113,8 @@ public sealed class AuditaXOptions
             // Set runtime properties
             options.EntityType = type;
             options.ResolveKeySelector();
+            options.ResolveIdentifierSelector();
+            options.ResolveReferenceSelector();
 
             // Resolve related entities
             foreach (var (relatedName, relatedOptions) in options.RelatedEntities)

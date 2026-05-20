@@ -11,7 +11,7 @@ public class PostgreSqlTableStructureValidationTests
     #region PostgreSql GetExpectedTableStructure Tests
 
     [Fact]
-    public void PostgreSql_GetExpectedTableStructure_Json_ShouldReturn4Columns()
+    public void PostgreSql_GetExpectedTableStructure_Json_ShouldReturn5Columns()
     {
         // Arrange
         var options = new AuditaXOptions
@@ -26,8 +26,12 @@ public class PostgreSqlTableStructureValidationTests
         var structure = provider.GetExpectedTableStructure();
 
         // Assert
-        structure.Should().HaveCount(4);
-        structure.Select(c => c.ColumnName).Should().Contain(new[] { "log_id", "source_name", "source_key", "audit_log" });
+        structure.Should().HaveCount(5);
+        structure.Select(c => c.ColumnName).Should().Contain(new[] { "log_id", "source_name", "source_key", "source_reference", "audit_log" });
+
+        var sourceReference = structure.First(c => c.ColumnName == "source_reference");
+        sourceReference.MinLength.Should().Be(256);
+        sourceReference.RequireNotNull.Should().BeFalse();
     }
 
     [Fact]
