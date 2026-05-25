@@ -2,6 +2,12 @@
 
 All notable changes to AuditaX will be documented in this file.
 
+## [2.3.1] - 2026-05-25
+
+### Changed
+
+- **Republish bump** of 2.3.0 (all 5 packages: AuditaX, AuditaX.Dapper, AuditaX.EntityFramework, AuditaX.SqlServer, AuditaX.PostgreSql). Version-only change required to push to nuget.org; the binary content is functionally identical to 2.3.0.
+
 ## [2.3.0] - 2026-05-25
 
 ### Changed
