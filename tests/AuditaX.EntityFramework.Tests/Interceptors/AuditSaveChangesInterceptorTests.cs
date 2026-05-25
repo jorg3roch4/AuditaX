@@ -81,9 +81,9 @@ public class AuditSaveChangesInterceptorTests : IDisposable
         var product = new Product { Name = "Widget", Price = 10.00m };
         _dbContext.Products.Add(product);
 
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var auditLogs = await _dbContext.Set<AuditLog>().ToListAsync();
+        var auditLogs = await _dbContext.Set<AuditLog>().ToListAsync(TestContext.Current.CancellationToken);
         auditLogs.Should().HaveCount(1);
         auditLogs[0].SourceName.Should().Be("Product");
     }
@@ -96,9 +96,9 @@ public class AuditSaveChangesInterceptorTests : IDisposable
         var product = new Product { Name = "Widget", Price = 10.00m };
         _dbContext.Products.Add(product);
 
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var auditLogs = await _dbContext.Set<AuditLog>().ToListAsync();
+        var auditLogs = await _dbContext.Set<AuditLog>().ToListAsync(TestContext.Current.CancellationToken);
         auditLogs.Should().HaveCount(1);
         auditLogs[0].SourceKey.Should().Be(product.Id.ToString());
     }
@@ -115,11 +115,11 @@ public class AuditSaveChangesInterceptorTests : IDisposable
         // First create the entity with an audit log
         var product = new Product { Name = "Widget", Price = 10.00m };
         _dbContext.Products.Add(product);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Now modify it
         product.Price = 20.00m;
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         _changeLogServiceMock.Verify(
             c => c.UpdateEntry(It.IsAny<string?>(), It.IsAny<List<FieldChange>>(), "TestUser"),
@@ -133,11 +133,11 @@ public class AuditSaveChangesInterceptorTests : IDisposable
 
         var product = new Product { Name = "Widget", Price = 10.00m };
         _dbContext.Products.Add(product);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Modify a property that's NOT in the audit config
         product.Description = "A nice widget";
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // UpdateEntry should not be called since Description is not in Properties
         _changeLogServiceMock.Verify(
@@ -156,10 +156,10 @@ public class AuditSaveChangesInterceptorTests : IDisposable
 
         var product = new Product { Name = "Widget", Price = 10.00m };
         _dbContext.Products.Add(product);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         _dbContext.Products.Remove(product);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         _changeLogServiceMock.Verify(
             c => c.DeleteEntry(It.IsAny<string?>(), "TestUser"),
@@ -177,9 +177,9 @@ public class AuditSaveChangesInterceptorTests : IDisposable
         var product = new Product { Name = "Widget", Price = 10.00m };
         _dbContext.Products.Add(product);
 
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var auditLogs = await _dbContext.Set<AuditLog>().ToListAsync();
+        var auditLogs = await _dbContext.Set<AuditLog>().ToListAsync(TestContext.Current.CancellationToken);
         auditLogs.Should().BeEmpty();
     }
 
@@ -195,7 +195,7 @@ public class AuditSaveChangesInterceptorTests : IDisposable
         var product = new Product { Name = "Widget", Price = 10.00m };
         _dbContext.Products.Add(product);
 
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         _userProviderMock.Verify(u => u.GetCurrentUser(), Times.AtLeastOnce);
     }
@@ -212,9 +212,9 @@ public class AuditSaveChangesInterceptorTests : IDisposable
         var product = new Product { Name = "Widget", Price = 10.00m };
         _dbContext.Products.Add(product);
 
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var auditLogs = await _dbContext.Set<AuditLog>().ToListAsync();
+        var auditLogs = await _dbContext.Set<AuditLog>().ToListAsync(TestContext.Current.CancellationToken);
         auditLogs.Should().HaveCount(1);
         auditLogs[0].AuditLogXml.Should().NotBeNullOrEmpty();
     }
@@ -226,17 +226,17 @@ public class AuditSaveChangesInterceptorTests : IDisposable
 
         var product = new Product { Name = "Widget", Price = 10.00m };
         _dbContext.Products.Add(product);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var auditLogCount = await _dbContext.Set<AuditLog>().CountAsync();
+        var auditLogCount = await _dbContext.Set<AuditLog>().CountAsync(TestContext.Current.CancellationToken);
         auditLogCount.Should().Be(1);
 
         // Modify the product
         product.Price = 25.00m;
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Should still be 1 audit log, not 2
-        auditLogCount = await _dbContext.Set<AuditLog>().CountAsync();
+        auditLogCount = await _dbContext.Set<AuditLog>().CountAsync(TestContext.Current.CancellationToken);
         auditLogCount.Should().Be(1);
     }
 
@@ -252,22 +252,22 @@ public class AuditSaveChangesInterceptorTests : IDisposable
         // Create original entity
         var product = new Product { Name = "Widget", Price = 10.00m };
         _dbContext.Products.Add(product);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
         var originalId = product.Id;
 
         // Delete it
         _dbContext.Products.Remove(product);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Re-create with same key
         var newProduct = new Product { Id = originalId, Name = "Widget Reborn", Price = 15.00m };
         _dbContext.Products.Add(newProduct);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Should still have exactly one audit log for this entity
         var auditLogs = await _dbContext.Set<AuditLog>()
             .Where(a => a.SourceName == "Product" && a.SourceKey == originalId.ToString())
-            .ToListAsync();
+            .ToListAsync(TestContext.Current.CancellationToken);
         auditLogs.Should().HaveCount(1);
     }
 
@@ -304,9 +304,9 @@ public class AuditSaveChangesInterceptorTests : IDisposable
         _dbContext.Products.Add(product1);
         _dbContext.Products.Add(product2);
 
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var auditLogs = await _dbContext.Set<AuditLog>().ToListAsync();
+        var auditLogs = await _dbContext.Set<AuditLog>().ToListAsync(TestContext.Current.CancellationToken);
         auditLogs.Should().HaveCount(2);
     }
 
@@ -324,10 +324,10 @@ public class AuditSaveChangesInterceptorTests : IDisposable
 
         var product = new Product { Name = "Widget", Price = 10.00m };
         _dbContext.Products.Add(product);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         product.Name = "Super Widget";
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         _changeLogServiceMock.Verify(
             c => c.UpdateEntry(

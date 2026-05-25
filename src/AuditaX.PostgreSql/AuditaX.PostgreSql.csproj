@@ -14,9 +14,9 @@
 
         <!-- Package Identity -->
         <PackageId>AuditaX.PostgreSql</PackageId>
-        <Version>2.2.0</Version>
-        <AssemblyVersion>2.2.0</AssemblyVersion>
-        <FileVersion>2.2.0</FileVersion>
+        <Version>2.3.0</Version>
+        <AssemblyVersion>2.3.0</AssemblyVersion>
+        <FileVersion>2.3.0</FileVersion>
         <Product>AuditaX</Product>
 
         <!-- Package Metadata -->
@@ -25,7 +25,7 @@
         <Description>PostgreSQL database provider for AuditaX audit logging with optimized queries and native type support.</Description>
         <Copyright>Copyright (c) 2025 jorg3roch4</Copyright>
         <PackageTags>audit;logging;postgresql;database;provider;dotnet</PackageTags>
-        <PackageReleaseNotes>Added optional Identifier (display key) decoupled from Key (FK match). Backward compatible. See WithIdentifier&lt;TKey&gt;() Fluent API.</PackageReleaseNotes>
+        <PackageReleaseNotes>2.3.0: SourceReference column widened to VARCHAR(512). CreateTableSql and GetExpectedTableStructure updated. BREAKING: existing audit_log tables must ALTER source_reference to width &gt;= 512.</PackageReleaseNotes>
         <NeutralLanguage>en</NeutralLanguage>
         <MinClientVersion>6.0</MinClientVersion>
 
@@ -68,6 +68,6 @@
 
     <!-- Dependencies -->
     <ItemGroup>
-        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
     </ItemGroup>
 </Project>

@@ -30,7 +30,7 @@ public class PostgreSqlTableStructureValidationTests
         structure.Select(c => c.ColumnName).Should().Contain(new[] { "log_id", "source_name", "source_key", "source_reference", "audit_log" });
 
         var sourceReference = structure.First(c => c.ColumnName == "source_reference");
-        sourceReference.MinLength.Should().Be(256);
+        sourceReference.MinLength.Should().Be(512);
         sourceReference.RequireNotNull.Should().BeFalse();
     }
 

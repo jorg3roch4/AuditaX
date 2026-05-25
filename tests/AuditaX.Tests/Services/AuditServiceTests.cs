@@ -44,7 +44,7 @@ public class AuditServiceTests
             .Setup(c => c.CreateEntry(string.Empty, "TestUser"))
             .Returns("<AuditLog><Entry /></AuditLog>");
 
-        await _service.LogCreateAsync("Product", "1");
+        await _service.LogCreateAsync("Product", "1", TestContext.Current.CancellationToken);
 
         _repositoryMock.Verify(r => r.AddAsync(It.IsAny<AuditLog>(), It.IsAny<CancellationToken>()), Times.Once);
         _repositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -61,7 +61,7 @@ public class AuditServiceTests
             .Setup(c => c.CreateEntry("<old />", "TestUser"))
             .Returns("<new />");
 
-        await _service.LogCreateAsync("Product", "1");
+        await _service.LogCreateAsync("Product", "1", TestContext.Current.CancellationToken);
 
         existingLog.AuditLogXml.Should().Be("<new />");
         _repositoryMock.Verify(r => r.AddAsync(It.IsAny<AuditLog>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -78,7 +78,7 @@ public class AuditServiceTests
             .Setup(c => c.CreateEntry(string.Empty, "admin"))
             .Returns("<xml />");
 
-        await _service.LogCreateAsync("Product", "1", "admin");
+        await _service.LogCreateAsync("Product", "1", "admin", TestContext.Current.CancellationToken);
 
         _changeLogServiceMock.Verify(c => c.CreateEntry(string.Empty, "admin"), Times.Once);
         _userProviderMock.Verify(u => u.GetCurrentUser(), Times.Never);
@@ -104,7 +104,7 @@ public class AuditServiceTests
             .Setup(c => c.UpdateEntry("<old />", changes, "TestUser"))
             .Returns("<updated />");
 
-        await _service.LogUpdateAsync("Product", "1", changes);
+        await _service.LogUpdateAsync("Product", "1", changes, TestContext.Current.CancellationToken);
 
         existingLog.AuditLogXml.Should().Be("<updated />");
         _repositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -115,7 +115,7 @@ public class AuditServiceTests
     {
         var changes = new List<FieldChange>();
 
-        await _service.LogUpdateAsync("Product", "1", changes);
+        await _service.LogUpdateAsync("Product", "1", changes, TestContext.Current.CancellationToken);
 
         _repositoryMock.Verify(r => r.GetByEntityTrackingAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -135,7 +135,7 @@ public class AuditServiceTests
             .Setup(c => c.UpdateEntry("<old />", changes, "admin"))
             .Returns("<updated />");
 
-        await _service.LogUpdateAsync("Product", "1", changes, "admin");
+        await _service.LogUpdateAsync("Product", "1", changes, "admin", TestContext.Current.CancellationToken);
 
         _changeLogServiceMock.Verify(c => c.UpdateEntry("<old />", changes, "admin"), Times.Once);
         _userProviderMock.Verify(u => u.GetCurrentUser(), Times.Never);
@@ -157,7 +157,7 @@ public class AuditServiceTests
             .Setup(c => c.DeleteEntry("<old />", "TestUser"))
             .Returns("<deleted />");
 
-        await _service.LogDeleteAsync("Product", "1");
+        await _service.LogDeleteAsync("Product", "1", TestContext.Current.CancellationToken);
 
         existingLog.AuditLogXml.Should().Be("<deleted />");
         _repositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -180,7 +180,7 @@ public class AuditServiceTests
             .Setup(c => c.RelatedEntry("<old />", AuditAction.Added, "Tags", fields, "TestUser"))
             .Returns("<related />");
 
-        await _service.LogRelatedAsync("Product", "1", AuditAction.Added, "Tags", fields);
+        await _service.LogRelatedAsync("Product", "1", AuditAction.Added, "Tags", fields, TestContext.Current.CancellationToken);
 
         existingLog.AuditLogXml.Should().Be("<related />");
         _repositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -199,7 +199,7 @@ public class AuditServiceTests
             .Setup(c => c.RelatedEntry("<old />", AuditAction.Removed, "Tags", fields, "admin"))
             .Returns("<related />");
 
-        await _service.LogRelatedAsync("Product", "1", AuditAction.Removed, "Tags", fields, "admin");
+        await _service.LogRelatedAsync("Product", "1", AuditAction.Removed, "Tags", fields, "admin", TestContext.Current.CancellationToken);
 
         _userProviderMock.Verify(u => u.GetCurrentUser(), Times.Never);
     }
@@ -218,7 +218,7 @@ public class AuditServiceTests
             .Setup(c => c.CreateEntry(string.Empty, "TestUser"))
             .Returns("<xml />");
 
-        await _service.LogCreateAsync("Product", "1");
+        await _service.LogCreateAsync("Product", "1", TestContext.Current.CancellationToken);
 
         _userProviderMock.Verify(u => u.GetCurrentUser(), Times.Once);
     }
@@ -235,7 +235,7 @@ public class AuditServiceTests
             .Setup(c => c.DeleteEntry("<old />", "admin"))
             .Returns("<deleted />");
 
-        await _service.LogDeleteAsync("Product", "1", "admin");
+        await _service.LogDeleteAsync("Product", "1", "admin", TestContext.Current.CancellationToken);
 
         _userProviderMock.Verify(u => u.GetCurrentUser(), Times.Never);
     }

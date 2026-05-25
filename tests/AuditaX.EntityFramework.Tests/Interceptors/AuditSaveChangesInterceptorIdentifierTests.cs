@@ -97,9 +97,9 @@ public class AuditSaveChangesInterceptorIdentifierTests : IDisposable
         var product = new ParentProduct { Sku = "SKU-001", Name = "Widget" };
         _dbContext.Products.Add(product);
 
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var auditLogs = await _dbContext.Set<AuditLog>().ToListAsync();
+        var auditLogs = await _dbContext.Set<AuditLog>().ToListAsync(TestContext.Current.CancellationToken);
         auditLogs.Should().HaveCount(1);
         auditLogs[0].SourceKey.Should().Be("SKU-001");
         auditLogs[0].SourceKey.Should().NotBe(product.Id.ToString());
@@ -112,14 +112,14 @@ public class AuditSaveChangesInterceptorIdentifierTests : IDisposable
 
         var product = new ParentProduct { Sku = "SKU-002", Name = "Widget" };
         _dbContext.Products.Add(product);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         product.Name = "Super Widget";
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var auditLogs = await _dbContext.Set<AuditLog>()
             .Where(a => a.SourceName == "ParentProduct" && a.SourceKey == "SKU-002")
-            .ToListAsync();
+            .ToListAsync(TestContext.Current.CancellationToken);
         auditLogs.Should().HaveCount(1);
     }
 
@@ -130,14 +130,14 @@ public class AuditSaveChangesInterceptorIdentifierTests : IDisposable
 
         var product = new ParentProduct { Sku = "SKU-003", Name = "Widget" };
         _dbContext.Products.Add(product);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         _dbContext.Products.Remove(product);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var auditLogs = await _dbContext.Set<AuditLog>()
             .Where(a => a.SourceName == "ParentProduct" && a.SourceKey == "SKU-003")
-            .ToListAsync();
+            .ToListAsync(TestContext.Current.CancellationToken);
         auditLogs.Should().HaveCount(1);
     }
 
@@ -151,9 +151,9 @@ public class AuditSaveChangesInterceptorIdentifierTests : IDisposable
 
         var product = new ParentProduct { Sku = "SKU-NA", Name = "Widget" };
         _dbContext.Products.Add(product);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var auditLogs = await _dbContext.Set<AuditLog>().ToListAsync();
+        var auditLogs = await _dbContext.Set<AuditLog>().ToListAsync(TestContext.Current.CancellationToken);
         auditLogs.Should().HaveCount(1);
         auditLogs[0].SourceKey.Should().Be(product.Id.ToString());
     }
@@ -169,21 +169,21 @@ public class AuditSaveChangesInterceptorIdentifierTests : IDisposable
 
         var product = new ParentProduct { Sku = "SKU-IN-TRACKER", Name = "Widget" };
         _dbContext.Products.Add(product);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Now both parent and child are added in same SaveChanges
         var product2 = new ParentProduct { Sku = "SKU-CHILD-PARENT", Name = "Widget2" };
         _dbContext.Products.Add(product2);
         // Need to save first so we can have Id, then add child in another SaveChanges where parent is still tracked
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var tag = new ProductTag { ProductId = product2.Id, TagName = "Hot" };
         _dbContext.Tags.Add(tag);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var auditLogs = await _dbContext.Set<AuditLog>()
             .Where(a => a.SourceName == "ParentProduct" && a.SourceKey == "SKU-CHILD-PARENT")
-            .ToListAsync();
+            .ToListAsync(TestContext.Current.CancellationToken);
         auditLogs.Should().HaveCount(1, "child should consolidate under the parent's identifier-keyed audit log");
     }
 
@@ -199,7 +199,7 @@ public class AuditSaveChangesInterceptorIdentifierTests : IDisposable
         // 1. Pre-seed parent in DB
         var product = new ParentProduct { Sku = "SKU-DETACHED", Name = "Widget" };
         _dbContext.Products.Add(product);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
         var parentId = product.Id;
 
         // 2. Detach parent so only the FK is known when child is added
@@ -208,12 +208,12 @@ public class AuditSaveChangesInterceptorIdentifierTests : IDisposable
         // 3. Add child with FK only
         var tag = new ProductTag { ProductId = parentId, TagName = "Cold" };
         _dbContext.Tags.Add(tag);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // 4. The interceptor must call context.Find to load parent then write SKU as SourceKey
         var auditLogs = await _dbContext.Set<AuditLog>()
             .Where(a => a.SourceName == "ParentProduct" && a.SourceKey == "SKU-DETACHED")
-            .ToListAsync();
+            .ToListAsync(TestContext.Current.CancellationToken);
         auditLogs.Should().HaveCount(1);
     }
 
@@ -237,7 +237,7 @@ public class AuditSaveChangesInterceptorIdentifierTests : IDisposable
         // The audit log must use the raw FK value as SourceKey
         var auditLogs = await _dbContext.Set<AuditLog>()
             .Where(a => a.SourceName == "ParentProduct" && a.SourceKey == orphanFk.ToString())
-            .ToListAsync();
+            .ToListAsync(TestContext.Current.CancellationToken);
         auditLogs.Should().HaveCount(1);
     }
 
@@ -252,7 +252,7 @@ public class AuditSaveChangesInterceptorIdentifierTests : IDisposable
 
         var product = new ParentProduct { Sku = "SKU-CONSOL", Name = "Widget" };
         _dbContext.Products.Add(product);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Add two tags in same SaveChanges
         var tag1 = new ProductTag { ProductId = product.Id, TagName = "TagA" };
@@ -260,11 +260,11 @@ public class AuditSaveChangesInterceptorIdentifierTests : IDisposable
         _dbContext.Tags.Add(tag1);
         _dbContext.Tags.Add(tag2);
 
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var auditLogs = await _dbContext.Set<AuditLog>()
             .Where(a => a.SourceName == "ParentProduct" && a.SourceKey == "SKU-CONSOL")
-            .ToListAsync();
+            .ToListAsync(TestContext.Current.CancellationToken);
         auditLogs.Should().HaveCount(1, "two related changes should consolidate into one AuditLog row keyed by parent identifier");
     }
 

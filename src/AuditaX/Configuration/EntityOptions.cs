@@ -183,9 +183,19 @@ public sealed class EntityOptions
     /// <summary>
     /// Gets the human-readable reference value from an entity instance.
     /// Returns <c>null</c> when no <see cref="ReferenceSelector"/> is configured.
+    /// Result is silently truncated to <see cref="MaxReferenceLength"/> characters
+    /// so callers never propagate a SQL truncation failure for an oversized reference.
     /// </summary>
     public string? GetReference(object entity)
     {
-        return ReferenceSelector?.Invoke(entity);
+        var value = ReferenceSelector?.Invoke(entity);
+        if (value is null) return null;
+        return value.Length > MaxReferenceLength ? value.Substring(0, MaxReferenceLength) : value;
     }
+
+    /// <summary>
+    /// Maximum length of <c>SourceReference</c> stored in the audit log table.
+    /// Matches the <see cref="AuditaX.Entities.AuditLog.SourceReference"/> column length.
+    /// </summary>
+    public const int MaxReferenceLength = 512;
 }

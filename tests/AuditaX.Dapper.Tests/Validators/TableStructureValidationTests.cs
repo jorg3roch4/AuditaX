@@ -30,7 +30,7 @@ public class TableStructureValidationTests
         structure.Select(c => c.ColumnName).Should().Contain(new[] { "LogId", "SourceName", "SourceKey", "SourceReference", "AuditLog" });
 
         var sourceReference = structure.First(c => c.ColumnName == "SourceReference");
-        sourceReference.MinLength.Should().Be(256);
+        sourceReference.MinLength.Should().Be(512);
         sourceReference.RequireNotNull.Should().BeFalse();
     }
 

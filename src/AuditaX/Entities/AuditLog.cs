@@ -39,7 +39,7 @@ public class AuditLog
     /// when configured via <c>WithReference</c>. Independent from <see cref="SourceKey"/>,
     /// which remains the stable persisted identifier.
     /// </summary>
-    [MaxLength(256)]
+    [MaxLength(512)]
     [Column("SourceReference")]
     public string? SourceReference { get; set; }
 

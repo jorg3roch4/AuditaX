@@ -89,7 +89,7 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
     ""{LogIdColumn}"" UUID NOT NULL DEFAULT gen_random_uuid(),
     ""{SourceNameColumn}"" VARCHAR(64) NOT NULL,
     ""{SourceKeyColumn}"" VARCHAR(64) NOT NULL,
-    ""{SourceReferenceColumn}"" VARCHAR(256) NULL,
+    ""{SourceReferenceColumn}"" VARCHAR(512) NULL,
     ""{AuditLogColumn}"" {columnType} NOT NULL,
     CONSTRAINT ""pk_{_tableName}"" PRIMARY KEY (""{LogIdColumn}""),
     CONSTRAINT ""uq_{_tableName}_source"" UNIQUE (""{SourceNameColumn}"", ""{SourceKeyColumn}"")
@@ -176,7 +176,7 @@ public sealed class PostgreSqlDatabaseProvider(AuditaXOptions options) : IDataba
             {
                 ColumnName = SourceReferenceColumn,
                 AcceptableDataTypes = ["character varying", "varchar", "text"],
-                MinLength = 256,
+                MinLength = 512,
                 RequireNotNull = false
             },
             new()

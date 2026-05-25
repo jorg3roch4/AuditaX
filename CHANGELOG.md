@@ -2,6 +2,45 @@
 
 All notable changes to AuditaX will be documented in this file.
 
+## [2.3.0] - 2026-05-25
+
+### Changed
+
+- **`AuditLog.SourceReference` column widened to 512 characters**
+  (`NVARCHAR(512)` in SQL Server, `VARCHAR(512)` in PostgreSQL). The previous
+  256-char ceiling was too tight for natural display references that combine
+  multiple fields (for example, `FirstName + LastName` of an identity user
+  with each at 128 characters reaches 257 and would have triggered SQL
+  truncation on the audit insert path).
+- **`EntityOptions.MaxReferenceLength`** raised to `512` and the silent
+  truncation in `EntityOptions.GetReference` now uses this new value.
+- **SQL providers** (`SqlServerDatabaseProvider`, `PostgreSqlDatabaseProvider`):
+  `CreateTableSql` emits the new width, and `GetExpectedTableStructure()`
+  reports `MinLength = 512` for `SourceReference`.
+
+### Migration
+
+```sql
+-- SQL Server
+ALTER TABLE [dbo].[AuditLog] ALTER COLUMN [SourceReference] NVARCHAR(512) NULL;
+
+-- PostgreSQL
+ALTER TABLE "public"."audit_log" ALTER COLUMN "source_reference" TYPE VARCHAR(512);
+```
+
+### Breaking Changes
+
+- Consumers that deployed an `AuditLog` table with `SourceReference NVARCHAR(256)`
+  must run the ALTER above; otherwise the AuditaX startup validator throws
+  `AuditTableStructureMismatchException` because the actual column width is
+  smaller than the expected `MinLength = 512`.
+
+## [2.2.1] - 2026-05-25 [SUPERSEDED by 2.3.0]
+
+Truncation-only release (`MaxReferenceLength = 256`, no schema change). Was
+shipped briefly the same day as 2.3.0; consumers should skip directly to 2.3.0
+which carries the truncation fix plus the wider column.
+
 ## [2.2.0] - 2026-05-20
 
 ### Added

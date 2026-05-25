@@ -70,7 +70,7 @@ public sealed class SqlServerDatabaseProvider(AuditaXOptions options) : IDatabas
     [{LogIdColumn}] UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID(),
     [{SourceNameColumn}] NVARCHAR(64) NOT NULL,
     [{SourceKeyColumn}] NVARCHAR(64) NOT NULL,
-    [{SourceReferenceColumn}] NVARCHAR(256) NULL,
+    [{SourceReferenceColumn}] NVARCHAR(512) NULL,
     [{AuditLogColumn}] {columnType} NOT NULL,
     CONSTRAINT [PK_{options.TableName}] PRIMARY KEY ([{LogIdColumn}]),
     CONSTRAINT [UQ_{options.TableName}_Source] UNIQUE ([{SourceNameColumn}], [{SourceKeyColumn}])
@@ -160,7 +160,7 @@ public sealed class SqlServerDatabaseProvider(AuditaXOptions options) : IDatabas
             {
                 ColumnName = SourceReferenceColumn,
                 AcceptableDataTypes = ["nvarchar", "varchar"],
-                MinLength = 256,
+                MinLength = 512,
                 RequireNotNull = false
             },
             new()
