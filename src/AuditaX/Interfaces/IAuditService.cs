@@ -25,11 +25,13 @@ public interface IAuditService
     /// <param name="sourceName">The name of the entity being audited.</param>
     /// <param name="sourceKey">The unique identifier of the entity.</param>
     /// <param name="user">The user who created the entity.</param>
+    /// <param name="sourceReference">The human-readable reference (name) of the entity. Optional.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task LogCreateAsync(
         string sourceName,
         string sourceKey,
         string user,
+        string? sourceReference = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -52,12 +54,14 @@ public interface IAuditService
     /// <param name="sourceKey">The unique identifier of the entity.</param>
     /// <param name="changes">The list of field changes to log.</param>
     /// <param name="user">The user who made the changes.</param>
+    /// <param name="sourceReference">The human-readable reference (name) of the entity. Optional.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task LogUpdateAsync(
         string sourceName,
         string sourceKey,
         List<FieldChange> changes,
         string user,
+        string? sourceReference = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -77,11 +81,13 @@ public interface IAuditService
     /// <param name="sourceName">The name of the entity being audited.</param>
     /// <param name="sourceKey">The unique identifier of the entity.</param>
     /// <param name="user">The user who deleted the entity.</param>
+    /// <param name="sourceReference">The human-readable reference (name) of the entity. Optional.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task LogDeleteAsync(
         string sourceName,
         string sourceKey,
         string user,
+        string? sourceReference = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -110,6 +116,7 @@ public interface IAuditService
     /// <param name="relatedName">The name of the related entity.</param>
     /// <param name="fields">The fields describing the related entity.</param>
     /// <param name="user">The user who made the change.</param>
+    /// <param name="sourceReference">The human-readable reference (name) of the parent entity. Optional.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task LogRelatedAsync(
         string sourceName,
@@ -118,6 +125,7 @@ public interface IAuditService
         string relatedName,
         List<FieldChange> fields,
         string user,
+        string? sourceReference = null,
         CancellationToken cancellationToken = default);
 
 }

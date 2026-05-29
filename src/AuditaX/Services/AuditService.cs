@@ -32,7 +32,7 @@ public sealed class AuditService(
         CancellationToken cancellationToken = default)
     {
         var user = userProvider.GetCurrentUser();
-        await LogCreateAsync(sourceName, sourceKey, user, cancellationToken);
+        await LogCreateAsync(sourceName, sourceKey, user, cancellationToken: cancellationToken);
     }
 
     /// <inheritdoc />
@@ -40,6 +40,7 @@ public sealed class AuditService(
         string sourceName,
         string sourceKey,
         string user,
+        string? sourceReference = null,
         CancellationToken cancellationToken = default)
     {
         _logger?.LogDebug(
@@ -48,7 +49,7 @@ public sealed class AuditService(
             sourceKey,
             user);
 
-        var auditLog = await GetOrCreateAuditLogAsync(sourceName, sourceKey, cancellationToken);
+        var auditLog = await GetOrCreateAuditLogAsync(sourceName, sourceKey, sourceReference, cancellationToken);
 
         auditLog.AuditLogXml = changeLogService.CreateEntry(auditLog.AuditLogXml, user);
 
@@ -68,7 +69,7 @@ public sealed class AuditService(
         CancellationToken cancellationToken = default)
     {
         var user = userProvider.GetCurrentUser();
-        await LogUpdateAsync(sourceName, sourceKey, changes, user, cancellationToken);
+        await LogUpdateAsync(sourceName, sourceKey, changes, user, cancellationToken: cancellationToken);
     }
 
     /// <inheritdoc />
@@ -77,6 +78,7 @@ public sealed class AuditService(
         string sourceKey,
         List<FieldChange> changes,
         string user,
+        string? sourceReference = null,
         CancellationToken cancellationToken = default)
     {
         if (changes.Count == 0)
@@ -95,7 +97,7 @@ public sealed class AuditService(
             sourceKey,
             user);
 
-        var auditLog = await GetOrCreateAuditLogAsync(sourceName, sourceKey, cancellationToken);
+        var auditLog = await GetOrCreateAuditLogAsync(sourceName, sourceKey, sourceReference, cancellationToken);
 
         auditLog.AuditLogXml = changeLogService.UpdateEntry(
             auditLog.AuditLogXml,
@@ -117,7 +119,7 @@ public sealed class AuditService(
         CancellationToken cancellationToken = default)
     {
         var user = userProvider.GetCurrentUser();
-        await LogDeleteAsync(sourceName, sourceKey, user, cancellationToken);
+        await LogDeleteAsync(sourceName, sourceKey, user, cancellationToken: cancellationToken);
     }
 
     /// <inheritdoc />
@@ -125,6 +127,7 @@ public sealed class AuditService(
         string sourceName,
         string sourceKey,
         string user,
+        string? sourceReference = null,
         CancellationToken cancellationToken = default)
     {
         _logger?.LogDebug(
@@ -133,7 +136,7 @@ public sealed class AuditService(
             sourceKey,
             user);
 
-        var auditLog = await GetOrCreateAuditLogAsync(sourceName, sourceKey, cancellationToken);
+        var auditLog = await GetOrCreateAuditLogAsync(sourceName, sourceKey, sourceReference, cancellationToken);
 
         auditLog.AuditLogXml = changeLogService.DeleteEntry(auditLog.AuditLogXml, user);
 
@@ -155,7 +158,7 @@ public sealed class AuditService(
         CancellationToken cancellationToken = default)
     {
         var user = userProvider.GetCurrentUser();
-        await LogRelatedAsync(sourceName, sourceKey, action, relatedName, fields, user, cancellationToken);
+        await LogRelatedAsync(sourceName, sourceKey, action, relatedName, fields, user, cancellationToken: cancellationToken);
     }
 
     /// <inheritdoc />
@@ -166,6 +169,7 @@ public sealed class AuditService(
         string relatedName,
         List<FieldChange> fields,
         string user,
+        string? sourceReference = null,
         CancellationToken cancellationToken = default)
     {
         _logger?.LogDebug(
@@ -176,7 +180,7 @@ public sealed class AuditService(
             sourceKey,
             user);
 
-        var auditLog = await GetOrCreateAuditLogAsync(sourceName, sourceKey, cancellationToken);
+        var auditLog = await GetOrCreateAuditLogAsync(sourceName, sourceKey, sourceReference, cancellationToken);
 
         auditLog.AuditLogXml = changeLogService.RelatedEntry(
             auditLog.AuditLogXml,
@@ -198,6 +202,7 @@ public sealed class AuditService(
     private async Task<AuditLog> GetOrCreateAuditLogAsync(
         string sourceName,
         string sourceKey,
+        string? sourceReference,
         CancellationToken cancellationToken)
     {
         var auditLog = await repository.GetByEntityTrackingAsync(
@@ -207,6 +212,11 @@ public sealed class AuditService(
 
         if (auditLog is not null)
         {
+            if (sourceReference is not null)
+            {
+                auditLog.SourceReference = sourceReference;
+            }
+
             return auditLog;
         }
 
@@ -214,6 +224,7 @@ public sealed class AuditService(
         {
             SourceName = sourceName,
             SourceKey = sourceKey,
+            SourceReference = sourceReference,
             AuditLogXml = string.Empty
         };
 

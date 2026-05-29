@@ -78,7 +78,7 @@ public class AuditServiceTests
             .Setup(c => c.CreateEntry(string.Empty, "admin"))
             .Returns("<xml />");
 
-        await _service.LogCreateAsync("Product", "1", "admin", TestContext.Current.CancellationToken);
+        await _service.LogCreateAsync("Product", "1", "admin", cancellationToken: TestContext.Current.CancellationToken);
 
         _changeLogServiceMock.Verify(c => c.CreateEntry(string.Empty, "admin"), Times.Once);
         _userProviderMock.Verify(u => u.GetCurrentUser(), Times.Never);
@@ -135,7 +135,7 @@ public class AuditServiceTests
             .Setup(c => c.UpdateEntry("<old />", changes, "admin"))
             .Returns("<updated />");
 
-        await _service.LogUpdateAsync("Product", "1", changes, "admin", TestContext.Current.CancellationToken);
+        await _service.LogUpdateAsync("Product", "1", changes, "admin", cancellationToken: TestContext.Current.CancellationToken);
 
         _changeLogServiceMock.Verify(c => c.UpdateEntry("<old />", changes, "admin"), Times.Once);
         _userProviderMock.Verify(u => u.GetCurrentUser(), Times.Never);
@@ -199,7 +199,7 @@ public class AuditServiceTests
             .Setup(c => c.RelatedEntry("<old />", AuditAction.Removed, "Tags", fields, "admin"))
             .Returns("<related />");
 
-        await _service.LogRelatedAsync("Product", "1", AuditAction.Removed, "Tags", fields, "admin", TestContext.Current.CancellationToken);
+        await _service.LogRelatedAsync("Product", "1", AuditAction.Removed, "Tags", fields, "admin", cancellationToken: TestContext.Current.CancellationToken);
 
         _userProviderMock.Verify(u => u.GetCurrentUser(), Times.Never);
     }
@@ -235,7 +235,7 @@ public class AuditServiceTests
             .Setup(c => c.DeleteEntry("<old />", "admin"))
             .Returns("<deleted />");
 
-        await _service.LogDeleteAsync("Product", "1", "admin", TestContext.Current.CancellationToken);
+        await _service.LogDeleteAsync("Product", "1", "admin", cancellationToken: TestContext.Current.CancellationToken);
 
         _userProviderMock.Verify(u => u.GetCurrentUser(), Times.Never);
     }

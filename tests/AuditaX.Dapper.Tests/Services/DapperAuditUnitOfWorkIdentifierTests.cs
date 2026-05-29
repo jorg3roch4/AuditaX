@@ -56,6 +56,26 @@ public class DapperAuditUnitOfWorkIdentifierTests
     }
 
     [Fact]
+    public async Task LogCreateAsync_With_Reference_Configured_Passes_SourceReference()
+    {
+        // Arrange — WithReference(u => u.UserName) must flow to the audit service (QA #119 regression)
+        _options.ConfigureEntity<TestUser>("User")
+            .WithKey(u => u.UserId)
+            .WithReference(u => u.UserName)
+            .Properties("UserName");
+
+        var user = new TestUser { UserId = "guid-123", UserName = "alice" };
+
+        // Act
+        await _unitOfWork.LogCreateAsync(user);
+
+        // Assert — the human-readable reference is forwarded, not left null
+        _auditServiceMock.Verify(
+            s => s.LogCreateAsync("User", "guid-123", "test@example.com", "alice"),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task LogCreateAsync_Without_Identifier_Falls_Back_To_Key()
     {
         // Arrange — back-compat: no WithIdentifier

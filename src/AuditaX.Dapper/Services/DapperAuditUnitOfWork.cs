@@ -19,32 +19,32 @@ public class DapperAuditUnitOfWork(
     /// <inheritdoc />
     public async Task LogCreateAsync<T>(T entity) where T : class
     {
-        var (sourceName, sourceKey) = GetEntityInfo(entity);
+        var (sourceName, sourceKey, sourceReference) = GetEntityInfo(entity);
         var user = userProvider.GetCurrentUser();
 
-        await auditService.LogCreateAsync(sourceName, sourceKey, user);
+        await auditService.LogCreateAsync(sourceName, sourceKey, user, sourceReference);
     }
 
     /// <inheritdoc />
     public async Task LogUpdateAsync<T>(T original, T modified) where T : class
     {
-        var (sourceName, sourceKey) = GetEntityInfo(modified);
+        var (sourceName, sourceKey, sourceReference) = GetEntityInfo(modified);
         var changes = GetFieldChanges(original, modified);
 
         if (changes.Count > 0)
         {
             var user = userProvider.GetCurrentUser();
-            await auditService.LogUpdateAsync(sourceName, sourceKey, changes, user);
+            await auditService.LogUpdateAsync(sourceName, sourceKey, changes, user, sourceReference);
         }
     }
 
     /// <inheritdoc />
     public async Task LogDeleteAsync<T>(T entity) where T : class
     {
-        var (sourceName, sourceKey) = GetEntityInfo(entity);
+        var (sourceName, sourceKey, sourceReference) = GetEntityInfo(entity);
         var user = userProvider.GetCurrentUser();
 
-        await auditService.LogDeleteAsync(sourceName, sourceKey, user);
+        await auditService.LogDeleteAsync(sourceName, sourceKey, user, sourceReference);
     }
 
     /// <inheritdoc />
@@ -52,11 +52,11 @@ public class DapperAuditUnitOfWork(
         where TParent : class
         where TRelated : class
     {
-        var (sourceName, sourceKey) = GetEntityInfo(parent);
+        var (sourceName, sourceKey, sourceReference) = GetEntityInfo(parent);
         var (relatedName, fields) = GetRelatedEntityInfo(related);
         var user = userProvider.GetCurrentUser();
 
-        await auditService.LogRelatedAsync(sourceName, sourceKey, AuditAction.Added, relatedName, fields, user);
+        await auditService.LogRelatedAsync(sourceName, sourceKey, AuditAction.Added, relatedName, fields, user, sourceReference);
     }
 
     /// <inheritdoc />
@@ -64,7 +64,7 @@ public class DapperAuditUnitOfWork(
         where TParent : class
         where TRelated : class
     {
-        var (sourceName, sourceKey) = GetEntityInfo(parent);
+        var (sourceName, sourceKey, sourceReference) = GetEntityInfo(parent);
         var relatedType = typeof(TRelated);
         var relatedConfig = options.GetRelatedEntity(relatedType);
         var relatedName = relatedConfig?.RelatedName ?? relatedType.Name;
@@ -72,7 +72,7 @@ public class DapperAuditUnitOfWork(
         var fields = GetFieldsFromLookups(relatedConfig, lookups);
         var user = userProvider.GetCurrentUser();
 
-        await auditService.LogRelatedAsync(sourceName, sourceKey, AuditAction.Added, relatedName, fields, user);
+        await auditService.LogRelatedAsync(sourceName, sourceKey, AuditAction.Added, relatedName, fields, user, sourceReference);
     }
 
     /// <inheritdoc />
@@ -80,7 +80,7 @@ public class DapperAuditUnitOfWork(
         where TParent : class
         where TRelated : class
     {
-        var (sourceName, sourceKey) = GetEntityInfo(parent);
+        var (sourceName, sourceKey, sourceReference) = GetEntityInfo(parent);
         var relatedType = typeof(TRelated);
         var relatedConfig = options.GetRelatedEntity(relatedType);
         var relatedName = relatedConfig?.RelatedName ?? relatedType.Name;
@@ -90,7 +90,7 @@ public class DapperAuditUnitOfWork(
         if (changes.Count > 0)
         {
             var user = userProvider.GetCurrentUser();
-            await auditService.LogRelatedAsync(sourceName, sourceKey, AuditAction.Updated, relatedName, changes, user);
+            await auditService.LogRelatedAsync(sourceName, sourceKey, AuditAction.Updated, relatedName, changes, user, sourceReference);
         }
     }
 
@@ -104,7 +104,7 @@ public class DapperAuditUnitOfWork(
         where TParent : class
         where TRelated : class
     {
-        var (sourceName, sourceKey) = GetEntityInfo(parent);
+        var (sourceName, sourceKey, sourceReference) = GetEntityInfo(parent);
         var relatedType = typeof(TRelated);
         var relatedConfig = options.GetRelatedEntity(relatedType);
         var relatedName = relatedConfig?.RelatedName ?? relatedType.Name;
@@ -114,7 +114,7 @@ public class DapperAuditUnitOfWork(
         if (changes.Count > 0)
         {
             var user = userProvider.GetCurrentUser();
-            await auditService.LogRelatedAsync(sourceName, sourceKey, AuditAction.Updated, relatedName, changes, user);
+            await auditService.LogRelatedAsync(sourceName, sourceKey, AuditAction.Updated, relatedName, changes, user, sourceReference);
         }
     }
 
@@ -123,11 +123,11 @@ public class DapperAuditUnitOfWork(
         where TParent : class
         where TRelated : class
     {
-        var (sourceName, sourceKey) = GetEntityInfo(parent);
+        var (sourceName, sourceKey, sourceReference) = GetEntityInfo(parent);
         var (relatedName, fields) = GetRelatedEntityInfo(related);
         var user = userProvider.GetCurrentUser();
 
-        await auditService.LogRelatedAsync(sourceName, sourceKey, AuditAction.Removed, relatedName, fields, user);
+        await auditService.LogRelatedAsync(sourceName, sourceKey, AuditAction.Removed, relatedName, fields, user, sourceReference);
     }
 
     /// <inheritdoc />
@@ -135,7 +135,7 @@ public class DapperAuditUnitOfWork(
         where TParent : class
         where TRelated : class
     {
-        var (sourceName, sourceKey) = GetEntityInfo(parent);
+        var (sourceName, sourceKey, sourceReference) = GetEntityInfo(parent);
         var relatedType = typeof(TRelated);
         var relatedConfig = options.GetRelatedEntity(relatedType);
         var relatedName = relatedConfig?.RelatedName ?? relatedType.Name;
@@ -143,10 +143,10 @@ public class DapperAuditUnitOfWork(
         var fields = GetFieldsFromLookups(relatedConfig, lookups);
         var user = userProvider.GetCurrentUser();
 
-        await auditService.LogRelatedAsync(sourceName, sourceKey, AuditAction.Removed, relatedName, fields, user);
+        await auditService.LogRelatedAsync(sourceName, sourceKey, AuditAction.Removed, relatedName, fields, user, sourceReference);
     }
 
-    private (string SourceName, string SourceKey) GetEntityInfo<T>(T entity) where T : class
+    private (string SourceName, string SourceKey, string? SourceReference) GetEntityInfo<T>(T entity) where T : class
     {
         var entityType = typeof(T);
         var config = options.GetEntity(entityType)
@@ -155,8 +155,9 @@ public class DapperAuditUnitOfWork(
                 $"Configure it using AuditaX options in appsettings.json or fluent API.");
 
         var sourceKey = config.GetIdentifier(entity);
+        var sourceReference = config.GetReference(entity);
 
-        return (config.DisplayName ?? entityType.Name, sourceKey);
+        return (config.DisplayName ?? entityType.Name, sourceKey, sourceReference);
     }
 
     private (string RelatedName, List<FieldChange> Fields) GetRelatedEntityInfo<T>(T entity) where T : class

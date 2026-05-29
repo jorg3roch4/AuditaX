@@ -14,9 +14,9 @@
 
         <!-- Package Identity -->
         <PackageId>AuditaX.Dapper</PackageId>
-        <Version>2.3.1</Version>
-        <AssemblyVersion>2.3.1</AssemblyVersion>
-        <FileVersion>2.3.1</FileVersion>
+        <Version>2.4.0</Version>
+        <AssemblyVersion>2.4.0</AssemblyVersion>
+        <FileVersion>2.4.0</FileVersion>
         <Product>AuditaX</Product>
 
         <!-- Package Metadata -->
@@ -25,7 +25,7 @@
         <Description>Dapper ORM integration for AuditaX with IAuditUnitOfWork for manual audit control in lightweight data access scenarios.</Description>
         <Copyright>Copyright (c) 2025 jorg3roch4</Copyright>
         <PackageTags>audit;logging;dapper;orm;entity-tracking;dotnet</PackageTags>
-        <PackageReleaseNotes>2.3.1: Republish bump aligned with AuditaX 2.3.1 (version-only). 2.3.0 introduced SourceReference widening to 512; migration required in existing AuditLog tables.</PackageReleaseNotes>
+        <PackageReleaseNotes>2.4.0: DapperAuditUnitOfWork now resolves the configured WithReference selector and forwards it to IAuditService, so SourceReference (the human-readable entity name) is persisted for Dapper-tracked entities — previously it was always null. Requires AuditaX 2.4.0. 2.3.1: Republish bump aligned with AuditaX 2.3.1 (version-only). 2.3.0 introduced SourceReference widening to 512.</PackageReleaseNotes>
         <NeutralLanguage>en</NeutralLanguage>
         <MinClientVersion>6.0</MinClientVersion>
 
