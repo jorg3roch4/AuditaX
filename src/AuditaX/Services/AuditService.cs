@@ -212,7 +212,11 @@ public sealed class AuditService(
 
         if (auditLog is not null)
         {
-            if (sourceReference is not null)
+            // Only refresh the reference when a meaningful value is supplied. A related-entity
+            // audit (e.g. adding a child) may pass a parent projection without the reference
+            // property populated, which the reference selector resolves to an empty string —
+            // updating with it would wipe the previously stored reference on the existing row.
+            if (!string.IsNullOrEmpty(sourceReference))
             {
                 auditLog.SourceReference = sourceReference;
             }

@@ -2,6 +2,23 @@
 
 All notable changes to AuditaX will be documented in this file.
 
+## [2.4.1] - 2026-06-10
+
+### Fixed
+
+- **`SourceReference` no longer wiped by a related-entity audit on an existing row.**
+  `AuditService.GetOrCreateAuditLogAsync` refreshed the stored `SourceReference`
+  whenever the incoming value was non-null. A related-entity audit
+  (`LogRelatedAddedAsync` / `LogRelatedUpdatedAsync`) commonly receives a parent
+  projection whose reference property is unset, and `EntityOptions.GetReference`
+  resolves that to an **empty string** (`?? string.Empty`) rather than `null`, so
+  the empty value passed the `is not null` guard and overwrote the reference
+  previously stored on the existing audit row. The guard now uses
+  `!string.IsNullOrEmpty(...)`, so a missing/empty reference preserves the
+  existing one. Adding a child (e.g. a catalog column, data row, relation,
+  integration resource, or process task) no longer blanks the parent's
+  `SourceReference`.
+
 ## [2.3.1] - 2026-05-25
 
 ### Changed

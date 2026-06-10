@@ -204,6 +204,46 @@ public class AuditServiceTests
         _userProviderMock.Verify(u => u.GetCurrentUser(), Times.Never);
     }
 
+    [Fact]
+    public async Task LogRelatedAsync_EmptySourceReference_ShouldNotOverwriteExistingReference()
+    {
+        // Regression (QA #200): a related-entity audit (e.g. adding a child) may pass a parent
+        // projection whose reference property is unset; the reference selector resolves that to
+        // an empty string. That empty value must NOT wipe the reference already stored on the
+        // existing audit row.
+        var existingLog = new AuditLog { SourceName = "Catalogs", SourceKey = "C1", SourceReference = "QA200X", AuditLogXml = "<old />" };
+        var fields = new List<FieldChange> { new() { Name = "ColumnId", Value = "COL1" } };
+
+        _repositoryMock
+            .Setup(r => r.GetByEntityTrackingAsync("Catalogs", "C1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingLog);
+        _changeLogServiceMock
+            .Setup(c => c.RelatedEntry("<old />", AuditAction.Added, "Columns", fields, "TestUser"))
+            .Returns("<related />");
+
+        await _service.LogRelatedAsync("Catalogs", "C1", AuditAction.Added, "Columns", fields, "TestUser", sourceReference: string.Empty, cancellationToken: TestContext.Current.CancellationToken);
+
+        existingLog.SourceReference.Should().Be("QA200X");
+    }
+
+    [Fact]
+    public async Task LogRelatedAsync_NonEmptySourceReference_ShouldUpdateExistingReference()
+    {
+        var existingLog = new AuditLog { SourceName = "Catalogs", SourceKey = "C1", SourceReference = "OldName", AuditLogXml = "<old />" };
+        var fields = new List<FieldChange> { new() { Name = "ColumnId", Value = "COL1" } };
+
+        _repositoryMock
+            .Setup(r => r.GetByEntityTrackingAsync("Catalogs", "C1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingLog);
+        _changeLogServiceMock
+            .Setup(c => c.RelatedEntry("<old />", AuditAction.Added, "Columns", fields, "TestUser"))
+            .Returns("<related />");
+
+        await _service.LogRelatedAsync("Catalogs", "C1", AuditAction.Added, "Columns", fields, "TestUser", sourceReference: "NewName", cancellationToken: TestContext.Current.CancellationToken);
+
+        existingLog.SourceReference.Should().Be("NewName");
+    }
+
     #endregion
 
     #region User Provider Interaction
